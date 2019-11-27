@@ -1,3 +1,5 @@
 # Ignore File for docker build
 .git
+.idea
+graalfuzzing.iml
 README.md
