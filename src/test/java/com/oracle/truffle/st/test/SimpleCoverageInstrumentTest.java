@@ -52,7 +52,7 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import com.oracle.truffle.st.Coverage;
-import com.oracle.truffle.st.SimpleCoverageInstrument;
+import com.oracle.truffle.st.FuzzingTool;
 
 public class SimpleCoverageInstrumentTest {
 
@@ -131,7 +131,7 @@ public class SimpleCoverageInstrumentTest {
         // This test only makes sense if JS is available.
         Assume.assumeTrue(Engine.create().getLanguages().containsKey("js"));
         // This is how we can create a context with our tool enabled if we are embeddined in java
-        try (Context context = Context.newBuilder("js").option(SimpleCoverageInstrument.ID, "true").option(SimpleCoverageInstrument.ID + ".PrintCoverage", "false").build()) {
+        try (Context context = Context.newBuilder("js").option(FuzzingTool.ID, "true").option(FuzzingTool.ID + ".PrintCoverage", "false").build()) {
             Source source = Source.newBuilder("js", JS_SOURCE, "main").build();
             context.eval(source);
             assertJSCorrect(context);
@@ -147,7 +147,7 @@ public class SimpleCoverageInstrumentTest {
     private static void assertJSCorrect(final Context context) {
         // We can lookup services exported by the instrument, in our case this is
         // the instrument itself but it does not have to be.
-        SimpleCoverageInstrument coverageInstrument = context.getEngine().getInstruments().get(SimpleCoverageInstrument.ID).lookup(SimpleCoverageInstrument.class);
+        FuzzingTool coverageInstrument = context.getEngine().getInstruments().get(FuzzingTool.ID).lookup(FuzzingTool.class);
         // We then use the looked up service to assert that it behaves as expected, just like in any
         // other test.
         Map<com.oracle.truffle.api.source.Source, Coverage> coverageMap = coverageInstrument.getCoverageMap();
@@ -178,12 +178,12 @@ public class SimpleCoverageInstrumentTest {
         // This test only makes sense if SL is available.
         Assume.assumeTrue(Engine.create().getLanguages().containsKey("sl"));
         // This is how we can create a context with our tool enabled if we are embeddined in java
-        try (Context context = Context.newBuilder("sl").option(SimpleCoverageInstrument.ID, "true").option(SimpleCoverageInstrument.ID + ".PrintCoverage", "false").build()) {
+        try (Context context = Context.newBuilder("sl").option(FuzzingTool.ID, "true").option(FuzzingTool.ID + ".PrintCoverage", "false").build()) {
             Source source = Source.newBuilder("sl", SL_SOURCE, "main").build();
             context.eval(source);
             // We can lookup services exported by the instrument, in our case this is
             // the instrument itself but it does not have to be.
-            SimpleCoverageInstrument coverageInstrument = context.getEngine().getInstruments().get(SimpleCoverageInstrument.ID).lookup(SimpleCoverageInstrument.class);
+            FuzzingTool coverageInstrument = context.getEngine().getInstruments().get(FuzzingTool.ID).lookup(FuzzingTool.class);
             // We then use the looked up service to assert that it behaves as expected, just like in
             // any other test.
             Map<com.oracle.truffle.api.source.Source, Coverage> coverageMap = coverageInstrument.getCoverageMap();

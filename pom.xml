@@ -3,10 +3,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.oracle</groupId>
-    <artifactId>graalfuzzing</artifactId>
+    <artifactId>fuzzingtool</artifactId>
     <version>19.3.0</version>
 
-    <name>graalfuzzing</name>
+    <name>fuzzingtool</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

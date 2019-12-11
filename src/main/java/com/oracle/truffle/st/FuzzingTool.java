@@ -96,7 +96,7 @@ public final class FuzzingTool extends TruffleInstrument {
 
     @Override
     protected OptionDescriptors getOptionDescriptors() {
-        return new SimpleCoverageInstrumentOptionDescriptors();
+        return new FuzzingToolOptionDescriptors();
     }
 
     synchronized void addLoaded(SourceSection sourceSection) {
