@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="7937b683-e266-4626-b31f-f2e51fd3d190" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="importingSettings">
+      <MavenImportingSettings>
+        <option name="importAutomatically" value="true" />
+      </MavenImportingSettings>
+    </option>
+  </component>
+  <component name="ProjectId" id="1bJTH6Sd6C6fuismYrHzrWcMOS6" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.path.for.package.eslint" value="project" />
+    <property name="node.js.path.for.package.tslint" value="project" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="project.structure.last.edited" value="Modules" />
+    <property name="project.structure.proportion" value="0.15" />
+    <property name="project.structure.side.proportion" value="0.2" />
+  </component>
+  <component name="RunManager">
+    <configuration name="Maven Package" type="MavenRunConfiguration" factoryName="Maven">
+      <MavenSettings>
+        <option name="myGeneralSettings" />
+        <option name="myRunnerSettings" />
+        <option name="myRunnerParameters">
+          <MavenRunnerParameters>
+            <option name="profiles">
+              <set />
+            </option>
+            <option name="goals">
+              <list>
+                <option value="package" />
+              </list>
+            </option>
+            <option name="pomFileName" />
+            <option name="profilesMap">
+              <map />
+            </option>
+            <option name="resolveToWorkspace" value="false" />
+            <option name="workingDirPath" value="$PROJECT_DIR$" />
+          </MavenRunnerParameters>
+        </option>
+      </MavenSettings>
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="ServiceViewManager">
+    <option name="viewStates">
+      <list>
+        <serviceView>
+          <treeState>
+            <expand />
+            <select />
+          </treeState>
+        </serviceView>
+      </list>
+    </option>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="7937b683-e266-4626-b31f-f2e51fd3d190" name="Default Changelist" comment="" />
+      <created>1588349105529</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1588349105529</updated>
+      <workItem from="1588349109507" duration="10051000" />
+      <workItem from="1588417561033" duration="3847000" />
+      <workItem from="1589292519610" duration="426000" />
+      <workItem from="1589299985072" duration="5021000" />
+      <workItem from="1589360280879" duration="7939000" />
+      <workItem from="1589455055194" duration="218000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="69" y="98" width="1027" height="749" key="#Project_Structure" timestamp="1588350257658">
+      <screen x="0" y="0" width="1280" height="984" />
+    </state>
+    <state x="69" y="98" width="1027" height="749" key="#Project_Structure/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1588350257658" />
+    <state x="98" y="149" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1588350357598">
+      <screen x="0" y="0" width="1280" height="984" />
+    </state>
+    <state x="98" y="149" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1588350357598" />
+    <state width="1878" height="674" key="GridCell.Tab.0.bottom" timestamp="1589455171019">
+      <screen x="1280" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1878" height="357" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1589313973673" />
+    <state width="1878" height="674" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1589455171019" />
+    <state width="1878" height="674" key="GridCell.Tab.0.center" timestamp="1589455171019">
+      <screen x="1280" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1878" height="357" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1589313973672" />
+    <state width="1878" height="674" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1589455171019" />
+    <state width="1878" height="674" key="GridCell.Tab.0.left" timestamp="1589455171018">
+      <screen x="1280" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1878" height="357" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1589313973672" />
+    <state width="1878" height="674" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1589455171018" />
+    <state width="1878" height="674" key="GridCell.Tab.0.right" timestamp="1589455171019">
+      <screen x="1280" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1878" height="357" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1589313973672" />
+    <state width="1878" height="674" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1589455171019" />
+    <state width="1878" height="357" key="GridCell.Tab.1.bottom" timestamp="1589313973673">
+      <screen x="0" y="0" width="1280" height="984" />
+    </state>
+    <state width="1878" height="357" key="GridCell.Tab.1.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1589313973673" />
+    <state width="1878" height="357" key="GridCell.Tab.1.bottom/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1589305868419" />
+    <state width="1878" height="357" key="GridCell.Tab.1.center" timestamp="1589313973673">
+      <screen x="0" y="0" width="1280" height="984" />
+    </state>
+    <state width="1878" height="357" key="GridCell.Tab.1.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1589313973673" />
+    <state width="1878" height="357" key="GridCell.Tab.1.center/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1589305868419" />
+    <state width="1878" height="357" key="GridCell.Tab.1.left" timestamp="1589313973673">
+      <screen x="0" y="0" width="1280" height="984" />
+    </state>
+    <state width="1878" height="357" key="GridCell.Tab.1.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1589313973673" />
+    <state width="1878" height="357" key="GridCell.Tab.1.left/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1589305868418" />
+    <state width="1878" height="357" key="GridCell.Tab.1.right" timestamp="1589313973673">
+      <screen x="0" y="0" width="1280" height="984" />
+    </state>
+    <state width="1878" height="357" key="GridCell.Tab.1.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1589313973673" />
+    <state width="1878" height="357" key="GridCell.Tab.1.right/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1589305868419" />
+    <state x="2041" y="320" width="387" height="433" key="chooseDestDirectoryDialog" timestamp="1588349249556">
+      <screen x="1280" y="0" width="1920" height="1080" />
+    </state>
+    <state x="2041" y="320" width="387" height="433" key="chooseDestDirectoryDialog/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1588349249556" />
+  </component>
+</project>
