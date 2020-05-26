@@ -1,37 +1,37 @@
 package org.fuzzingtool;
 
-import java.io.PrintStream;
-import java.util.HashSet;
-import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Option;
 import com.oracle.truffle.api.Scope;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.*;
-import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.TruffleInstrument.Registration;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
-import com.oracle.truffle.js.nodes.instrumentation.NodeObjectDescriptor;
-import com.oracle.truffle.js.nodes.instrumentation.NodeObjectDescriptorKeys;
+import org.fuzzingtool.components.Amygdala;
+import org.fuzzingtool.symbolic.SymbolicException;
+import org.fuzzingtool.symbolic.SymbolicNode;
+import org.fuzzingtool.symbolic.Type;
+import org.fuzzingtool.symbolic.arithmetic.Addition;
+import org.fuzzingtool.symbolic.arithmetic.Multiplication;
+import org.fuzzingtool.symbolic.arithmetic.Subtraction;
+import org.fuzzingtool.symbolic.basic.ConstantInt;
+import org.fuzzingtool.symbolic.basic.ConstantString;
+import org.fuzzingtool.symbolic.basic.ConstantVoid;
+import org.fuzzingtool.symbolic.basic.SymbolicName;
+import org.fuzzingtool.symbolic.logical.And;
+import org.fuzzingtool.symbolic.logical.Equal;
+import org.fuzzingtool.symbolic.logical.LessThan;
+import org.fuzzingtool.symbolic.logical.Not;
+import org.fuzzingtool.visualization.ASTVisualizer;
+import org.graalvm.collections.Pair;
 import org.graalvm.options.*;
 
-import com.oracle.truffle.api.interop.InteropLibrary;
+import java.io.PrintStream;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 @Registration(id = FuzzingTool.ID, name = "Fuzzing Tool", version = "1.0-SNAPSHOT", services = FuzzingTool.class)
 public final class FuzzingTool extends TruffleInstrument {
@@ -45,51 +45,36 @@ public final class FuzzingTool extends TruffleInstrument {
     }
 
     PrintStream outStream;
-    static final InteropLibrary INTEROP = LibraryFactory.resolve(InteropLibrary.class).getUncached();
+    Amygdala amygdala;
 
     @Override
     protected void onCreate(final Env env) {
         final OptionValues options = env.getOptions();
         if (optionFuzzingEnabled.getValue(options)) {
             init(env);
+            init_constraints();
             env.registerService(this);
         }
     }
 
     private void init(final Env env) {
         this.outStream = new PrintStream(env.out());
-
-        SourceSectionFilter.Builder builder = SourceSectionFilter.newBuilder();
-        SourceSectionFilter filter = builder.build();
+        this.amygdala = new Amygdala();
         Instrumenter instrumenter = env.getInstrumenter();
-        instrumenter.attachExecutionEventFactory(filter, new CoverageExampleEventFactory(env));
+
+        // What source sections are we interested in?
+        SourceSectionFilter sourceSectionFilter = SourceSectionFilter.newBuilder().build();
+        // What generates input data to track?
+        SourceSectionFilter inputGeneratingLocations = SourceSectionFilter.newBuilder().build();
+        instrumenter.attachExecutionEventFactory(sourceSectionFilter, inputGeneratingLocations,  new FuzzingNodeWrapperFactory(env, this.amygdala, this.outStream));
     }
 
-    private class CoverageExampleEventFactory implements ExecutionEventNodeFactory {
-        private final Env env;
+    //Limits (for testing)
+    ArrayList<String> constraints_scopes = new ArrayList<>();
 
-        CoverageExampleEventFactory(final Env env) {
-            this.env = env;
-        }
-
-        public ExecutionEventNode create(final EventContext ec) {
-            return new ExecutionEventNode() {
-
-                @Override
-                public void onReturnValue(VirtualFrame vFrame, Object result) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    outStream.println("-----------------------");
-                    Node n = ec.getInstrumentedNode();
-                    for (Scope s: env.findLocalScopes(n, vFrame)) {
-                        try {
-                            outStream.println(s.getName() + ":::" + s.getNode().hashCode());
-                        } catch (java.lang.Exception ex) {
-                            outStream.println("not good");
-                        }
-                    }
-                }
-            };
-        }
+    // Nur für testzwecke!
+    public void init_constraints() {
+        constraints_scopes.add("factorial");
     }
 
     @Override
@@ -99,6 +84,11 @@ public final class FuzzingTool extends TruffleInstrument {
 
     private synchronized void printResults() {
         outStream.println("==Fuzzing Finished==");
+        outStream.println("Human Readable Expressions:");
+        outStream.println(amygdala.lastRunToHumanReadableExpr());
+
+        outStream.println("SMT2 Expression Format:");
+        outStream.println(amygdala.lastRunToSMTExpr());
     }
 
 }

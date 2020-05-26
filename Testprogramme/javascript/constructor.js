@@ -14,6 +14,7 @@ car2 = new Car("Landrover", "Defender", 1995);
 
 ownerstr1 = car1.owner("George");
 ownerstr2 = car2.owner("Herbert");
+ownerstr3 = car1.owner("Frank");
 
 print(ownerstr2);
 

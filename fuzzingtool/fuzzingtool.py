@@ -5,6 +5,8 @@ import os
 
 FUZZINGTOOL_EXEC = "target/fuzzingtool-1.0-SNAPSHOT.jar"
 TESTING_ARGUMENTS = ""
+DEPENDENCY_PACKAGES = ["guru.nidi", "org.slf4j.slf4j-api","org.apache.logging.log4j.log4j-slf4j-impl","org.apache.logging.log4j.log4j-api", "org.apache.logging.log4j.log4j-core", "org.apache.commons"]
+DEPENDENCY_REPOSITORY = "/home/robert/.m2/repository"
 
 
 def get_full_name(name):
@@ -18,6 +20,17 @@ def get_full_name(name):
             if f.startswith(name_splitted[-1]):
                 return os.path.join(path_joined, f)
         return name
+
+def get_all_dependencies():
+    classpaths = []
+    for root, dirs, files in os.walk(DEPENDENCY_REPOSITORY):
+        for file_name in files:
+            if file_name.endswith(".jar"):
+                for groupid in DEPENDENCY_PACKAGES:
+                    expected_path = os.path.join(DEPENDENCY_REPOSITORY, groupid.replace(".", "/"))
+                    if root.startswith(expected_path):
+                        classpaths.append(os.path.join(root, file_name))
+    return classpaths
 
 
 def main():
@@ -36,13 +49,21 @@ def main():
     program = args.program
 
     #program = get_full_name(program)
+    
+    dependency_classpaths = get_all_dependencies()
+    classpath_string = ""
+    for cp_index in range(len(dependency_classpaths)):
+        if cp_index == 0:
+            classpath_string += f'{dependency_classpaths[cp_index]}'
+        else:
+            classpath_string += f':{dependency_classpaths[cp_index]}'
 
     engine_exec_path = os.path.join(environ_java_home, "bin", engine)
 
     args = [
             engine_exec_path,
             "--jvm",
-            "--vm.Dtruffle.class.path.append=" + FUZZINGTOOL_EXEC,
+            '--vm.Dtruffle.class.path.append=' + FUZZINGTOOL_EXEC + ':' + classpath_string,
             "--fuzzing-tool",
             program
            ]
