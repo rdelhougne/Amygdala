@@ -1,37 +1,15 @@
 package org.fuzzingtool;
 
 import com.oracle.truffle.api.Option;
-import com.oracle.truffle.api.Scope;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.instrumentation.*;
+import com.oracle.truffle.api.instrumentation.Instrumenter;
+import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
+import com.oracle.truffle.api.instrumentation.TruffleInstrument;
 import com.oracle.truffle.api.instrumentation.TruffleInstrument.Registration;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.LibraryFactory;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.source.SourceSection;
 import org.fuzzingtool.components.Amygdala;
-import org.fuzzingtool.symbolic.SymbolicException;
-import org.fuzzingtool.symbolic.SymbolicNode;
-import org.fuzzingtool.symbolic.Type;
-import org.fuzzingtool.symbolic.arithmetic.Addition;
-import org.fuzzingtool.symbolic.arithmetic.Multiplication;
-import org.fuzzingtool.symbolic.arithmetic.Subtraction;
-import org.fuzzingtool.symbolic.basic.ConstantInt;
-import org.fuzzingtool.symbolic.basic.ConstantString;
-import org.fuzzingtool.symbolic.basic.ConstantVoid;
-import org.fuzzingtool.symbolic.basic.SymbolicName;
-import org.fuzzingtool.symbolic.logical.And;
-import org.fuzzingtool.symbolic.logical.Equal;
-import org.fuzzingtool.symbolic.logical.LessThan;
-import org.fuzzingtool.symbolic.logical.Not;
-import org.fuzzingtool.visualization.ASTVisualizer;
-import org.graalvm.collections.Pair;
 import org.graalvm.options.*;
 
 import java.io.PrintStream;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 @Registration(id = FuzzingTool.ID, name = "Fuzzing Tool", version = "1.0-SNAPSHOT", services = FuzzingTool.class)
 public final class FuzzingTool extends TruffleInstrument {
