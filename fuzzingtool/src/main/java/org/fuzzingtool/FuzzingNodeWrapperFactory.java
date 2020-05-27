@@ -6,33 +6,30 @@ import com.oracle.truffle.api.instrumentation.*;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
 import org.fuzzingtool.components.Amygdala;
+import org.fuzzingtool.components.BranchingNodeAttribute;
 import org.fuzzingtool.symbolic.Operation;
 import org.fuzzingtool.symbolic.SymbolicException;
 import org.fuzzingtool.symbolic.Type;
-import org.fuzzingtool.symbolic.logical.Not;
 import org.fuzzingtool.visualization.ASTVisualizer;
 import org.graalvm.collections.Pair;
 
-import java.io.PrintStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
 class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
     private final TruffleInstrument.Env env;
     private Amygdala amygdala;
-    private PrintStream outStream;
     private int visualized_counter = 0;
 
-    FuzzingNodeWrapperFactory(final TruffleInstrument.Env env, Amygdala amy, PrintStream os) {
+    FuzzingNodeWrapperFactory(final TruffleInstrument.Env env, Amygdala amy) {
         this.env = env;
         this.amygdala = amy;
-        this.outStream = os;
     }
 
     public ExecutionEventNode create(final EventContext ec) {
         if (ec.getInstrumentedNode().getClass().getSimpleName().equals("MaterializedFunctionBodyNode")) {
             ASTVisualizer av = new ASTVisualizer(ec.getInstrumentedNode());
-            av.save_image(Paths.get(".").toAbsolutePath().normalize().toString() + "/function_visualization_" + String.valueOf(visualized_counter));
+            av.save_image(Paths.get(".").toAbsolutePath().normalize().toString() + "/function_visualization_" + visualized_counter);
             visualized_counter += 1;
         }
 
@@ -50,14 +47,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                     scope_constraint_satisfied = true;
                 }
                 return scope_constraint_satisfied;
-            }
-
-            protected void alert(String text) {
-                outStream.println("\033[41m!ALERT! " + text + "\033[0m");
-            }
-
-            protected void highlight(String text) {
-                outStream.println("\033[44m" + text + "\033[0m");
             }
 
             protected String getSignature() {
@@ -78,7 +67,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
             @Override
             protected void onEnter(VirtualFrame vFrame) {
-                outStream.println(getSignature() + " \033[32m→\033[0m");
+                amygdala.logger.log(getSignature() + " \033[32m→\033[0m");
                     /*highlight("Entering vFrame: " + vFrame);
 
                     Node n = ec.getInstrumentedNode();
@@ -111,29 +100,25 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
             @Override
             protected void onInputValue(VirtualFrame vFrame, EventContext inputContext, int inputIndex, Object inputValue) {
-                outStream.println(getSignature() + " \033[34m•\033[0m");
+                amygdala.logger.log(getSignature() + " \033[34m•\033[0m");
 
                 if (constraints_satisfied) {
-                    try {
-                        switch (node_type) { // TODO big time
-                            case "IfNode":
-                                onInputValueBehaviorIfNode(vFrame, inputContext, inputIndex, inputValue);
-                                break;
-                            case "WhileNode":
-                                onInputValueBehaviorWhileNode(vFrame, inputContext, inputIndex, inputValue);
-                                break;
-                            default:
-                                onInputValueBehaviorDefault(vFrame, inputContext, inputIndex, inputValue);
-                        }
-                    } catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize ex) {
-                        alert(ex.getMessage());
+                    switch (node_type) { // TODO big time
+                        case "IfNode":
+                            onInputValueBehaviorIfNode(vFrame, inputContext, inputIndex, inputValue);
+                            break;
+                        case "WhileNode":
+                            onInputValueBehaviorWhileNode(vFrame, inputContext, inputIndex, inputValue);
+                            break;
+                        default:
+                            onInputValueBehaviorDefault(vFrame, inputContext, inputIndex, inputValue);
                     }
                 }
             }
 
             @Override
             public void onReturnValue(VirtualFrame vFrame, Object result) {
-                outStream.println(getSignature() + " \033[31m↵\033[0m");
+                amygdala.logger.log(getSignature() + " \033[31m↵\033[0m");
 
                 if (constraints_satisfied) {
                     try {
@@ -190,7 +175,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                                 onReturnBehaviorDefault(vFrame, result);
                         }
                     } catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize ex) {
-                        alert(ex.getMessage());
+                        amygdala.logger.alert(ex.getMessage());
                     }
                 }
             }
@@ -224,20 +209,20 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                 return;
             }
 
-            public void onInputValueBehaviorIfNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex, Object inputValue) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+            public void onInputValueBehaviorIfNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex, Object inputValue) {
                 ArrayList<Pair<Integer, String>> children = getChildHashes();
                 assert children.size() == 2;
                 if (inputIndex == 0) { // Predicate
                     Boolean taken = (Boolean) inputValue;
-                    amygdala.branching_event(node_hash, children.get(0).getLeft(), taken);
+                    amygdala.branching_event(node_hash, BranchingNodeAttribute.BRANCH, children.get(0).getLeft(), taken);
                 }
             }
 
-            public void onInputValueBehaviorWhileNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex, Object inputValue) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+            public void onInputValueBehaviorWhileNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex, Object inputValue) {
                 ArrayList<Pair<Integer, String>> children = getChildHashes();
                 if (inputIndex == 0) { // TODO Predicate
                     Boolean taken = (Boolean) inputValue;
-                    amygdala.branching_event(node_hash, children.get(0).getLeft(), taken);
+                    amygdala.branching_event(node_hash, BranchingNodeAttribute.LOOP, children.get(0).getLeft(), taken);
                 }
             }
 
@@ -288,7 +273,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                 invalidate_interim(children);
             }
 
-            public void onReturnBehaviorConstant(VirtualFrame vFrame, Object result, Type type) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+            public void onReturnBehaviorConstant(VirtualFrame vFrame, Object result, Type type) {
                 amygdala.tracer.add_constant(node_hash, type, result);
             }
         };

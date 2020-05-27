@@ -1,36 +1,48 @@
 package org.fuzzingtool.components;
 
-import org.fuzzingtool.symbolic.SymbolicException;
-import org.fuzzingtool.symbolic.SymbolicNode;
-import org.fuzzingtool.symbolic.logical.Not;
+import org.fuzzingtool.Logger;
 
 import java.util.ArrayList;
 
 public class Amygdala {
     public Tracer tracer;
+    public Logger logger;
+    public BranchingNode branchingRootNode;
+    private BranchingNode currentBranch;
 
-    // Speichert die Prädikate, die an den SMT-Solver weitergegeben werden.
-    ArrayList<SymbolicNode> predicates = new ArrayList<>();
-
-    public Amygdala() {
+    public Amygdala(Logger lgr) {
         this.tracer = new Tracer();
+        this.logger = lgr;
     }
 
-    public void branching_event(Integer branching_node, Integer predicate_interim_key, Boolean taken) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
-        if (taken) { // Branch taken
-            predicates.add(tracer.get_interim(predicate_interim_key));
+    public void branching_event(Integer branching_node_hash, BranchingNodeAttribute bt, Integer predicate_interim_key, Boolean taken) {
+        boolean update_existing_path = false; // TODO
+        if (update_existing_path) {
+
         } else {
-            predicates.add(new Not(tracer.get_interim(predicate_interim_key)));
+            if (branchingRootNode == null) {
+                branchingRootNode = new BranchingNode(tracer.get_interim(predicate_interim_key), branching_node_hash, bt);
+                currentBranch = branchingRootNode.getChildBranch(taken);
+            } else {
+                currentBranch.setProperties(tracer.get_interim(predicate_interim_key), branching_node_hash, bt);
+                currentBranch.initializeChildren();
+                currentBranch = currentBranch.getChildBranch(taken);
+            }
         }
     }
 
+    public void terminate() {
+        currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.TERMINATE);
+    }
+
     public String lastRunToSMTExpr() {
+        ArrayList<String> exp = currentBranch.getSymbolicPathSMTExpression();
         StringBuilder exp_str = new StringBuilder();
         exp_str.append("(declare-const n Int)\n");
         exp_str.append("(assert\n");
         exp_str.append("\t(and\n");
-        for (SymbolicNode n: predicates) {
-            exp_str.append("\t\t").append(n.toSMTExpr()).append("\n");
+        for (String str: exp) {
+            exp_str.append("\t\t").append(str).append("\n");
         }
         exp_str.append("\t)\n");
         exp_str.append(")");
@@ -38,9 +50,10 @@ public class Amygdala {
     }
 
     public String lastRunToHumanReadableExpr() {
+        ArrayList<String> exp = currentBranch.getSymbolicPathHRExpression();
         StringBuilder exp_str = new StringBuilder();
-        for (SymbolicNode n: predicates) {
-            exp_str.append(n.toString()).append("\n");
+        for (String str: exp) {
+            exp_str.append(str).append("\n");
         }
         return exp_str.toString();
     }

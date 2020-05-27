@@ -8,7 +8,6 @@ import com.oracle.truffle.api.instrumentation.TruffleInstrument.Registration;
 import org.fuzzingtool.components.Amygdala;
 import org.graalvm.options.*;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 
 @Registration(id = FuzzingTool.ID, name = "Fuzzing Tool", version = "1.0-SNAPSHOT", services = FuzzingTool.class)
@@ -22,7 +21,7 @@ public final class FuzzingTool extends TruffleInstrument {
         return new FuzzingToolOptionDescriptors();
     }
 
-    PrintStream outStream;
+    Logger logger;
     Amygdala amygdala;
 
     @Override
@@ -36,15 +35,15 @@ public final class FuzzingTool extends TruffleInstrument {
     }
 
     private void init(final Env env) {
-        this.outStream = new PrintStream(env.out());
-        this.amygdala = new Amygdala();
+        this.logger = new Logger(env.out());
+        this.amygdala = new Amygdala(this.logger);
         Instrumenter instrumenter = env.getInstrumenter();
 
         // What source sections are we interested in?
         SourceSectionFilter sourceSectionFilter = SourceSectionFilter.newBuilder().build();
         // What generates input data to track?
         SourceSectionFilter inputGeneratingLocations = SourceSectionFilter.newBuilder().build();
-        instrumenter.attachExecutionEventFactory(sourceSectionFilter, inputGeneratingLocations,  new FuzzingNodeWrapperFactory(env, this.amygdala, this.outStream));
+        instrumenter.attachExecutionEventFactory(sourceSectionFilter, inputGeneratingLocations,  new FuzzingNodeWrapperFactory(env, this.amygdala));
     }
 
     //Limits (for testing)
@@ -61,12 +60,13 @@ public final class FuzzingTool extends TruffleInstrument {
     }
 
     private synchronized void printResults() {
-        outStream.println("==Fuzzing Finished==");
-        outStream.println("Human Readable Expressions:");
-        outStream.println(amygdala.lastRunToHumanReadableExpr());
+        amygdala.terminate();
+        logger.log("==Fuzzing Finished==");
+        logger.log("Human Readable Expressions:");
+        logger.log(amygdala.lastRunToHumanReadableExpr());
 
-        outStream.println("SMT2 Expression Format:");
-        outStream.println(amygdala.lastRunToSMTExpr());
+        logger.log("SMT2 Expression Format:");
+        logger.log(amygdala.lastRunToSMTExpr());
     }
 
 }
