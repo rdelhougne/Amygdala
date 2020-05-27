@@ -161,7 +161,7 @@ public class BranchingNode {
         return null;
     }
 
-    private String getLocalSMTExpression(Boolean taken) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+    public String getLocalSMTExpression(Boolean taken) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
         if (taken) {
             return this.symbolic_expression.toSMTExpr();
         } else {
@@ -170,7 +170,7 @@ public class BranchingNode {
         }
     }
 
-    private String getLocalHRExpression(Boolean taken) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+    public String getLocalHRExpression(Boolean taken) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
         if (taken) {
             return this.symbolic_expression.toString();
         } else {

@@ -1,6 +1,7 @@
 package org.fuzzingtool.components;
 
 import org.fuzzingtool.Logger;
+import org.fuzzingtool.visualization.BranchingVisualizer;
 
 import java.util.ArrayList;
 
@@ -56,5 +57,10 @@ public class Amygdala {
             exp_str.append(str).append("\n");
         }
         return exp_str.toString();
+    }
+
+    public void visualizeProgramFlow(String path) {
+        BranchingVisualizer bv = new BranchingVisualizer(branchingRootNode);
+        bv.save_image(path);
     }
 }

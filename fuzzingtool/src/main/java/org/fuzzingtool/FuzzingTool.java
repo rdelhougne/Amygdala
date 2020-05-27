@@ -8,6 +8,7 @@ import com.oracle.truffle.api.instrumentation.TruffleInstrument.Registration;
 import org.fuzzingtool.components.Amygdala;
 import org.graalvm.options.*;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 @Registration(id = FuzzingTool.ID, name = "Fuzzing Tool", version = "1.0-SNAPSHOT", services = FuzzingTool.class)
@@ -67,6 +68,8 @@ public final class FuzzingTool extends TruffleInstrument {
 
         logger.log("SMT2 Expression Format:");
         logger.log(amygdala.lastRunToSMTExpr());
+
+        amygdala.visualizeProgramFlow(Paths.get(".").toAbsolutePath().normalize().toString() + "/program_flow");
     }
 
 }

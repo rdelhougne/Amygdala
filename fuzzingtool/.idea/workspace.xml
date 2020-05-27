@@ -3,10 +3,9 @@
   <component name="ChangeListManager">
     <list default="true" id="7937b683-e266-4626-b31f-f2e51fd3d190" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingNodeWrapperFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingNodeWrapperFactory.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingTool.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingTool.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Amygdala.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Amygdala.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/SymbolicException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/SymbolicException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNode.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNode.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -124,6 +123,7 @@
       <workItem from="1590487763037" duration="15511000" />
       <workItem from="1590517768368" duration="63000" />
       <workItem from="1590569633975" duration="21970000" />
+      <workItem from="1590596925952" duration="1797000" />
     </task>
     <servers />
   </component>
@@ -148,28 +148,28 @@
       <screen x="0" y="0" width="1280" height="984" />
     </state>
     <state x="0" y="0" width="1270" height="979" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590588243485" />
-    <state width="1238" height="358" key="GridCell.Tab.0.bottom" timestamp="1590594927124">
+    <state width="1238" height="358" key="GridCell.Tab.0.bottom" timestamp="1590598722517">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="358" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590594927124" />
+    <state width="1238" height="358" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590598722517" />
     <state width="1878" height="358" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590492266846" />
     <state width="1878" height="644" key="GridCell.Tab.0.bottom/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
-    <state width="1238" height="358" key="GridCell.Tab.0.center" timestamp="1590594927124">
+    <state width="1238" height="358" key="GridCell.Tab.0.center" timestamp="1590598722517">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="358" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590594927124" />
+    <state width="1238" height="358" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590598722517" />
     <state width="1878" height="358" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590492266845" />
     <state width="1878" height="644" key="GridCell.Tab.0.center/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
-    <state width="1238" height="358" key="GridCell.Tab.0.left" timestamp="1590594927124">
+    <state width="1238" height="358" key="GridCell.Tab.0.left" timestamp="1590598722516">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="358" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590594927124" />
+    <state width="1238" height="358" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590598722516" />
     <state width="1878" height="358" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590492266845" />
     <state width="1878" height="644" key="GridCell.Tab.0.left/0.0.3200.984@0.0.3200.984" timestamp="1589732454122" />
-    <state width="1238" height="358" key="GridCell.Tab.0.right" timestamp="1590594927124">
+    <state width="1238" height="358" key="GridCell.Tab.0.right" timestamp="1590598722517">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="358" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590594927124" />
+    <state width="1238" height="358" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590598722517" />
     <state width="1878" height="358" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590492266845" />
     <state width="1878" height="644" key="GridCell.Tab.0.right/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
     <state width="1878" height="357" key="GridCell.Tab.1.bottom" timestamp="1589313973673">
