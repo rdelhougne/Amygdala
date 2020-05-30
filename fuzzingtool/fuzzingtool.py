@@ -7,6 +7,7 @@ FUZZINGTOOL_EXEC = "target/fuzzingtool-1.0-SNAPSHOT.jar"
 TESTING_ARGUMENTS = ""
 DEPENDENCY_PACKAGES = ["guru.nidi", "org.slf4j.slf4j-api","org.apache.logging.log4j.log4j-slf4j-impl","org.apache.logging.log4j.log4j-api", "org.apache.logging.log4j.log4j-core", "org.apache.commons"]
 DEPENDENCY_REPOSITORY = "/home/robert/.m2/repository"
+ADDITIONAL_DEPENDENCIES = "/home/robert/Seafile/Studium/Master Informatik/Masterarbeit/Projekt/Software"
 
 
 def get_full_name(name):
@@ -32,6 +33,13 @@ def get_all_dependencies():
                         classpaths.append(os.path.join(root, file_name))
     return classpaths
 
+def get_additional_dependencies():
+    classpaths = []
+    for root, dirs, files in os.walk(ADDITIONAL_DEPENDENCIES):
+        for file_name in files:
+            if file_name.endswith(".jar"):
+                classpaths.append(os.path.join(root, file_name))
+    return classpaths
 
 def main():
     parser = argparse.ArgumentParser(description="Run fuzzing tool")
@@ -51,6 +59,7 @@ def main():
     #program = get_full_name(program)
     
     dependency_classpaths = get_all_dependencies()
+    dependency_classpaths += get_additional_dependencies()
     classpath_string = ""
     for cp_index in range(len(dependency_classpaths)):
         if cp_index == 0:

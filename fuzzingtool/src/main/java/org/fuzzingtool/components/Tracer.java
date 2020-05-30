@@ -22,7 +22,7 @@ public class Tracer {
     private HashMap<String, SymbolicNode> symbolic_frame = new HashMap<>();
 
     public Tracer() {
-        symbolic_frame.put("n", new SymbolicName("n", Type.INT)); // TODO
+        symbolic_frame.put("n", new SymbolicName(new VariableIdentifier("n", Type.INT))); // TODO
     }
 
     /**
@@ -75,7 +75,7 @@ public class Tracer {
             interim_results.put(to_node, symbolic_frame.get(variable_name));
         } else {
             // TODO Typbestimmung oder Exception! Es wird versucht eine Variable zu lesen die nicht existiert!
-            interim_results.put(to_node, new SymbolicName(variable_name, Type.INT));
+            interim_results.put(to_node, new SymbolicName(new VariableIdentifier(variable_name, Type.INT)));
         }
     }
 
@@ -92,6 +92,16 @@ public class Tracer {
         } else {
             //alert("onReturnBehaviorJSWriteCurrentFrameSlotNodeGen()"); // TODO Exception
         }
+    }
+
+    /**
+     * Deletes all intermediate results from interim_results and the symbolic frame.
+     * This should be used by terminate(), e.g. when the program restarts.
+     */
+    public void clearAll() {
+        interim_results.clear();
+        symbolic_frame.clear();
+        symbolic_frame.put("n", new SymbolicName(new VariableIdentifier("n", Type.INT))); // TODO
     }
 
     /**

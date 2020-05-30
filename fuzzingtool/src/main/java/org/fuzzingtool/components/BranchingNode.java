@@ -1,10 +1,13 @@
 package org.fuzzingtool.components;
 
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
 import org.fuzzingtool.symbolic.SymbolicException;
 import org.fuzzingtool.symbolic.SymbolicNode;
 import org.fuzzingtool.symbolic.logical.Not;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class BranchingNode {
     /**
@@ -56,6 +59,14 @@ public class BranchingNode {
     public BranchingNode(SymbolicNode exp, Integer node_hash, BranchingNodeAttribute bt) {
         setProperties(exp, node_hash, bt);
         initializeChildren();
+    }
+
+    public BranchingNode() {
+        this.nodeHash = 0;
+        this.symbolic_expression = null;
+        this.branchingNodeAttribute = BranchingNodeAttribute.UNKNOWN;
+        this.parentNode = null;
+        this.parentNodeTakenFlag = false;
     }
 
     private BranchingNode(BranchingNode parent, Boolean taken_flag) {
@@ -111,6 +122,22 @@ public class BranchingNode {
         }
     }
 
+    public Integer getNodeHash() {
+        return nodeHash;
+    }
+
+    public HashSet<VariableIdentifier> getSymbolicPathIdentifiers() {
+        if (parentNode != null) {
+            HashSet<VariableIdentifier> all_from_parents = this.parentNode.getSymbolicPathIdentifiers();
+            if (this.branchingNodeAttribute == BranchingNodeAttribute.BRANCH || this.branchingNodeAttribute == BranchingNodeAttribute.LOOP) {
+                all_from_parents.addAll(this.symbolic_expression.getSymbolicVars());
+            }
+            return all_from_parents;
+        } else {
+            return this.symbolic_expression.getSymbolicVars();
+        }
+    }
+
     public ArrayList<String> getSymbolicPathSMTExpression() {
         if (parentNode != null) {
             return this.parentNode.getSymbolicPathSMTExpression(this.parentNodeTakenFlag);
@@ -161,6 +188,28 @@ public class BranchingNode {
         return null;
     }
 
+    public BoolExpr getSymbolicPathZ3Expression(Context ctx) {
+        if (parentNode != null) {
+            return this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
+        } else {
+            return ctx.mkBool(false); // TODO empty expression?
+        }
+    }
+
+    public BoolExpr getSymbolicPathZ3Expression(Boolean taken_flag, Context ctx) {
+        try {
+            if (parentNode != null) {
+                BoolExpr all_from_parents = this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
+                return ctx.mkAnd(all_from_parents, getLocalZ3Expression(taken_flag, ctx));
+            } else {
+                return getLocalZ3Expression(taken_flag, ctx);
+            }
+        } catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize incompatibleType) {
+            incompatibleType.printStackTrace();
+        }
+        return null;
+    }
+
     public String getLocalSMTExpression(Boolean taken) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
         if (taken) {
             return this.symbolic_expression.toSMTExpr();
@@ -176,6 +225,15 @@ public class BranchingNode {
         } else {
             SymbolicNode not = new Not(this.symbolic_expression);
             return not.toString();
+        }
+    }
+
+    public BoolExpr getLocalZ3Expression(Boolean taken, Context ctx) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+        if (taken) {
+            return (BoolExpr) this.symbolic_expression.toZ3Expr(ctx);
+        } else {
+            SymbolicNode not = new Not(this.symbolic_expression);
+            return (BoolExpr) not.toZ3Expr(ctx);
         }
     }
 }

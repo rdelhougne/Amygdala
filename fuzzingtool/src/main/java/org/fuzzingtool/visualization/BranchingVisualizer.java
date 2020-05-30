@@ -55,8 +55,6 @@ public class BranchingVisualizer {
                     return Label.of("BRANCH: " + node.getLocalHRExpression(true));
                 case LOOP:
                     return Label.of("LOOP: " + node.getLocalHRExpression(true));
-                case EXPLORED:
-                    return Label.of("EXPLORED: " + node.getLocalHRExpression(true));
                 case UNKNOWN:
                     return Label.of("UNKNOWN");
                 case UNREACHABLE:

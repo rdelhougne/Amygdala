@@ -1,5 +1,8 @@
 package org.fuzzingtool.symbolic.arithmetic;
 
+import com.microsoft.z3.ArithExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import org.fuzzingtool.symbolic.SymbolicException;
 import org.fuzzingtool.symbolic.SymbolicNode;
 import org.fuzzingtool.symbolic.Type;
@@ -22,12 +25,22 @@ public class Addition extends SymbolicNode {
 
     @Override
     public String toString() {
-        return encapsulate(this.children[0].toString() + " + " + this.children[1].toString());
+        return parentheses(this.children[0].toString() + " + " + this.children[1].toString());
     }
 
     @Override
     public String toSMTExpr() {
-        return encapsulate("+ " + this.children[0].toSMTExpr() + " " + this.children[1].toSMTExpr());
+        return parentheses("+ " + this.children[0].toSMTExpr() + " " + this.children[1].toSMTExpr());
+    }
+
+    @Override
+    public Expr toZ3Expr(Context ctx) {
+        if (allChildrenTypeOr(Type.INT, Type.REAL)) {
+            ArithExpr a = (ArithExpr) this.children[0].toZ3Expr(ctx);
+            ArithExpr b = (ArithExpr) this.children[1].toZ3Expr(ctx);
+            return ctx.mkAdd(a, b);
+        } // TODO
+        return null;
     }
 
     public static Addition add(SymbolicNode a, SymbolicNode b) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
