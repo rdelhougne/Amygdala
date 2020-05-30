@@ -226,7 +226,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                 assert children.size() == 2;
                 if (inputIndex == 0) { // Predicate
                     Boolean taken = (Boolean) inputValue;
-                    amygdala.branching_event(node_hash, BranchingNodeAttribute.BRANCH, children.get(0).getLeft(), taken);
+                    amygdala.branching_event(node_hash, BranchingNodeAttribute.BRANCH, children.get(0).getLeft(), taken, extractPredicate());
                 }
             }
 
@@ -234,8 +234,23 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                 if (!(my_sourcesection.getStartLine() == amygdala.global_fuzzing_loop_line_num && my_sourcesection.getSource().getCharacters(amygdala.global_fuzzing_loop_line_num).toString().contains(amygdala.global_fuzzing_loop_identifier))) {
                     ArrayList<Pair<Integer, String>> children = getChildHashes();
                     if (inputIndex == 0) { // TODO Predicate
-                        amygdala.branching_event(node_hash, BranchingNodeAttribute.LOOP, children.get(0).getLeft(), (Boolean) inputValue);
+                        amygdala.branching_event(node_hash, BranchingNodeAttribute.LOOP, children.get(0).getLeft(), (Boolean) inputValue, extractPredicate());
                     }
+                }
+            }
+
+            // TODO extremely costly...
+            private String extractPredicate() {
+                if (my_sourcesection != null && my_sourcesection.isAvailable()) {
+                    String extracted_predicate = my_sourcesection.getCharacters().toString().replaceAll("\\s+", " ");
+                    extracted_predicate = extracted_predicate.substring(extracted_predicate.indexOf("(") + 1, extracted_predicate.length());
+                    int last_index = extracted_predicate.indexOf(")");
+                    if (last_index != -1) {
+                        extracted_predicate = extracted_predicate.substring(0, last_index);
+                    }
+                    return extracted_predicate;
+                } else {
+                    return "(NO SOURCE)";
                 }
             }
 

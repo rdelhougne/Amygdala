@@ -45,13 +45,14 @@ public class Amygdala {
         new_variable_values.put(new VariableIdentifier("n", Type.INT), (Integer) 5);
     }
 
-    public void branching_event(Integer branching_node_hash, BranchingNodeAttribute bt, Integer predicate_interim_key, Boolean taken) {
+    public void branching_event(Integer branching_node_hash, BranchingNodeAttribute bt, Integer predicate_interim_key, Boolean taken, String vis_predicate_string) {
         // TODO Hier Konsistenz prüfen: Ist dies wirklich der Pfad den ich gehen wollte?
         if (currentBranch.getBranchingNodeAttribute() == BranchingNodeAttribute.BRANCH // "Hier bin ich schonmal gewesen" -> einfach weiter durchlaufen
                 || currentBranch.getBranchingNodeAttribute() == BranchingNodeAttribute.LOOP) {
             currentBranch = currentBranch.getChildBranch(taken);
         } else { // unbekannter pfad -> updaten
             currentBranch.setProperties(tracer.get_interim(predicate_interim_key), branching_node_hash, bt);
+            currentBranch.setSourceCodeExpression(vis_predicate_string);
             currentBranch.initializeChildren();
             currentBranch = currentBranch.getChildBranch(taken);
         }

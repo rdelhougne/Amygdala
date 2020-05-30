@@ -106,6 +106,14 @@ public class BranchingNode {
         return this.parentNode;
     }
 
+    public void setSourceCodeExpression(String source_code_expression) {
+        this.source_code_expression = source_code_expression;
+    }
+
+    public String getSourceCodeExpression() {
+        return this.source_code_expression;
+    }
+
     public void setChildBranch(BranchingNode child_node, Boolean taken) {
         if (taken) {
             this.childNodeTaken = child_node;

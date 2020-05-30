@@ -2,35 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7937b683-e266-4626-b31f-f2e51fd3d190" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../Testprogramme/javascript/factorial.js" beforeDir="false" afterPath="$PROJECT_DIR$/../Testprogramme/javascript/factorial.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/fuzzingtool.py" beforeDir="false" afterPath="$PROJECT_DIR$/fuzzingtool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingNodeWrapperFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingNodeWrapperFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingTool.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingTool.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Amygdala.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Amygdala.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNode.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNode.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNodeAttribute.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNodeAttribute.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Tracer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Tracer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/SymbolicNode.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/SymbolicNode.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Addition.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Addition.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Division.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Division.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Multiplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Multiplication.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Subtraction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Subtraction.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/ConstantBoolean.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/ConstantBoolean.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/ConstantInt.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/ConstantInt.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/ConstantReal.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/ConstantReal.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/ConstantString.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/ConstantString.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/ConstantVoid.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/ConstantVoid.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/SymbolicName.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/SymbolicName.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/And.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/And.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Equal.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Equal.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/GreaterEqual.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/GreaterEqual.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/GreaterThan.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/GreaterThan.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/LessEqual.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/LessEqual.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/LessThan.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/LessThan.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Not.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Not.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Or.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Or.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/visualization/BranchingVisualizer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/visualization/BranchingVisualizer.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -87,7 +62,7 @@
     <property name="project.structure.last.edited" value="Modules" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
-    <property name="settings.editor.selected.configurable" value="reference.settings.project.maven.repository.indices" />
+    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
   </component>
   <component name="RunAnythingCache">
     <option name="myCommands">
@@ -175,6 +150,8 @@
       <workItem from="1590741813322" duration="3256000" />
       <workItem from="1590758470258" duration="9154000" />
       <workItem from="1590829484398" duration="16734000" />
+      <workItem from="1590849543501" duration="3344000" />
+      <workItem from="1590860250454" duration="4841000" />
     </task>
     <servers />
   </component>
@@ -203,29 +180,33 @@
       <screen x="1280" y="0" width="1920" height="1080" />
     </state>
     <state x="2023" y="297" width="424" height="479" key="FileChooserDialogImpl/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667287807" />
-    <state width="1238" height="357" key="GridCell.Tab.0.bottom" timestamp="1590847848021">
+    <state width="1238" height="356" key="GridCell.Tab.0.bottom" timestamp="1590864673803">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="357" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590847848021" />
+    <state width="1238" height="356" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590864673803" />
     <state width="1878" height="400" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667455984" />
+    <state width="1878" height="381" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1590852888344" />
     <state width="1878" height="644" key="GridCell.Tab.0.bottom/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
-    <state width="1238" height="357" key="GridCell.Tab.0.center" timestamp="1590847848021">
+    <state width="1238" height="356" key="GridCell.Tab.0.center" timestamp="1590864673802">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="357" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590847848021" />
+    <state width="1238" height="356" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590864673802" />
     <state width="1878" height="400" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667455984" />
+    <state width="1878" height="381" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1590852888344" />
     <state width="1878" height="644" key="GridCell.Tab.0.center/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
-    <state width="1238" height="357" key="GridCell.Tab.0.left" timestamp="1590847848021">
+    <state width="1238" height="356" key="GridCell.Tab.0.left" timestamp="1590864673802">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="357" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590847848021" />
+    <state width="1238" height="356" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590864673802" />
     <state width="1878" height="400" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667455983" />
+    <state width="1878" height="381" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1590852888343" />
     <state width="1878" height="644" key="GridCell.Tab.0.left/0.0.3200.984@0.0.3200.984" timestamp="1589732454122" />
-    <state width="1238" height="357" key="GridCell.Tab.0.right" timestamp="1590847848021">
+    <state width="1238" height="356" key="GridCell.Tab.0.right" timestamp="1590864673802">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="357" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590847848021" />
+    <state width="1238" height="356" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590864673802" />
     <state width="1878" height="400" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667455984" />
+    <state width="1878" height="381" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1590852888344" />
     <state width="1878" height="644" key="GridCell.Tab.0.right/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
     <state width="1878" height="357" key="GridCell.Tab.1.bottom" timestamp="1589313973673">
       <screen x="0" y="0" width="1280" height="984" />
@@ -252,10 +233,11 @@
     </state>
     <state x="329" y="167" width="924" height="679" key="Maven.ArtifactSearchDialog/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1589817435803" />
     <state x="493" y="177" width="924" height="679" key="Maven.ArtifactSearchDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1589718685192" />
-    <state x="1744" y="174" width="1024" height="840" key="SettingsEditor" timestamp="1590667420248">
-      <screen x="1280" y="0" width="1920" height="1080" />
+    <state x="464" y="168" width="1024" height="840" key="SettingsEditor" timestamp="1590849588871">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="1744" y="174" width="1024" height="840" key="SettingsEditor/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667420248" />
+    <state x="464" y="168" key="SettingsEditor/0.0.1920.1040@0.0.1920.1040" timestamp="1590849588871" />
     <state x="2041" y="320" width="387" height="433" key="chooseDestDirectoryDialog" timestamp="1588349249556">
       <screen x="1280" y="0" width="1920" height="1080" />
     </state>
