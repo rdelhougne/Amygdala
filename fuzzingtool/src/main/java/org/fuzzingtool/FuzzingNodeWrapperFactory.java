@@ -1,6 +1,5 @@
 package org.fuzzingtool;
 
-import com.oracle.truffle.api.Scope;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.*;
 import com.oracle.truffle.api.nodes.Node;
@@ -231,7 +230,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
             }
 
             public void onInputValueBehaviorWhileNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex, Object inputValue) {
-                if (!(my_sourcesection.getStartLine() == amygdala.global_fuzzing_loop_line_num && my_sourcesection.getSource().getCharacters(amygdala.global_fuzzing_loop_line_num).toString().contains(amygdala.global_fuzzing_loop_identifier))) {
+                if (!(my_sourcesection.getStartLine() == amygdala.main_loop_line_num && my_sourcesection.getSource().getCharacters(amygdala.main_loop_line_num).toString().contains(amygdala.main_loop_identifier_string))) {
                     ArrayList<Pair<Integer, String>> children = getChildHashes();
                     if (inputIndex == 0) { // TODO Predicate
                         amygdala.branching_event(node_hash, BranchingNodeAttribute.LOOP, children.get(0).getLeft(), (Boolean) inputValue, extractPredicate());
@@ -302,9 +301,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
             }
 
             public void onReturnBehaviorConstant(VirtualFrame vFrame, Object result, Type type) {
-                if (type == Type.BOOLEAN && my_sourcesection.getStartLine() == amygdala.global_fuzzing_loop_line_num) {
-                    String source_code_line = my_sourcesection.getSource().getCharacters(amygdala.global_fuzzing_loop_line_num).toString();
-                    if (source_code_line.contains(amygdala.global_fuzzing_loop_identifier)) {
+                if (type == Type.BOOLEAN && my_sourcesection.getStartLine() == amygdala.main_loop_line_num) {
+                    String source_code_line = my_sourcesection.getSource().getCharacters(amygdala.main_loop_line_num).toString();
+                    if (source_code_line.contains(amygdala.main_loop_identifier_string)) {
                         if (!amygdala.isFirstRun()) {
                             // An diesem Punkt ist das Programm eigentlich beendet, wird aber jetzt neu gestartet.
                             amygdala.terminate();

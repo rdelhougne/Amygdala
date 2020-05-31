@@ -2,10 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7937b683-e266-4626-b31f-f2e51fd3d190" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/../Testprogramme/javascript/factorial.js" beforeDir="false" afterPath="$PROJECT_DIR$/../Testprogramme/javascript/factorial.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/fuzzingtool.py" beforeDir="false" afterPath="$PROJECT_DIR$/fuzzingtool.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingNodeWrapperFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingNodeWrapperFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingTool.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingTool.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Amygdala.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Amygdala.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNode.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNode.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/visualization/BranchingVisualizer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/visualization/BranchingVisualizer.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -151,7 +153,8 @@
       <workItem from="1590758470258" duration="9154000" />
       <workItem from="1590829484398" duration="16734000" />
       <workItem from="1590849543501" duration="3344000" />
-      <workItem from="1590860250454" duration="4841000" />
+      <workItem from="1590860250454" duration="4945000" />
+      <workItem from="1590917150600" duration="6882000" />
     </task>
     <servers />
   </component>
@@ -180,31 +183,31 @@
       <screen x="1280" y="0" width="1920" height="1080" />
     </state>
     <state x="2023" y="297" width="424" height="479" key="FileChooserDialogImpl/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667287807" />
-    <state width="1238" height="356" key="GridCell.Tab.0.bottom" timestamp="1590864673803">
+    <state width="1238" height="356" key="GridCell.Tab.0.bottom" timestamp="1590933133748">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="356" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590864673803" />
+    <state width="1238" height="356" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590933133748" />
     <state width="1878" height="400" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667455984" />
     <state width="1878" height="381" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1590852888344" />
     <state width="1878" height="644" key="GridCell.Tab.0.bottom/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
-    <state width="1238" height="356" key="GridCell.Tab.0.center" timestamp="1590864673802">
+    <state width="1238" height="356" key="GridCell.Tab.0.center" timestamp="1590933133747">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="356" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590864673802" />
+    <state width="1238" height="356" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590933133747" />
     <state width="1878" height="400" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667455984" />
     <state width="1878" height="381" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1590852888344" />
     <state width="1878" height="644" key="GridCell.Tab.0.center/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
-    <state width="1238" height="356" key="GridCell.Tab.0.left" timestamp="1590864673802">
+    <state width="1238" height="356" key="GridCell.Tab.0.left" timestamp="1590933133747">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="356" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590864673802" />
+    <state width="1238" height="356" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590933133747" />
     <state width="1878" height="400" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667455983" />
     <state width="1878" height="381" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1590852888343" />
     <state width="1878" height="644" key="GridCell.Tab.0.left/0.0.3200.984@0.0.3200.984" timestamp="1589732454122" />
-    <state width="1238" height="356" key="GridCell.Tab.0.right" timestamp="1590864673802">
+    <state width="1238" height="356" key="GridCell.Tab.0.right" timestamp="1590933133748">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="356" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590864673802" />
+    <state width="1238" height="356" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590933133748" />
     <state width="1878" height="400" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667455984" />
     <state width="1878" height="381" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1590852888344" />
     <state width="1878" height="644" key="GridCell.Tab.0.right/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />

@@ -23,8 +23,8 @@ public class Amygdala {
 
     //Fuzzing Configuration TODO
     public int input_line_num = 22;
-    public int global_fuzzing_loop_line_num = 2; // Kann automatisch bestimmt werden
-    public String global_fuzzing_loop_identifier = "fuzzing1234"; // Needed if the program happens to be combined of several files
+    public int main_loop_line_num = 1;
+    public String main_loop_identifier_string = "fuzzing_main_loop"; // Needed if the program happens to be combined of several files
 
     public Amygdala(Logger lgr) {
         this.tracer = new Tracer();

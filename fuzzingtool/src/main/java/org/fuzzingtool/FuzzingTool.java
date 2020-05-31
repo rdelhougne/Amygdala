@@ -9,13 +9,19 @@ import org.fuzzingtool.components.Amygdala;
 import org.graalvm.options.*;
 
 import java.nio.file.Paths;
-import java.util.ArrayList;
 
 @Registration(id = FuzzingTool.ID, name = "Fuzzing Tool", version = "1.0-SNAPSHOT", services = FuzzingTool.class)
 public final class FuzzingTool extends TruffleInstrument {
     @Option(name = "", help = "Enable Fuzzing (default: false).", category = OptionCategory.USER, stability = OptionStability.STABLE)
     static final OptionKey<Boolean> optionFuzzingEnabled = new OptionKey<>(false);
-    public static final String ID = "fuzzing-tool";
+
+    @Option(name = "mainLoopLineNumber", help = "Line number of the (generated) main loop", category = OptionCategory.USER, stability = OptionStability.STABLE)
+    static final OptionKey<Integer> optionLoopLineNum = new OptionKey<>(1);
+
+    @Option(name = "mainLoopIdentString", help = "String to identify the main loop", category = OptionCategory.USER, stability = OptionStability.STABLE)
+    static final OptionKey<String> optionLoopIdentString = new OptionKey<>("fuzzing_main_loop");
+
+    public static final String ID = "fuzzingtool";
 
     @Override
     protected OptionDescriptors getOptionDescriptors() {
@@ -27,17 +33,27 @@ public final class FuzzingTool extends TruffleInstrument {
 
     @Override
     protected void onCreate(final Env env) {
+        this.logger = new Logger(env.out());
         final OptionValues options = env.getOptions();
         if (optionFuzzingEnabled.getValue(options)) {
+            this.amygdala = new Amygdala(this.logger);
+
+            if (!options.hasBeenSet(optionLoopLineNum)) {
+                logger.critical("Option --fuzzingtool.mainLoopLineNumber=<Integer> has not been set, defaulting to 1.");
+            }
+            this.amygdala.main_loop_line_num = optionLoopLineNum.getValue(options);
+
+            if (!options.hasBeenSet(optionLoopIdentString)) {
+                logger.critical("Option --fuzzingtool.mainLoopIdentString=<String> has not been set, defaulting to 'fuzzing_main_loop'.");
+            }
+            this.amygdala.main_loop_identifier_string = optionLoopIdentString.getValue(options);
+
             init(env);
-            init_constraints();
             env.registerService(this);
         }
     }
 
     private void init(final Env env) {
-        this.logger = new Logger(env.out());
-        this.amygdala = new Amygdala(this.logger);
         Instrumenter instrumenter = env.getInstrumenter();
 
         // What source sections are we interested in?
@@ -45,14 +61,6 @@ public final class FuzzingTool extends TruffleInstrument {
         // What generates input data to track?
         SourceSectionFilter inputGeneratingLocations = SourceSectionFilter.newBuilder().build();
         instrumenter.attachExecutionEventFactory(sourceSectionFilter, inputGeneratingLocations,  new FuzzingNodeWrapperFactory(env, this.amygdala));
-    }
-
-    //Limits (for testing)
-    ArrayList<String> constraints_scopes = new ArrayList<>();
-
-    // Nur für testzwecke!
-    public void init_constraints() {
-        constraints_scopes.add("factorial");
     }
 
     @Override

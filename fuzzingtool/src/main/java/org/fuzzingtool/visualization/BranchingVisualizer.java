@@ -32,7 +32,7 @@ public class BranchingVisualizer {
         Graphviz.useEngine(new GraphvizCmdLineEngine());
         try {
             Graphviz.fromGraph(vis_graph).render(Format.SVG).toFile(new File(path + ".svg"));
-            Graphviz.fromGraph(vis_graph).render(Format.DOT).toFile(new File(path + ".dot"));
+            //Graphviz.fromGraph(vis_graph).render(Format.DOT).toFile(new File(path + ".dot"));
         } catch (IOException e) {
             e.printStackTrace();
         }
