@@ -21,6 +21,12 @@ public final class FuzzingTool extends TruffleInstrument {
     @Option(name = "mainLoopIdentString", help = "String to identify the main loop", category = OptionCategory.USER, stability = OptionStability.STABLE)
     static final OptionKey<String> optionLoopIdentString = new OptionKey<>("fuzzing_main_loop");
 
+    @Option(name = "errorLineNumber", help = "Line number of the global error catch", category = OptionCategory.USER, stability = OptionStability.STABLE)
+    static final OptionKey<Integer> optionErrorLineNum = new OptionKey<>(7);
+
+    @Option(name = "errorIdentString", help = "String to identify the global error catch", category = OptionCategory.USER, stability = OptionStability.STABLE)
+    static final OptionKey<String> optionErrorIdentString = new OptionKey<>("fuzzing_error");
+
     public static final String ID = "fuzzingtool";
 
     @Override
@@ -47,6 +53,16 @@ public final class FuzzingTool extends TruffleInstrument {
                 logger.critical("Option --fuzzingtool.mainLoopIdentString=<String> has not been set, defaulting to 'fuzzing_main_loop'.");
             }
             this.amygdala.main_loop_identifier_string = optionLoopIdentString.getValue(options);
+
+            if (!options.hasBeenSet(optionErrorLineNum)) {
+                logger.critical("Option --fuzzingtool.errorLineNumber=<Integer> has not been set, defaulting to 7.");
+            }
+            this.amygdala.error_line_num = optionErrorLineNum.getValue(options);
+
+            if (!options.hasBeenSet(optionErrorIdentString)) {
+                logger.critical("Option --fuzzingtool.errorIdentString=<String> has not been set, defaulting to 'fuzzing_error'.");
+            }
+            this.amygdala.error_identifier_string = optionErrorIdentString.getValue(options);
 
             init(env);
             env.registerService(this);

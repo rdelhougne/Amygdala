@@ -71,6 +71,16 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
             @Override
             protected void onEnter(VirtualFrame vFrame) {
                 //amygdala.logger.log(getSignature() + " \033[32m→\033[0m");
+
+                if (constraints_satisfied) {
+                    switch (node_type) { // TODO big time
+                        case "Call1Node":
+                            onEnterBehaviorCallNode(vFrame);
+                            break;
+                        default:
+                            onEnterBehaviorDefault(vFrame);
+                    }
+                }
                     /*highlight("Entering vFrame: " + vFrame);
 
                     Node n = ec.getInstrumentedNode();
@@ -216,6 +226,16 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                 return children;
             }
 
+            public void onEnterBehaviorDefault(VirtualFrame vFrame) {
+                return;
+            }
+
+            public void onEnterBehaviorCallNode(VirtualFrame vFrame) {
+                if (my_sourcesection.getStartLine() == amygdala.error_line_num && my_sourcesection.getSource().getCharacters(amygdala.error_line_num).toString().contains(amygdala.error_identifier_string)) {
+                    amygdala.error_event();
+                }
+            }
+
             public void onInputValueBehaviorDefault(VirtualFrame vFrame, EventContext inputContext, int inputIndex, Object inputValue) {
                 return;
             }
@@ -306,10 +326,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                     if (source_code_line.contains(amygdala.main_loop_identifier_string)) {
                         if (!amygdala.isFirstRun()) {
                             // An diesem Punkt ist das Programm eigentlich beendet, wird aber jetzt neu gestartet.
-                            amygdala.terminate();
+                            amygdala.terminate_event();
 
                             // Hier wird entschieden ob ein weiterer Fuzzing-Durchlauf stattfindet
-                            throw this.event_context.createUnwind(amygdala.calculateNextPath());
+                            throw this.event_context.createUnwind(amygdala.calculateNextPath()); // TODO evtl. rückgabe von terminate event nutzen, calculateNextPath dann intern
                         }
                     }
                 }

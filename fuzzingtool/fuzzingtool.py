@@ -48,22 +48,24 @@ def prepare_js_program(path):
     main_loop_identifier = uuid.uuid4()
     error_identifier = uuid.uuid4()
     main_loop_line_num = 0
+    error_line_num = 0
     with open(abs_path, "r") as sourcefile:
         source_contents = str(sourcefile.read())
     if source_contents.startswith("\"use strict\";"):
-        new_source = "\"use strict\";\nwhile(true) { //" + str(main_loop_identifier) + "\ntry {\n\n"
+        new_source = "\"use strict\";\nwhile(true) { //" + str(main_loop_identifier) + "\ntry {\n\n" + source_contents
         main_loop_line_num = 2
     else:
-        new_source = "while(true) { //" + str(main_loop_identifier) + "\ntry {\n"
+        new_source = "while(true) { //" + str(main_loop_identifier) + "\ntry {\n\n" + source_contents
         main_loop_line_num = 1
-    new_source = new_source + source_contents + "\n} catch(ex_" + str(error_identifier.fields[5]) + ") {\nprint(ex_" + str(error_identifier.fields[5]) + ") //" + str(error_identifier) + "\n}\n}"
+    error_line_num = len(new_source.split("\n")) + 2
+    new_source = new_source + "\n} catch(ex_" + str(error_identifier.fields[5]) + ") {\nprint(ex_" + str(error_identifier.fields[5]) + ") //" + str(error_identifier) + "\n}\n}"
     
     working_dir, source_file_name = os.path.split(abs_path)
     new_filename = source_file_name.split(".")[0] + "_" + str(filename_uid) + ".js"
     new_filepath = os.path.join(working_dir, new_filename)
     with open(new_filepath, "w") as nf:
         nf.write(new_source)
-    return new_filepath, main_loop_line_num, main_loop_identifier
+    return new_filepath, main_loop_line_num, main_loop_identifier, error_line_num, error_identifier
 
 def main():
     parser = argparse.ArgumentParser(description="Run fuzzing tool")
@@ -91,7 +93,7 @@ def main():
 
     engine_exec_path = os.path.join(environ_java_home, "bin", engine)
     
-    new_filepath, main_loop_line_num, main_loop_identifier = prepare_js_program(program)
+    new_filepath, main_loop_line_num, main_loop_identifier, error_line_num, error_identifier = prepare_js_program(program)
 
     args = [
             engine_exec_path,
@@ -100,6 +102,8 @@ def main():
             "--fuzzingtool",
             "--fuzzingtool.mainLoopLineNumber=" + str(main_loop_line_num),
             "--fuzzingtool.mainLoopIdentString=" + str(main_loop_identifier),
+            "--fuzzingtool.errorLineNumber=" + str(error_line_num),
+            "--fuzzingtool.errorIdentString=" + str(error_identifier),
             new_filepath
            ]
 

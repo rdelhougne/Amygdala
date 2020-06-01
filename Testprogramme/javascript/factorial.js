@@ -8,6 +8,9 @@ function factorial(n) {
 	if (n == 1) {
 		return 1;
 	}
+	if (n == 7) {
+		throw TypeError;
+	}
 	var v = 1;
 	var l = n + 1;
 	while (0 != l) {

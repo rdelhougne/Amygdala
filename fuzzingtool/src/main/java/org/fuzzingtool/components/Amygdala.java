@@ -19,12 +19,15 @@ public class Amygdala {
     public HashMap<VariableIdentifier, Object> new_variable_values;
     public boolean fuzzing_finished = false;
     private int fuzzing_iterations = 1;
+    private boolean suppress_next_terminate = false;
     private boolean is_first_run = true;
 
     //Fuzzing Configuration TODO
-    public int input_line_num = 22;
+    public int input_line_num = 26;
     public int main_loop_line_num = 1;
     public String main_loop_identifier_string = "fuzzing_main_loop"; // Needed if the program happens to be combined of several files
+    public int error_line_num = 7;
+    public String error_identifier_string = "fuzzing_error"; // Needed if the program happens to be combined of several files
 
     public Amygdala(Logger lgr) {
         this.tracer = new Tracer();
@@ -58,11 +61,31 @@ public class Amygdala {
         }
     }
 
-    public void terminate() {
+    public void terminate_event() {
+        if (suppress_next_terminate) {
+            suppress_next_terminate = false;
+            return;
+        }
         currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.TERMINATE);
         currentBranch = branchingRootNode;
         tracer.clearAll();
         this.fuzzing_iterations += 1;
+    }
+
+    public void error_event() {
+        currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.ERROR);
+        currentBranch = branchingRootNode;
+        tracer.clearAll();
+        this.fuzzing_iterations += 1;
+        suppress_terminate();
+    }
+
+    /**
+     * This function suppresses the next terminate event. Useful for the first run and error events.
+     * This function has side effects.
+     */
+    public void suppress_terminate() {
+        suppress_next_terminate = true;
     }
 
     /**
