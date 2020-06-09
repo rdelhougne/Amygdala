@@ -73,3 +73,5 @@ target/
 
 fuzzingtool/*.svg
 fuzzingtool/*.dot
+
+fuzzingtool/__pycache__/

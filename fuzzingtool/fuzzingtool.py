@@ -97,6 +97,7 @@ def main():
 
     args = [
             engine_exec_path,
+            "--polyglot",
             "--jvm",
             '--vm.Dtruffle.class.path.append=' + FUZZINGTOOL_EXEC + ':' + classpath_string,
             "--fuzzingtool",

@@ -2,9 +2,13 @@ package org.fuzzingtool.components;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
+import org.fuzzingtool.symbolic.ExpressionType;
+import org.fuzzingtool.symbolic.LanguageSemantic;
 import org.fuzzingtool.symbolic.SymbolicException;
 import org.fuzzingtool.symbolic.SymbolicNode;
 import org.fuzzingtool.symbolic.logical.Not;
+import org.graalvm.collections.Pair;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -14,6 +18,16 @@ public class BranchingNode {
      * State of the branch, BRANCH and LOOP indicate a taken branch, all others indicate not yet taken or error states
      */
     private BranchingNodeAttribute branchingNodeAttribute;
+
+    /**
+     * The symbolic expression of this node (and therefore all child-nodes) is undecidable by the SMT-Solver, e.g. if the expression contains strings but the solver can't handle string types
+     */
+    private boolean isUndecidable = false;
+
+    /**
+     * All possible subsequent paths were already explored
+     */
+    private boolean isExplored = false;
 
     /**
      * hash-code of the corresponding TruffleNode
@@ -55,6 +69,11 @@ public class BranchingNode {
      * the "childNodeNotTaken" variable of the parent node.
      */
     private Boolean parentNodeTakenFlag;
+
+    /**
+     * Language semantic of the node
+     */
+    private static final LanguageSemantic nodeLanguageSemantic = LanguageSemantic.JAVASCRIPT; //TODO
 
     public BranchingNode(SymbolicNode exp, Integer node_hash, BranchingNodeAttribute bt) {
         setProperties(exp, node_hash, bt);
@@ -134,7 +153,7 @@ public class BranchingNode {
         return nodeHash;
     }
 
-    public HashSet<VariableIdentifier> getSymbolicPathIdentifiers() {
+    /*public HashSet<VariableIdentifier> getSymbolicPathIdentifiers() {
         if (parentNode != null) {
             HashSet<VariableIdentifier> all_from_parents = this.parentNode.getSymbolicPathIdentifiers();
             if (this.branchingNodeAttribute == BranchingNodeAttribute.BRANCH || this.branchingNodeAttribute == BranchingNodeAttribute.LOOP) {
@@ -144,7 +163,7 @@ public class BranchingNode {
         } else {
             return this.symbolic_expression.getSymbolicVars();
         }
-    }
+    }*/
 
     public ArrayList<String> getSymbolicPathSMTExpression() {
         if (parentNode != null) {
@@ -165,13 +184,13 @@ public class BranchingNode {
                 my_expr.add(getLocalSMTExpression(taken_flag));
                 return my_expr;
             }
-        } catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize incompatibleType) {
+        } catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize | SymbolicException.NotImplemented incompatibleType) {
             incompatibleType.printStackTrace();
         }
         return null;
     }
 
-    public ArrayList<String> getSymbolicPathHRExpression() {
+    public ArrayList<String> getSymbolicPathHRExpression() throws SymbolicException.WrongParameterSize {
         if (parentNode != null) {
             return this.parentNode.getSymbolicPathHRExpression(this.parentNodeTakenFlag);
         } else {
@@ -179,24 +198,19 @@ public class BranchingNode {
         }
     }
 
-    public ArrayList<String> getSymbolicPathHRExpression(Boolean taken_flag) {
-        try {
-            if (parentNode != null) {
-                ArrayList<String> all_from_parents = this.parentNode.getSymbolicPathHRExpression(this.parentNodeTakenFlag);
-                all_from_parents.add(getLocalHRExpression(taken_flag));
-                return all_from_parents;
-            } else {
-                ArrayList<String> my_expr = new ArrayList<>();
-                my_expr.add(getLocalHRExpression(taken_flag));
-                return my_expr;
-            }
-        } catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize incompatibleType) {
-            incompatibleType.printStackTrace();
+    public ArrayList<String> getSymbolicPathHRExpression(Boolean taken_flag) throws SymbolicException.WrongParameterSize {
+        if (parentNode != null) {
+            ArrayList<String> all_from_parents = this.parentNode.getSymbolicPathHRExpression(this.parentNodeTakenFlag);
+            all_from_parents.add(getLocalHRExpression(taken_flag));
+            return all_from_parents;
+        } else {
+            ArrayList<String> my_expr = new ArrayList<>();
+            my_expr.add(getLocalHRExpression(taken_flag));
+            return my_expr;
         }
-        return null;
     }
 
-    public BoolExpr getSymbolicPathZ3Expression(Context ctx) {
+    public BoolExpr getSymbolicPathZ3Expression(Context ctx) throws SymbolicException.WrongParameterSize, SymbolicException.NotImplemented, SymbolicException.UndecidableExpression {
         if (parentNode != null) {
             return this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
         } else {
@@ -204,44 +218,43 @@ public class BranchingNode {
         }
     }
 
-    public BoolExpr getSymbolicPathZ3Expression(Boolean taken_flag, Context ctx) {
-        try {
-            if (parentNode != null) {
-                BoolExpr all_from_parents = this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
-                return ctx.mkAnd(all_from_parents, getLocalZ3Expression(taken_flag, ctx));
-            } else {
-                return getLocalZ3Expression(taken_flag, ctx);
-            }
-        } catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize incompatibleType) {
-            incompatibleType.printStackTrace();
+    public BoolExpr getSymbolicPathZ3Expression(Boolean taken_flag, Context ctx) throws SymbolicException.WrongParameterSize, SymbolicException.UndecidableExpression, SymbolicException.NotImplemented {
+        if (parentNode != null) {
+            BoolExpr all_from_parents = this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
+            return ctx.mkAnd(all_from_parents, getLocalZ3Expression(taken_flag, ctx));
+        } else {
+            return getLocalZ3Expression(taken_flag, ctx);
         }
-        return null;
     }
 
-    public String getLocalSMTExpression(Boolean taken) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+    public String getLocalSMTExpression(Boolean taken) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize, SymbolicException.NotImplemented {
         if (taken) {
             return this.symbolic_expression.toSMTExpr();
         } else {
-            SymbolicNode not = new Not(this.symbolic_expression);
+            SymbolicNode not = new Not(nodeLanguageSemantic, this.symbolic_expression);
             return not.toSMTExpr();
         }
     }
 
-    public String getLocalHRExpression(Boolean taken) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+    public String getLocalHRExpression(Boolean taken) throws SymbolicException.WrongParameterSize {
         if (taken) {
             return this.symbolic_expression.toString();
         } else {
-            SymbolicNode not = new Not(this.symbolic_expression);
+            SymbolicNode not = new Not(nodeLanguageSemantic, this.symbolic_expression);
             return not.toString();
         }
     }
 
-    public BoolExpr getLocalZ3Expression(Boolean taken, Context ctx) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+    public BoolExpr getLocalZ3Expression(Boolean taken, Context ctx) throws SymbolicException.WrongParameterSize, SymbolicException.NotImplemented, SymbolicException.UndecidableExpression {
         if (taken) {
-            return (BoolExpr) this.symbolic_expression.toZ3Expr(ctx);
+            Pair<Expr, ExpressionType> expr = this.symbolic_expression.toZ3Expr(ctx);
+            assert expr.getRight() == ExpressionType.BOOLEAN;
+            return (BoolExpr) expr.getLeft();
         } else {
-            SymbolicNode not = new Not(this.symbolic_expression);
-            return (BoolExpr) not.toZ3Expr(ctx);
+            SymbolicNode not = new Not(nodeLanguageSemantic, this.symbolic_expression);
+            Pair<Expr, ExpressionType> expr = not.toZ3Expr(ctx);
+            assert expr.getRight() == ExpressionType.BOOLEAN;
+            return (BoolExpr) expr.getLeft();
         }
     }
 }

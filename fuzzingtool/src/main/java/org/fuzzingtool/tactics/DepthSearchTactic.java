@@ -1,9 +1,12 @@
 package org.fuzzingtool.tactics;
 
 import com.microsoft.z3.*;
+import org.fuzzingtool.Logger;
 import org.fuzzingtool.components.BranchingNode;
 import org.fuzzingtool.components.BranchingNodeAttribute;
 import org.fuzzingtool.components.VariableIdentifier;
+import org.fuzzingtool.symbolic.ExpressionType;
+import org.fuzzingtool.symbolic.SymbolicException;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,50 +14,77 @@ import java.util.HashSet;
 public class DepthSearchTactic extends FuzzingTactic {
     BranchingNode root_node;
     Context ctx;
+    Logger logger;
 
     public final Integer max_loop_unrolling = 16;
     public final Integer max_depth = 32;
 
     HashMap<Integer, Integer> loop_unrolls;
 
-    public DepthSearchTactic(BranchingNode n, Context c) {
+    public DepthSearchTactic(BranchingNode n, Context c, Logger l) {
         this.root_node = n;
         this.ctx = c;
+        this.logger = l;
         loop_unrolls = new HashMap<>();
     }
 
-    public HashMap<VariableIdentifier, Object> getNextValues() throws FuzzingException.NoMorePaths {
+    public HashMap<VariableIdentifier, Object> getNextValues(HashMap<VariableIdentifier, ExpressionType> variable_types) throws FuzzingException.NoMorePaths {
         boolean path_found = true;
         while (path_found) {
             BranchingNode new_target = find_unexplored(root_node, 1);
             if (new_target == null) {
                 path_found = false;
             } else {
-                BoolExpr expr = new_target.getSymbolicPathZ3Expression(ctx);
-                HashSet<VariableIdentifier> vars = new_target.getSymbolicPathIdentifiers();
+                BoolExpr expr = null;
+                try {
+                    expr = new_target.getSymbolicPathZ3Expression(ctx);
+                } catch (SymbolicException.NotImplemented ni) {
+                    logger.warning(ni.getMessage());
+                    continue;
+                } catch (SymbolicException.UndecidableExpression ue) {
+                    logger.info(ue.getMessage());
+                    continue;
+                } catch (SymbolicException.WrongParameterSize wrongParameterSize) {
+                    wrongParameterSize.printStackTrace();
+                    continue;
+                }
                 Solver s = ctx.mkSolver();
                 s.add(expr);
                 if (s.check() == Status.SATISFIABLE) {
-                    Model m = s.getModel();
+                    Model model = s.getModel();
+                    FuncDecl declarations[] = model.getConstDecls();
                     HashMap<VariableIdentifier, Object> variable_values = new HashMap<>();
-                    for (VariableIdentifier var: vars) {
-                        switch (var.getVariableType()) {
-                            case BOOLEAN:
-                                // TODO
-                                break;
-                            case INT:
-                                IntNum result = (IntNum) m.evaluate(ctx.mkIntConst(var.getIdentifierString()), false);
-                                variable_values.put(var, result.getInt());
-                                break;
-                            case REAL:
-                                // TODO
-                                break;
-                            case STRING:
-                                // TODO
-                                break;
-                            case VOID:
-                                // TODO
-                                break;
+                    for (FuncDecl d: declarations) {
+                        String dname = d.getName().toString();
+                        VariableIdentifier identifier = VariableIdentifier.fromString(dname);
+                        Expr result = model.getConstInterp(d);
+
+                        if (variable_types.containsKey(identifier)) {
+                            switch (variable_types.get(identifier)) {
+                                case BOOLEAN:
+                                    logger.critical("Boolean Type not supported.");
+                                    break;
+                                case STRING:
+                                    logger.critical("String Type not supported.");
+                                    break;
+                                case BIGINT:
+                                case NUMBER_INTEGER:
+                                    try {
+                                        IntNum cast_result = (IntNum) result;
+                                        variable_values.put(identifier, cast_result.getInt());
+                                    } catch (ClassCastException cce) {
+                                        logger.critical("Cannot cast Z3 Expression '" + result.getString() + "' to Integer.");
+                                    }
+                                    break;
+                                case NUMBER_REAL:
+                                    logger.critical("Real Type not supported.");
+                                    break;
+                                default:
+                                    logger.critical("Variable " + identifier.getIdentifierString() + " has not allowed type '" + variable_types.get(identifier).toString() + "'.");
+                                    break;
+                            }
+                        } else {
+                            logger.critical("No type for variable: " + identifier.getIdentifierString());
                         }
                     }
                     return variable_values;

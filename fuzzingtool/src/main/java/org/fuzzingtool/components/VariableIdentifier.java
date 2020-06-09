@@ -1,6 +1,6 @@
 package org.fuzzingtool.components;
 
-import org.fuzzingtool.symbolic.Type;
+import org.fuzzingtool.symbolic.ExpressionType;
 
 /**
  * This class is for identifying Variables in the program context.
@@ -9,11 +9,9 @@ import org.fuzzingtool.symbolic.Type;
  */
 public final class VariableIdentifier {
     private String identifier; // TODO replace
-    private Type type;
 
-    public VariableIdentifier(String id, Type t) {
+    public VariableIdentifier(String id) {
         this.identifier = id;
-        this.type = t;
     }
 
     /**
@@ -30,9 +28,9 @@ public final class VariableIdentifier {
      *
      * @return The variable type
      */
-    public Type getVariableType() {
+    /*public ExpressionType getVariableType() {
         return type;
-    }
+    }*/
 
     @Override
     public int hashCode() {
@@ -48,8 +46,13 @@ public final class VariableIdentifier {
             return true;
         }
         if (obj instanceof VariableIdentifier) {
-            return this.identifier.equals(((VariableIdentifier) obj).identifier) && this.type.equals(((VariableIdentifier) obj).type);
+            return this.identifier.equals(((VariableIdentifier) obj).identifier);
         }
         return false;
+    }
+
+    public static VariableIdentifier fromString(String representation) {
+        // TODO Parse String
+        return new VariableIdentifier(representation);
     }
 }

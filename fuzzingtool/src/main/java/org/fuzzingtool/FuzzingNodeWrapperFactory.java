@@ -8,9 +8,10 @@ import com.oracle.truffle.js.nodes.access.JSConstantNode;
 import org.fuzzingtool.components.Amygdala;
 import org.fuzzingtool.components.BranchingNodeAttribute;
 import org.fuzzingtool.components.VariableIdentifier;
+import org.fuzzingtool.symbolic.ExpressionType;
+import org.fuzzingtool.symbolic.LanguageSemantic;
 import org.fuzzingtool.symbolic.Operation;
 import org.fuzzingtool.symbolic.SymbolicException;
-import org.fuzzingtool.symbolic.Type;
 import org.fuzzingtool.visualization.ASTVisualizer;
 import org.graalvm.collections.Pair;
 
@@ -161,16 +162,16 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
                             // ===== JavaScript Constant Nodes =====
                             case "JSConstantBooleanNode":
-                                onReturnBehaviorConstant(vFrame, result, Type.BOOLEAN);
+                                onReturnBehaviorConstant(vFrame, result, ExpressionType.BOOLEAN);
                                 break;
                             case "JSConstantIntegerNode":
-                                onReturnBehaviorConstant(vFrame, result, Type.INT);
+                                onReturnBehaviorConstant(vFrame, result, ExpressionType.NUMBER_INTEGER);
                                 break;
                             case "JSConstantStringNode":
-                                onReturnBehaviorConstant(vFrame, result, Type.STRING);
+                                onReturnBehaviorConstant(vFrame, result, ExpressionType.STRING);
                                 break;
                             case "JSConstantNullNode":
-                                onReturnBehaviorConstant(vFrame, result, Type.VOID);
+                                onReturnBehaviorConstant(vFrame, result, ExpressionType.NULL);
                                 break;
 
 
@@ -309,19 +310,19 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
             public void onReturnBehaviorBinaryOperation(VirtualFrame vFrame, Object result, Operation op) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
                 ArrayList<Pair<Integer, String>> children = getChildHashes();
                 assert children.size() == 2;
-                amygdala.tracer.add_operation(node_hash, op, children.get(0).getLeft(), children.get(1).getLeft());
+                amygdala.tracer.add_operation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft(), children.get(1).getLeft());
                 invalidate_interim(children);
             }
 
             public void onReturnBehaviorUnaryOperation(VirtualFrame vFrame, Object result, Operation op) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
                 ArrayList<Pair<Integer, String>> children = getChildHashes();
                 assert children.size() == 1;
-                amygdala.tracer.add_operation(node_hash, op, children.get(0).getLeft());
+                amygdala.tracer.add_operation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft());
                 invalidate_interim(children);
             }
 
-            public void onReturnBehaviorConstant(VirtualFrame vFrame, Object result, Type type) {
-                if (type == Type.BOOLEAN && my_sourcesection.getStartLine() == amygdala.main_loop_line_num) {
+            public void onReturnBehaviorConstant(VirtualFrame vFrame, Object result, ExpressionType type) {
+                if (type == ExpressionType.BOOLEAN && my_sourcesection.getStartLine() == amygdala.main_loop_line_num) {
                     String source_code_line = my_sourcesection.getSource().getCharacters(amygdala.main_loop_line_num).toString();
                     if (source_code_line.contains(amygdala.main_loop_identifier_string)) {
                         if (!amygdala.isFirstRun()) {
@@ -335,12 +336,12 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                 }
                 if (my_sourcesection.getStartLine() == amygdala.input_line_num) {
                     if (my_node instanceof JSConstantNode.JSConstantIntegerNode) {
-                        Integer next_int = (Integer) amygdala.getNextInputValue(new VariableIdentifier("n", Type.INT)); // TODO
+                        Integer next_int = (Integer) amygdala.getNextInputValue(new VariableIdentifier("n")); // TODO
                         amygdala.logger.log("Iteration " + amygdala.getIterations() + ", next input value: " + next_int);
                         throw this.event_context.createUnwind(next_int);
                     }
                 }
-                amygdala.tracer.add_constant(node_hash, type, result);
+                amygdala.tracer.add_constant(node_hash, LanguageSemantic.JAVASCRIPT, type, result);
             }
         };
     }

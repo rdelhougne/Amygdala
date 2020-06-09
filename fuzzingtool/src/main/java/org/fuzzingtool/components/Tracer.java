@@ -1,9 +1,7 @@
 package org.fuzzingtool.components;
 
-import org.fuzzingtool.symbolic.Operation;
-import org.fuzzingtool.symbolic.SymbolicException;
-import org.fuzzingtool.symbolic.SymbolicNode;
-import org.fuzzingtool.symbolic.Type;
+import org.fuzzingtool.Logger;
+import org.fuzzingtool.symbolic.*;
 import org.fuzzingtool.symbolic.arithmetic.Addition;
 import org.fuzzingtool.symbolic.arithmetic.Division;
 import org.fuzzingtool.symbolic.arithmetic.Multiplication;
@@ -14,6 +12,7 @@ import org.fuzzingtool.symbolic.logical.*;
 import java.util.HashMap;
 
 public class Tracer {
+    public Logger logger;
     // Speichert Zwischenergebnisse der Nodes um sie nach oben weiterzugeben
     private HashMap<Integer, SymbolicNode> interim_results = new HashMap<>();
 
@@ -21,8 +20,10 @@ public class Tracer {
     // Zugriff nur durch JSReadCurrentFrameSlotNodeGen & JSWriteCurrentFrameSlotNodeGen!
     private HashMap<String, SymbolicNode> symbolic_frame = new HashMap<>();
 
-    public Tracer() {
-        symbolic_frame.put("n", new SymbolicName(new VariableIdentifier("n", Type.INT))); // TODO
+    public Tracer(Logger l) {
+        this.logger = l;
+
+        symbolic_frame.put("n", new SymbolicVariable(LanguageSemantic.JAVASCRIPT, new VariableIdentifier("n"), ExpressionType.NUMBER_INTEGER)); // TODO
     }
 
     /**
@@ -74,8 +75,8 @@ public class Tracer {
         if (symbolic_frame.containsKey(variable_name)) {
             interim_results.put(to_node, symbolic_frame.get(variable_name));
         } else {
-            // TODO Typbestimmung oder Exception! Es wird versucht eine Variable zu lesen die nicht existiert!
-            interim_results.put(to_node, new SymbolicName(new VariableIdentifier(variable_name, Type.INT)));
+            // TODO Typbestimmung oder Exception! Es wird versucht eine Variable zu lesen die nicht existiert! Oder nachschauen ob sie existiert...
+            interim_results.put(to_node, new SymbolicVariable(LanguageSemantic.JAVASCRIPT, new VariableIdentifier(variable_name), ExpressionType.NUMBER_INTEGER));
         }
     }
 
@@ -101,56 +102,56 @@ public class Tracer {
     public void clearAll() {
         interim_results.clear();
         symbolic_frame.clear();
-        symbolic_frame.put("n", new SymbolicName(new VariableIdentifier("n", Type.INT))); // TODO
+        symbolic_frame.put("n", new SymbolicVariable(LanguageSemantic.JAVASCRIPT, new VariableIdentifier("n"), ExpressionType.NUMBER_INTEGER)); // TODO
     }
 
     /**
      * This function adds a new symbolic operation to the interim results of the given node-hash.
      *
      * @param node_target Node-hash of the new interim result
-     * @param op Type of Operation, see {@link Operation} for all available operation types
+     * @param op ExpressionType of Operation, see {@link Operation} for all available operation types
      * @param node_source_a Left-hand operator
      * @param node_source_b Right-hand operator
      * @throws SymbolicException.IncompatibleType
      * @throws SymbolicException.WrongParameterSize
      */
-    public void add_operation(Integer node_target, Operation op, Integer node_source_a, Integer node_source_b) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+    public void add_operation(Integer node_target, LanguageSemantic s, Operation op, Integer node_source_a, Integer node_source_b) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
         if (interim_results.containsKey(node_source_a) && interim_results.containsKey(node_source_b)) {
             SymbolicNode a = interim_results.get(node_source_a);
             SymbolicNode b = interim_results.get(node_source_b);
             switch (op) {
                 case ADDITION:
-                    interim_results.put(node_target, new Addition(a, b));
+                    interim_results.put(node_target, new Addition(s, a, b));
                     break;
                 case SUBTRACTION:
-                    interim_results.put(node_target, new Subtraction(a, b));
+                    interim_results.put(node_target, new Subtraction(s, a, b));
                     break;
                 case MULTIPLICATION:
-                    interim_results.put(node_target, new Multiplication(a, b));
+                    interim_results.put(node_target, new Multiplication(s, a, b));
                     break;
                 case DIVISION:
-                    interim_results.put(node_target, new Division(a, b));
+                    interim_results.put(node_target, new Division(s, a, b));
                     break;
                 case AND:
-                    interim_results.put(node_target, new And(a, b));
+                    interim_results.put(node_target, new And(s, a, b));
                     break;
                 case OR:
-                    interim_results.put(node_target, new Or(a, b));
+                    interim_results.put(node_target, new Or(s, a, b));
                     break;
                 case EQUAL:
-                    interim_results.put(node_target, new Equal(a, b));
+                    interim_results.put(node_target, new Equal(s, a, b));
                     break;
                 case GREATER_EQUAL:
-                    interim_results.put(node_target, new GreaterEqual(a, b));
+                    interim_results.put(node_target, new GreaterEqual(s, a, b));
                     break;
                 case GREATER_THAN:
-                    interim_results.put(node_target, new GreaterThan(a, b));
+                    interim_results.put(node_target, new GreaterThan(s, a, b));
                     break;
                 case LESS_EQUAL:
-                    interim_results.put(node_target, new LessEqual(a, b));
+                    interim_results.put(node_target, new LessEqual(s, a, b));
                     break;
                 case LESS_THAN:
-                    interim_results.put(node_target, new LessThan(a, b));
+                    interim_results.put(node_target, new LessThan(s, a, b));
                     break;
                 default:
                     // TODO exception
@@ -161,20 +162,20 @@ public class Tracer {
     }
 
     /**
-     * This is an overloaded method of {@link #add_operation(Integer, Operation, Integer, Integer)} for unary operations.
+     * This is an overloaded method of {@link #add_operation(Integer, LanguageSemantic, Operation, Integer, Integer)} for unary operations.
      *
      * @param node_target Node-hash of the new interim result
-     * @param op Type of Operation, see {@link Operation} for all available operation types
+     * @param op ExpressionType of Operation, see {@link Operation} for all available operation types
      * @param node_source child operator
      * @throws SymbolicException.IncompatibleType
      * @throws SymbolicException.WrongParameterSize
      */
-    public void add_operation(Integer node_target, Operation op, Integer node_source) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+    public void add_operation(Integer node_target, LanguageSemantic s, Operation op, Integer node_source) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
         if (interim_results.containsKey(node_source)) {
             SymbolicNode k = interim_results.get(node_source);
             switch (op) {
                 case NOT:
-                    interim_results.put(node_target, new Not(k));
+                    interim_results.put(node_target, new Not(s, k));
                     break;
                 default:
                     // TODO Exception
@@ -188,28 +189,15 @@ public class Tracer {
      * Add a new symbolic constant to the interim results of node_target.
      *
      * @param node_target The node-hash of the interim result
-     * @param type Type of the new constant value, see {@link Type}
-     * @param value Value of the constant, the value is automatically casted
+     * @param s Semantic of the language
+     * @param t ExpressionType of the new constant value, see {@link ExpressionType}
+     * @param v Value of the constant, the value is automatically casted
      */
-    public void add_constant(Integer node_target, Type type, Object value) {
-        switch (type) {
-            case BOOLEAN:
-                interim_results.put(node_target, new ConstantBoolean((Boolean) value));
-                break;
-            case INT:
-                interim_results.put(node_target, new ConstantInt((Integer) value));
-                break;
-            case REAL:
-                interim_results.put(node_target, new ConstantReal((Double) value));
-                break;
-            case STRING:
-                interim_results.put(node_target, new ConstantString((String) value));
-                break;
-            case VOID:
-                interim_results.put(node_target, new ConstantVoid());
-                break;
-            default:
-                //TODO exception
+    public void add_constant(Integer node_target, LanguageSemantic s, ExpressionType t, Object v) {
+        try {
+            interim_results.put(node_target, new SymbolicConstant(s, t, v));
+        } catch (SymbolicException.IncompatibleType incompatibleType) {
+            logger.critical(incompatibleType.getMessage());
         }
     }
 }
