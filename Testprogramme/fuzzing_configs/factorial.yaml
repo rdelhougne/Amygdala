@@ -1,0 +1,14 @@
+---
+program_path: "../javascript/factorial.js"
+variables: # TODO die Bezeichnung einer Variablen ersetzen durch den eindeutigen Identifier
+  -
+    line_num: 2
+    name: n
+    type: INTEGER
+    sample: 5
+fuzzing_parameters: # Globale Parameter und Parameter für Taktiken
+  max_iterations: 1000
+  tactic_depth_search:
+    max_loop_unrolling: 16
+    max_depth: 32
+...

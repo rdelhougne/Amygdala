@@ -1,5 +1,9 @@
 package org.fuzzingtool.components;
 
+import com.amihaiemil.eoyaml.Yaml;
+import com.amihaiemil.eoyaml.YamlMapping;
+import com.amihaiemil.eoyaml.YamlNode;
+import com.amihaiemil.eoyaml.YamlSequence;
 import com.microsoft.z3.*;
 import org.fuzzingtool.Logger;
 import org.fuzzingtool.symbolic.ExpressionType;
@@ -7,9 +11,13 @@ import org.fuzzingtool.symbolic.SymbolicException;
 import org.fuzzingtool.tactics.DepthSearchTactic;
 import org.fuzzingtool.tactics.FuzzingException;
 import org.fuzzingtool.visualization.BranchingVisualizer;
+import org.graalvm.collections.Pair;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 
 /**
  * Central class for managing execution flow events and fuzzing attempts
@@ -23,6 +31,7 @@ public class Amygdala {
     public Context z3_ctx;
     public HashMap<VariableIdentifier, Object> variable_values;
     public HashMap<VariableIdentifier, ExpressionType> variable_types;
+    public HashMap<Integer, VariableIdentifier> variable_line_to_identifier;
     public boolean fuzzing_finished = false;
     private int fuzzing_iterations = 1;
     private boolean suppress_next_terminate = false;
@@ -40,6 +49,7 @@ public class Amygdala {
         this.logger = lgr;
         this.variable_values = new HashMap<>();
         this.variable_types = new HashMap<>();
+        this.variable_line_to_identifier = new HashMap<>();
 
         HashMap<String, String> cfg = new HashMap<>();
         cfg.put("model", "true");
@@ -47,16 +57,6 @@ public class Amygdala {
 
         branchingRootNode = new BranchingNode();
         currentBranch = branchingRootNode;
-
-        initialize_sample_inputs();
-    }
-
-    /**
-     * This Method initializes all given sample-inputs.
-     */
-    public void initialize_sample_inputs() { // TODO
-        variable_values.put(new VariableIdentifier("n"), (Integer) 5);
-        variable_types.put(new VariableIdentifier("n"), ExpressionType.NUMBER_INTEGER);
     }
 
     /**
@@ -244,5 +244,92 @@ public class Amygdala {
     public void visualizeProgramFlow(String path) {
         BranchingVisualizer bv = new BranchingVisualizer(branchingRootNode);
         bv.save_image(path);
+    }
+
+    public void loadOptions(String path, Integer lineOffset) {
+        final YamlMapping map;
+        try {
+            map = Yaml.createYamlInput(new File(path)).readYamlMapping();
+        } catch (IOException ioe) {
+            logger.critical("Cannot open file " + path);
+            return;
+        }
+
+        YamlSequence variables = map.yamlSequence("variables");
+        YamlMapping parameters = map.yamlMapping("fuzzing_parameters");
+
+        loadVariables(variables, lineOffset);
+        loadFuzzingParameters(parameters);
+    }
+
+    /**
+     * This Method initializes all given variables and sample-inputs.
+     */
+    private void loadVariables(YamlSequence variable_list, Integer lineOffset) {
+        for (YamlNode yamlNode : variable_list) {
+            YamlMapping var_declaration = (YamlMapping) yamlNode;
+            Integer line_num = var_declaration.integer("line_num") + lineOffset;
+            String name = var_declaration.string("name");
+            String var_type = var_declaration.string("type");
+
+            ExpressionType var_type_enum;
+            switch (var_type) {
+                case "BIGINT":
+                    var_type_enum = ExpressionType.BIGINT;
+                    break;
+                case "INTEGER":
+                    var_type_enum = ExpressionType.NUMBER_INTEGER;
+                    break;
+                case "REAL":
+                    var_type_enum = ExpressionType.NUMBER_REAL;
+                    break;
+                case "BOOLEAN":
+                    var_type_enum = ExpressionType.BOOLEAN;
+                    break;
+                case "STRING":
+                    var_type_enum = ExpressionType.STRING;
+                    break;
+                default:
+                    logger.warning("Unknown variable type '" + var_type + "' for variable " + name);
+                    continue;
+            }
+
+            VariableIdentifier new_identifier = VariableIdentifier.fromString(name);
+            variable_line_to_identifier.put(line_num, new_identifier);
+            variable_types.put(new_identifier, var_type_enum);
+
+            switch (var_type_enum) {
+                case BOOLEAN:
+                    String bool_string = var_declaration.string("sample");
+                    if (bool_string.equals("true")) {
+                        variable_values.put(new_identifier, true);
+                    } else {
+                        variable_values.put(new_identifier, false);
+                    }
+                    break;
+                case STRING:
+                    variable_values.put(new_identifier, var_declaration.string("sample"));
+                    break;
+                case BIGINT:
+                case NUMBER_INTEGER:
+                    variable_values.put(new_identifier, var_declaration.integer("sample"));
+                    break;
+                case NUMBER_REAL:
+                    variable_values.put(new_identifier, var_declaration.doubleNumber("sample"));
+                    break;
+            }
+        }
+    }
+
+    private void loadFuzzingParameters(YamlMapping parameters) {
+
+    }
+
+    public Pair<Boolean, VariableIdentifier> getInputNodeConfiguration(Integer line_num) {
+        if (variable_line_to_identifier.containsKey(line_num)) {
+            return Pair.create(true, variable_line_to_identifier.get(line_num));
+        } else {
+            return Pair.create(false, null);
+        }
     }
 }

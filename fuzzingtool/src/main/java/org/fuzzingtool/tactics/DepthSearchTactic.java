@@ -16,8 +16,9 @@ public class DepthSearchTactic extends FuzzingTactic {
     Context ctx;
     Logger logger;
 
-    public final Integer max_loop_unrolling = 16;
-    public final Integer max_depth = 32;
+    //Options
+    private Integer max_loop_unrolling = 16;
+    private Integer max_depth = 32;
 
     HashMap<Integer, Integer> loop_unrolls;
 
@@ -35,7 +36,7 @@ public class DepthSearchTactic extends FuzzingTactic {
             if (new_target == null) {
                 path_found = false;
             } else {
-                BoolExpr expr = null;
+                BoolExpr expr;
                 try {
                     expr = new_target.getSymbolicPathZ3Expression(ctx);
                 } catch (SymbolicException.NotImplemented ni) {
@@ -148,5 +149,40 @@ public class DepthSearchTactic extends FuzzingTactic {
 
     private boolean over_loop_limit(Integer node_hash) {
         return loop_unrolls.get(node_hash) > max_loop_unrolling;
+    }
+
+    @Override
+    public void setOption(String option_name, Object value) {
+        switch (option_name) {
+            case "max_loop_unrolling":
+                try {
+                    this.max_loop_unrolling = (Integer) value;
+                } catch (ClassCastException cce) {
+                    logger.warning("DepthSearchTactic: Wrong parameter type for option 'max_loop_unrolling' (Integer).");
+                }
+                break;
+            case "max_depth":
+                try {
+                    this.max_depth = (Integer) value;
+                } catch (ClassCastException cce) {
+                    logger.warning("DepthSearchTactic: Wrong parameter type for option 'max_depth' (Integer).");
+                }
+                break;
+            default:
+                logger.warning("DepthSearchTactic: Unknown option '" + option_name + "'.");
+        }
+    }
+
+    @Override
+    public Object getOption(String option_name) {
+        switch (option_name) {
+            case "max_loop_unrolling":
+                return this.max_loop_unrolling;
+            case "max_depth":
+                return this.max_depth;
+            default:
+                logger.warning("DepthSearchTactic: Unknown option '" + option_name + "'.");
+                return null;
+        }
     }
 }

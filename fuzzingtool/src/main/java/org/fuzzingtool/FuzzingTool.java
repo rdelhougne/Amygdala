@@ -27,6 +27,12 @@ public final class FuzzingTool extends TruffleInstrument {
     @Option(name = "errorIdentString", help = "String to identify the global error catch", category = OptionCategory.USER, stability = OptionStability.STABLE)
     static final OptionKey<String> optionErrorIdentString = new OptionKey<>("fuzzing_error");
 
+    @Option(name = "optionFile", help = "Path to fuzzing options yaml file", category = OptionCategory.USER, stability = OptionStability.STABLE)
+    static final OptionKey<String> optionOptionFile = new OptionKey<>("fuzzing.yaml");
+
+    @Option(name = "sourceCodeLineOffset", help = "The number of lines added by the preprocessing step", category = OptionCategory.USER, stability = OptionStability.STABLE)
+    static final OptionKey<Integer> optionSourceCodeLineOffset = new OptionKey<>(3);
+
     public static final String ID = "fuzzingtool";
 
     @Override
@@ -43,6 +49,14 @@ public final class FuzzingTool extends TruffleInstrument {
         final OptionValues options = env.getOptions();
         if (optionFuzzingEnabled.getValue(options)) {
             this.amygdala = new Amygdala(this.logger);
+
+            if (!options.hasBeenSet(optionOptionFile)) {
+                logger.critical("Option --fuzzingtool.optionFile=<String> has not been set, defaulting to 'fuzzing.yaml'.");
+            }
+            if (!options.hasBeenSet(optionSourceCodeLineOffset)) {
+                logger.critical("Option --fuzzingtool.sourceCodeLineOffset=<Integer> has not been set, defaulting to 3.");
+            }
+            this.amygdala.loadOptions(optionOptionFile.getValue(options), optionSourceCodeLineOffset.getValue(options));
 
             if (!options.hasBeenSet(optionLoopLineNum)) {
                 logger.critical("Option --fuzzingtool.mainLoopLineNumber=<Integer> has not been set, defaulting to 1.");

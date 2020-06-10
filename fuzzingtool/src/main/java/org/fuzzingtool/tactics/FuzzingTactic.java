@@ -1,4 +1,6 @@
 package org.fuzzingtool.tactics;
 
-public class FuzzingTactic {
+public abstract class FuzzingTactic {
+    public abstract void setOption(String option_name, Object value);
+    public abstract Object getOption(String option_name);
 }

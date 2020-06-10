@@ -1,4 +1,5 @@
-function factorial(n) {
+function factorial() {
+	var n = 5;
 	if (n < 0) {
 		return null;
 	}
@@ -20,6 +21,5 @@ function factorial(n) {
 	return v;
 }
 
-var k = 5;
-var res = factorial(k);
+var res = factorial();
 print("Fakultät: " + res);
