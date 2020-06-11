@@ -117,6 +117,11 @@
             <artifactId>z3</artifactId>
             <version>4.8.7</version>
         </dependency>
+        <dependency>
+            <groupId>com.amihaiemil.web</groupId>
+            <artifactId>eo-yaml</artifactId>
+            <version>4.3.5</version>
+        </dependency>
     </dependencies>
 
     <build>

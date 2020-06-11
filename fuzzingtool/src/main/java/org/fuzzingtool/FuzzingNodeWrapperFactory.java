@@ -35,6 +35,17 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
             visualized_counter += 1;
         }
 
+        final boolean create_nodeIsInputNode;
+        final VariableIdentifier create_inputVariableIdentifier;
+        if (ec.getInstrumentedNode() instanceof JSConstantNode) {
+            Pair<Boolean, VariableIdentifier> create_inputNodeConfiguration = amygdala.getInputNodeConfiguration(ec.getInstrumentedSourceSection().getStartLine());
+            create_nodeIsInputNode = create_inputNodeConfiguration.getLeft();
+            create_inputVariableIdentifier = create_inputNodeConfiguration.getRight();
+        } else {
+            create_nodeIsInputNode = false;
+            create_inputVariableIdentifier = null;
+        }
+
         return new ExecutionEventNode() {
             private final EventContext event_context = ec;
             private final SourceSection my_sourcesection = ec.getInstrumentedSourceSection();
@@ -42,6 +53,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
             private String node_type = my_node.getClass().getSimpleName();
             private int node_hash = my_node.hashCode();
             private boolean constraints_satisfied = calcConstraints();
+
+            //Input node config
+            private boolean isInputNode = create_nodeIsInputNode;
+            private VariableIdentifier inputVariableIdentifier = create_inputVariableIdentifier;
 
             protected boolean calcConstraints() {
                 return true;
@@ -330,16 +345,14 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                             amygdala.terminate_event();
 
                             // Hier wird entschieden ob ein weiterer Fuzzing-Durchlauf stattfindet
-                            throw this.event_context.createUnwind(amygdala.calculateNextPath()); // TODO evtl. rückgabe von terminate event nutzen, calculateNextPath dann intern
+                            throw this.event_context.createUnwind(amygdala.calculateNextPath());
                         }
                     }
                 }
-                if (my_sourcesection.getStartLine() == amygdala.input_line_num) {
-                    if (my_node instanceof JSConstantNode.JSConstantIntegerNode) {
-                        Integer next_int = (Integer) amygdala.getNextInputValue(new VariableIdentifier("n")); // TODO
-                        amygdala.logger.log("Iteration " + amygdala.getIterations() + ", next input value: " + next_int);
-                        throw this.event_context.createUnwind(next_int);
-                    }
+                if (this.isInputNode) {
+                    Object next_input = amygdala.getNextInputValue(this.inputVariableIdentifier);
+                    amygdala.logger.log("Next input value for variable " + this.inputVariableIdentifier.getIdentifierString() + ": " + next_input);
+                    throw this.event_context.createUnwind(next_input);
                 }
                 amygdala.tracer.add_constant(node_hash, LanguageSemantic.JAVASCRIPT, type, result);
             }

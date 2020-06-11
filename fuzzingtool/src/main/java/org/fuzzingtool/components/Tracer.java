@@ -22,8 +22,6 @@ public class Tracer {
 
     public Tracer(Logger l) {
         this.logger = l;
-
-        symbolic_frame.put("n", new SymbolicVariable(LanguageSemantic.JAVASCRIPT, new VariableIdentifier("n"), ExpressionType.NUMBER_INTEGER)); // TODO
     }
 
     /**
@@ -102,7 +100,6 @@ public class Tracer {
     public void clearAll() {
         interim_results.clear();
         symbolic_frame.clear();
-        symbolic_frame.put("n", new SymbolicVariable(LanguageSemantic.JAVASCRIPT, new VariableIdentifier("n"), ExpressionType.NUMBER_INTEGER)); // TODO
     }
 
     /**
