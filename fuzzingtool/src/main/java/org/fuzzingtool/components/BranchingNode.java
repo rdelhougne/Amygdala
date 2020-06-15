@@ -115,8 +115,8 @@ public class BranchingNode {
         return this.branchingNodeAttribute;
     }
 
-    public void setParent(BranchingNode pnode, Boolean flag) {
-        this.parentNode = pnode;
+    public void setParent(BranchingNode parent_node, Boolean flag) {
+        this.parentNode = parent_node;
         this.parentNodeTakenFlag = flag;
     }
 

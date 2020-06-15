@@ -22,7 +22,7 @@ import java.util.Map;
 
 /**
  * Central class for managing execution flow events and fuzzing attempts
- * The class is contructed as a state-machine. Methods like {@link #branching_event(Integer, BranchingNodeAttribute, Integer, Boolean, String)} modify said machine.
+ * The class is designed as a state-machine. Methods like {@link #branching_event(Integer, BranchingNodeAttribute, Integer, Boolean, String)} modify said machine.
  */
 public class Amygdala {
     public Tracer tracer;

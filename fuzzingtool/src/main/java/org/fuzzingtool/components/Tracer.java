@@ -64,7 +64,7 @@ public class Tracer {
     }
 
     /**
-     * This function reads a variable from the symbolic frame an transfers the variable to an intermidiate result.
+     * This function reads a variable from the symbolic frame an transfers the variable to an intermediate result.
      * This should only be used by read-operational nodes (e.g. JSReadCurrentFrameSlotNode)!
      *
      * @param variable_name Name of the symbolic variable in the current symbolic frame

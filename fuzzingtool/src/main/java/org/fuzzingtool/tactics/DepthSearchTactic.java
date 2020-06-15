@@ -57,8 +57,8 @@ public class DepthSearchTactic extends FuzzingTactic {
                     FuncDecl[] declarations = model.getConstDecls();
                     HashMap<VariableIdentifier, Object> variable_values = new HashMap<>();
                     for (FuncDecl d: declarations) {
-                        String dname = d.getName().toString();
-                        VariableIdentifier identifier = VariableIdentifier.fromString(dname);
+                        String declaration_name = d.getName().toString();
+                        VariableIdentifier identifier = VariableIdentifier.fromString(declaration_name);
                         Expr result = model.getConstInterp(d);
 
                         if (variable_types.containsKey(identifier)) {
