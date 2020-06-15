@@ -11,7 +11,7 @@ PROGRAM_DECL_PREFIX = """//--------------------------------Inputs---------------
 
 var input_number_integer = 5; // Input
 var input_number_real = 6.7; // Input
-var input_bigint = BigInt(9001); // Input
+//var input_bigint = BigInt(9001);
 var input_boolean = true; // Input
 var input_string = 'abc'; // Input
 
@@ -21,23 +21,32 @@ var const_null = null;
 var const_undefined = undefined;
 var const_nan = NaN;
 var const_pos_infinity = Infinity;
-var const_neg_infinity = -Infinity; //TODO
+var const_neg_infinity = -Infinity;
 var const_number_integer = 7;
 var const_number_real = 9.877;
-var const_bigint = BigInt(9001);
+//var const_bigint = BigInt(9001);
 var const_boolean = false;
 var const_string = 'halelulja';
 
-//------------------------------Conditions--------------------------------------"""
+//------------------------------Conditions--------------------------------------
+
+"""
 
 def generate_simple_expression(num_const):
 	return "print(" + generate_expression((0,0), (0,0), num_const) + ");"
 
-def generate_program(expression_length, num_expressions, use_vars=True):
-	func_string = generate_function(expression_length, num_expressions, use_vars)
+def generate_program(num_expressions, num_input_vars, num_const_vars, num_const):
+	program_str = PROGRAM_DECL_PREFIX
+	concrete_num_expressions = random.randint(num_expressions[0], num_expressions[1])
+	for exp_indx in range(concrete_num_expressions):
+		program_str += generate_if(num_input_vars, num_const_vars, num_const, f"Got me, {exp_indx}!")
+		program_str += "\n\n"
+	return program_str
 
-def generate_function(num_vars, num_const, num_expressions, use_vars):
-	pass
+def generate_if(num_input_vars, num_const_vars, num_const, print_str):
+	if_exp = f"if ({generate_expression(num_input_vars, num_const_vars, num_const)}) {{\n"
+	if_exp += f"\tprint('{print_str}');\n}}"
+	return if_exp
 
 def generate_expression(num_input_vars, num_const_vars, num_const):
 	concrete_num_input_vars = random.randint(num_input_vars[0], num_input_vars[1])

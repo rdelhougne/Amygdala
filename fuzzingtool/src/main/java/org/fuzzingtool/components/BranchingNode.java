@@ -11,7 +11,6 @@ import org.fuzzingtool.symbolic.logical.Not;
 import org.graalvm.collections.Pair;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 public class BranchingNode {
     /**
@@ -129,6 +128,36 @@ public class BranchingNode {
         this.source_code_expression = source_code_expression;
     }
 
+    public boolean isUndecidable() {
+        return isUndecidable;
+    }
+
+    public void setUndecidable() {
+        this.isUndecidable = true;
+
+        if (childNodeTaken != null) {
+            childNodeTaken.setUndecidable();
+        }
+        if (childNodeNotTaken != null) {
+            childNodeNotTaken.setUndecidable();
+        }
+    }
+
+    public boolean isExplored() {
+        return isExplored;
+    }
+
+    public void setExplored() {
+        this.isExplored = true;
+
+        if (childNodeTaken != null) {
+            childNodeTaken.setExplored();
+        }
+        if (childNodeNotTaken != null) {
+            childNodeNotTaken.setExplored();
+        }
+    }
+
     public String getSourceCodeExpression() {
         return this.source_code_expression;
     }
@@ -184,8 +213,8 @@ public class BranchingNode {
                 my_expr.add(getLocalSMTExpression(taken_flag));
                 return my_expr;
             }
-        } catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize | SymbolicException.NotImplemented incompatibleType) {
-            incompatibleType.printStackTrace();
+        } catch (SymbolicException.WrongParameterSize | SymbolicException.NotImplemented ex) {
+            ex.printStackTrace();
         }
         return null;
     }
@@ -227,7 +256,7 @@ public class BranchingNode {
         }
     }
 
-    public String getLocalSMTExpression(Boolean taken) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize, SymbolicException.NotImplemented {
+    public String getLocalSMTExpression(Boolean taken) throws SymbolicException.WrongParameterSize, SymbolicException.NotImplemented {
         if (taken) {
             return this.symbolic_expression.toSMTExpr();
         } else {

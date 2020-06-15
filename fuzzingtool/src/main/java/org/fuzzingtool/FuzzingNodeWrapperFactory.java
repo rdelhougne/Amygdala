@@ -46,27 +46,25 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
             create_inputVariableIdentifier = null;
         }
 
+        final boolean create_nodeIsMainLoopInputNode;
+        if (ec.getInstrumentedSourceSection() != null && ec.getInstrumentedSourceSection().isAvailable()) {
+            String source_code_line = ec.getInstrumentedSourceSection().getSource().getCharacters(amygdala.main_loop_line_num).toString();
+            create_nodeIsMainLoopInputNode = ec.getInstrumentedNode() instanceof JSConstantNode && ec.getInstrumentedSourceSection().getStartLine() == amygdala.main_loop_line_num && source_code_line.contains(amygdala.main_loop_identifier_string);
+        } else {
+            create_nodeIsMainLoopInputNode = false;
+        }
+
         return new ExecutionEventNode() {
             private final EventContext event_context = ec;
             private final SourceSection my_sourcesection = ec.getInstrumentedSourceSection();
             private Node my_node = ec.getInstrumentedNode();
             private String node_type = my_node.getClass().getSimpleName();
             private int node_hash = my_node.hashCode();
-            private boolean constraints_satisfied = calcConstraints();
 
             //Input node config
             private boolean isInputNode = create_nodeIsInputNode;
             private VariableIdentifier inputVariableIdentifier = create_inputVariableIdentifier;
-
-            protected boolean calcConstraints() {
-                return true;
-                /*Scope scope = env.findLocalScopes(my_node, null).iterator().next();
-                boolean scope_constraint_satisfied = false;
-                if (scope != null && scope.getName().equals("factorial")) { // TODO
-                    scope_constraint_satisfied = true;
-                }
-                return scope_constraint_satisfied;*/
-            }
+            private boolean isMainLoopInputNode = create_nodeIsMainLoopInputNode;
 
             protected String getSignature() {
                 String node_type_padded = String.format("%1$-" + 36 + "s", node_type);
@@ -86,129 +84,138 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
             @Override
             protected void onEnter(VirtualFrame vFrame) {
-                //amygdala.logger.log(getSignature() + " \033[32m→\033[0m");
+                amygdala.logger.log(getSignature() + " \033[32m→\033[0m");
 
-                if (constraints_satisfied) {
-                    switch (node_type) { // TODO big time
-                        case "Call1Node":
-                            onEnterBehaviorCallNode(vFrame);
-                            break;
-                        default:
-                            onEnterBehaviorDefault(vFrame);
+                switch (node_type) {
+                    case "Call1Node":
+                        onEnterBehaviorCallNode(vFrame);
+                        break;
+                    default:
+                        onEnterBehaviorDefault(vFrame);
+                }
+                /*highlight("Entering vFrame: " + vFrame);
+
+                Node n = ec.getInstrumentedNode();
+                Iterable<Scope> a = env.findLocalScopes(n, vFrame);
+                if (a != null) {
+                    for (Scope s : env.findLocalScopes(n, vFrame)) {
+                        try {
+                            highlight("Local: " + s.getName());
+                            Object args = s.getArguments();
+                        } catch (java.lang.Exception ex) {
+                            ex.printStackTrace();
+                            outStream.println("not good");
+                        }
                     }
                 }
-                    /*highlight("Entering vFrame: " + vFrame);
 
-                    Node n = ec.getInstrumentedNode();
-                    Iterable<Scope> a = env.findLocalScopes(n, vFrame);
-                    if (a != null) {
-                        for (Scope s : env.findLocalScopes(n, vFrame)) {
-                            try {
-                                highlight("Local: " + s.getName());
-                                Object args = s.getArguments();
-                            } catch (java.lang.Exception ex) {
-                                ex.printStackTrace();
-                                outStream.println("not good");
-                            }
+                a = env.findTopScopes("js");
+                if (a != null) {
+                    for (Scope s : env.findLocalScopes(n, vFrame)) {
+                        try {
+                            highlight("Global:" + s.getName());
+                            Object args = s.getArguments();
+                        } catch (java.lang.Exception ex) {
+                            ex.printStackTrace();
+                            outStream.println("not good");
                         }
                     }
-
-                    a = env.findTopScopes("js");
-                    if (a != null) {
-                        for (Scope s : env.findLocalScopes(n, vFrame)) {
-                            try {
-                                highlight("Global:" + s.getName());
-                                Object args = s.getArguments();
-                            } catch (java.lang.Exception ex) {
-                                ex.printStackTrace();
-                                outStream.println("not good");
-                            }
-                        }
-                    }*/
+                }*/
             }
 
             @Override
             protected void onInputValue(VirtualFrame vFrame, EventContext inputContext, int inputIndex, Object inputValue) {
-                //amygdala.logger.log(getSignature() + " \033[34m•\033[0m");
+                amygdala.logger.log(getSignature() + " \033[34m•\033[0m");
 
-                if (constraints_satisfied) {
-                    switch (node_type) { // TODO big time
-                        case "IfNode":
-                            onInputValueBehaviorIfNode(vFrame, inputContext, inputIndex, inputValue);
-                            break;
-                        case "WhileNode":
-                            onInputValueBehaviorWhileNode(vFrame, inputContext, inputIndex, inputValue);
-                            break;
-                        default:
-                            onInputValueBehaviorDefault(vFrame, inputContext, inputIndex, inputValue);
-                    }
+                switch (node_type) {
+                    case "IfNode":
+                        onInputValueBehaviorIfNode(vFrame, inputContext, inputIndex, inputValue);
+                        break;
+                    case "WhileNode":
+                        onInputValueBehaviorWhileNode(vFrame, inputContext, inputIndex, inputValue);
+                        break;
+                    default:
+                        onInputValueBehaviorDefault(vFrame, inputContext, inputIndex, inputValue);
                 }
             }
 
             @Override
             public void onReturnValue(VirtualFrame vFrame, Object result) {
-                //amygdala.logger.log(getSignature() + " \033[31m↵\033[0m");
+                amygdala.logger.log(getSignature() + " \033[31m↵\033[0m");
 
-                if (constraints_satisfied) {
-                    try {
-                        switch (node_type) { // TODO big time
-                            // ===== JavaScript Read/Write =====
-                            case "JSReadCurrentFrameSlotNodeGen":
-                                onReturnBehaviorJSReadCurrentFrameSlotNodeGen(vFrame, result);
-                                break;
-                            case "JSWriteCurrentFrameSlotNodeGen":
-                                onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(vFrame, result);
-                                break;
+                try {
+                    switch (node_type) { // TODO big time
+                        // ===== JavaScript Read/Write =====
+                        case "JSReadCurrentFrameSlotNodeGen":
+                            onReturnBehaviorJSReadCurrentFrameSlotNodeGen(vFrame, result);
+                            break;
+                        case "JSWriteCurrentFrameSlotNodeGen":
+                            onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(vFrame, result);
+                            break;
+                        case "WritePropertyNode":
+                            onReturnBehaviorWritePropertyNode(vFrame, result);
+                            break;
+                        case "GlobalObjectNode":
+                            onReturnBehaviorGlobalObjectNode(vFrame, result);
+                            break;
 
-                            // ===== JavaScript Arithmetic Nodes =====
-                            case "JSAddNodeGen":
-                                onReturnBehaviorBinaryOperation(vFrame, result, Operation.ADDITION);
-                                break;
-                            case "JSSubtractNodeGen":
-                                onReturnBehaviorBinaryOperation(vFrame, result, Operation.SUBTRACTION);
-                                break;
-                            case "JSMultiplyNodeGen":
-                                onReturnBehaviorBinaryOperation(vFrame, result, Operation.MULTIPLICATION);
-                                break;
-                            case "JSDivisionNodeGen": // TODO richtiger Name?
-                                onReturnBehaviorBinaryOperation(vFrame, result, Operation.DIVISION);
-                                break;
-
-
-                            // ===== JavaScript Constant Nodes =====
-                            case "JSConstantBooleanNode":
-                                onReturnBehaviorConstant(vFrame, result, ExpressionType.BOOLEAN);
-                                break;
-                            case "JSConstantIntegerNode":
-                                onReturnBehaviorConstant(vFrame, result, ExpressionType.NUMBER_INTEGER);
-                                break;
-                            case "JSConstantStringNode":
-                                onReturnBehaviorConstant(vFrame, result, ExpressionType.STRING);
-                                break;
-                            case "JSConstantNullNode":
-                                onReturnBehaviorConstant(vFrame, result, ExpressionType.NULL);
-                                break;
+                        // ===== JavaScript Arithmetic Nodes =====
+                        case "JSAddNodeGen":
+                            onReturnBehaviorBinaryOperation(vFrame, result, Operation.ADDITION);
+                            break;
+                        case "JSSubtractNodeGen":
+                            onReturnBehaviorBinaryOperation(vFrame, result, Operation.SUBTRACTION);
+                            break;
+                        case "JSMultiplyNodeGen":
+                            onReturnBehaviorBinaryOperation(vFrame, result, Operation.MULTIPLICATION);
+                            break;
+                        case "JSDivideNodeGen": // TODO richtiger Name?
+                            onReturnBehaviorBinaryOperation(vFrame, result, Operation.DIVISION);
+                            break;
 
 
-                            // ===== JavaScript Logic Nodes =====
-                            case "JSLessThanNodeGen":
-                                onReturnBehaviorBinaryOperation(vFrame, result, Operation.LESS_THAN);
-                                break;
-                            case "JSEqualNodeGen":
-                                onReturnBehaviorBinaryOperation(vFrame, result, Operation.EQUAL);
-                                break;
-                            case "JSAndNode":
-                                onReturnBehaviorBinaryOperation(vFrame, result, Operation.AND);
-                                break;
-                            case "JSNotNodeGen":
-                                onReturnBehaviorUnaryOperation(vFrame, result, Operation.NOT);
-                                break;
-                            default:
-                                onReturnBehaviorDefault(vFrame, result);
-                        }
-                    } catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize ex) {
-                        amygdala.logger.alert(ex.getMessage());
+                        // ===== JavaScript Constant Nodes =====
+                        case "JSConstantBooleanNode":
+                            onReturnBehaviorConstant(vFrame, result, ExpressionType.BOOLEAN);
+                            break;
+                        case "JSConstantIntegerNode":
+                            onReturnBehaviorConstant(vFrame, result, ExpressionType.NUMBER_INTEGER);
+                            break;
+                        case "JSConstantDoubleNode":
+                            onReturnBehaviorConstant(vFrame, result, ExpressionType.NUMBER_REAL);
+                            break;
+                        case "JSConstantStringNode":
+                            onReturnBehaviorConstant(vFrame, result, ExpressionType.STRING);
+                            break;
+                        case "JSConstantNullNode":
+                            onReturnBehaviorConstant(vFrame, result, ExpressionType.NULL);
+                            break;
+                        case "JSConstantUndefinedNode":
+                            onReturnBehaviorConstant(vFrame, result, ExpressionType.UNDEFINED);
+                            break;
+
+
+                        // ===== JavaScript Logic Nodes =====
+                        case "JSLessThanNodeGen":
+                            onReturnBehaviorBinaryOperation(vFrame, result, Operation.LESS_THAN);
+                            break;
+                        case "JSGreaterThanNodeGen":
+                            onReturnBehaviorBinaryOperation(vFrame, result, Operation.GREATER_THAN);
+                            break;
+                        case "JSEqualNodeGen":
+                            onReturnBehaviorBinaryOperation(vFrame, result, Operation.EQUAL);
+                            break;
+                        case "JSAndNode":
+                            onReturnBehaviorBinaryOperation(vFrame, result, Operation.AND);
+                            break;
+                        case "JSNotNodeGen":
+                            onReturnBehaviorUnaryOperation(vFrame, result, Operation.NOT);
+                            break;
+                        default:
+                            onReturnBehaviorDefault(vFrame, result);
                     }
+                } catch (SymbolicException.WrongParameterSize ex) {
+                    amygdala.logger.alert(ex.getMessage());
                 }
             }
 
@@ -309,6 +316,22 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                 ArrayList<Pair<Integer, String>> child = getChildHashes();
                 assert child.size() == 1;
 
+                amygdala.tracer.write_interim_to_frame(child.get(0).getLeft(), get_variable_name());
+            }
+
+            public void onReturnBehaviorGlobalObjectNode(VirtualFrame vFrame, Object result) {
+                String variable_name = my_sourcesection.getCharacters().toString();
+                amygdala.tracer.read_frame_to_interim(variable_name, node_hash);
+            }
+
+            public void onReturnBehaviorWritePropertyNode(VirtualFrame vFrame, Object result) {
+                ArrayList<Pair<Integer, String>> child = getChildHashes();
+                assert child.size() >= 2;
+
+                amygdala.tracer.write_interim_to_frame(child.get(1).getLeft(), get_variable_name());
+            }
+
+            private String get_variable_name() {
                 String source = my_sourcesection.getCharacters().toString(); // TODO Benennung
                 String[] splitted = source.split("=");
                 String target = splitted[0].trim();
@@ -316,20 +339,19 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                     target = target.substring(4);
                 }
                 target = target.replace(" ", "");
-
-                amygdala.tracer.write_interim_to_frame(child.get(0).getLeft(), target);
+                return target;
             }
 
             // ===== JavaScript General Nodes =====
 
-            public void onReturnBehaviorBinaryOperation(VirtualFrame vFrame, Object result, Operation op) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+            public void onReturnBehaviorBinaryOperation(VirtualFrame vFrame, Object result, Operation op) throws SymbolicException.WrongParameterSize {
                 ArrayList<Pair<Integer, String>> children = getChildHashes();
                 assert children.size() == 2;
                 amygdala.tracer.add_operation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft(), children.get(1).getLeft());
                 invalidate_interim(children);
             }
 
-            public void onReturnBehaviorUnaryOperation(VirtualFrame vFrame, Object result, Operation op) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+            public void onReturnBehaviorUnaryOperation(VirtualFrame vFrame, Object result, Operation op) throws SymbolicException.WrongParameterSize {
                 ArrayList<Pair<Integer, String>> children = getChildHashes();
                 assert children.size() == 1;
                 amygdala.tracer.add_operation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft());
@@ -337,24 +359,22 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
             }
 
             public void onReturnBehaviorConstant(VirtualFrame vFrame, Object result, ExpressionType type) {
-                if (type == ExpressionType.BOOLEAN && my_sourcesection.getStartLine() == amygdala.main_loop_line_num) {
-                    String source_code_line = my_sourcesection.getSource().getCharacters(amygdala.main_loop_line_num).toString();
-                    if (source_code_line.contains(amygdala.main_loop_identifier_string)) {
-                        if (!amygdala.isFirstRun()) {
-                            // An diesem Punkt ist das Programm eigentlich beendet, wird aber jetzt neu gestartet.
-                            amygdala.terminate_event();
+                if (this.isMainLoopInputNode) {
+                    if (!amygdala.isFirstRun()) {
+                        // An diesem Punkt ist das Programm eigentlich beendet, wird aber jetzt neu gestartet.
+                        amygdala.terminate_event();
 
-                            // Hier wird entschieden ob ein weiterer Fuzzing-Durchlauf stattfindet
-                            throw this.event_context.createUnwind(amygdala.calculateNextPath());
-                        }
+                        // Hier wird entschieden ob ein weiterer Fuzzing-Durchlauf stattfindet
+                        throw this.event_context.createUnwind(amygdala.calculateNextPath());
                     }
-                }
-                if (this.isInputNode) {
+                } else if (this.isInputNode) {
                     Object next_input = amygdala.getNextInputValue(this.inputVariableIdentifier);
                     amygdala.logger.log("Next input value for variable " + this.inputVariableIdentifier.getIdentifierString() + ": " + next_input);
+                    amygdala.tracer.add_constant(node_hash, LanguageSemantic.JAVASCRIPT, type, next_input);
                     throw this.event_context.createUnwind(next_input);
+                } else {
+                    amygdala.tracer.add_constant(node_hash, LanguageSemantic.JAVASCRIPT, type, result);
                 }
-                amygdala.tracer.add_constant(node_hash, LanguageSemantic.JAVASCRIPT, type, result);
             }
         };
     }

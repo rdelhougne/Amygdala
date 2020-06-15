@@ -118,9 +118,10 @@
             <version>4.8.7</version>
         </dependency>
         <dependency>
-            <groupId>com.amihaiemil.web</groupId>
-            <artifactId>eo-yaml</artifactId>
-            <version>4.3.5</version>
+            <groupId>org.snakeyaml</groupId>
+            <artifactId>snakeyaml-engine</artifactId>
+            <version>2.1</version>
+            <!--<type>bundle</type>-->
         </dependency>
     </dependencies>
 

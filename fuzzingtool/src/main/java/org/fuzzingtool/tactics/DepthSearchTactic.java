@@ -9,7 +9,6 @@ import org.fuzzingtool.symbolic.ExpressionType;
 import org.fuzzingtool.symbolic.SymbolicException;
 
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class DepthSearchTactic extends FuzzingTactic {
     BranchingNode root_node;
@@ -41,9 +40,11 @@ public class DepthSearchTactic extends FuzzingTactic {
                     expr = new_target.getSymbolicPathZ3Expression(ctx);
                 } catch (SymbolicException.NotImplemented ni) {
                     logger.warning(ni.getMessage());
+                    new_target.setUndecidable();
                     continue;
                 } catch (SymbolicException.UndecidableExpression ue) {
                     logger.info(ue.getMessage());
+                    new_target.setUndecidable();
                     continue;
                 } catch (SymbolicException.WrongParameterSize wrongParameterSize) {
                     wrongParameterSize.printStackTrace();
@@ -53,7 +54,7 @@ public class DepthSearchTactic extends FuzzingTactic {
                 s.add(expr);
                 if (s.check() == Status.SATISFIABLE) {
                     Model model = s.getModel();
-                    FuncDecl declarations[] = model.getConstDecls();
+                    FuncDecl[] declarations = model.getConstDecls();
                     HashMap<VariableIdentifier, Object> variable_values = new HashMap<>();
                     for (FuncDecl d: declarations) {
                         String dname = d.getName().toString();
@@ -112,6 +113,14 @@ public class DepthSearchTactic extends FuzzingTactic {
                 decrement_loop(current_node.getNodeHash());
                 return null;
             }
+        }
+
+        if (current_node.isUndecidable()) {
+            return null;
+        }
+
+        if (current_node.isExplored()) {
+            return null;
         }
 
         BranchingNodeAttribute node_type = current_node.getBranchingNodeAttribute();

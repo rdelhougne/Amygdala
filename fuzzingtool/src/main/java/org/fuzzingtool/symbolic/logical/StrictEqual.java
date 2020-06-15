@@ -50,7 +50,7 @@ public class StrictEqual extends SymbolicNode {
         return sameValueNonNumericZ3JS(ctx, x, y);
     }
 
-    public static boolean typeEquality(Pair<Expr, ExpressionType> x, Pair<Expr, ExpressionType> y) throws SymbolicException.UndecidableExpression {
+    public static boolean typeEquality(Pair<Expr, ExpressionType> x, Pair<Expr, ExpressionType> y) {
         switch (x.getRight()) {
             case BOOLEAN:
                 return y.getRight() == ExpressionType.BOOLEAN;
@@ -93,7 +93,7 @@ public class StrictEqual extends SymbolicNode {
      * @param y right-side Parameter
      * @return Always ExpressionType.BOOLEAN
      */
-    public static Pair<Expr, ExpressionType> sameValueNonNumericZ3JS(Context ctx, Pair<Expr, ExpressionType> x, Pair<Expr, ExpressionType> y) throws SymbolicException.UndecidableExpression, SymbolicException.NotImplemented {
+    public static Pair<Expr, ExpressionType> sameValueNonNumericZ3JS(Context ctx, Pair<Expr, ExpressionType> x, Pair<Expr, ExpressionType> y) throws SymbolicException.NotImplemented {
         assert x.getRight() != ExpressionType.BIGINT;
         assert x.getRight() != ExpressionType.NUMBER_INTEGER;
         assert x.getRight() != ExpressionType.NUMBER_REAL;

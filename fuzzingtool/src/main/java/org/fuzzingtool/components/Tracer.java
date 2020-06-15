@@ -40,10 +40,11 @@ public class Tracer {
      */
     public SymbolicNode get_interim(Integer node_id) {
         if (interim_results.containsKey(node_id)) {
+            assert interim_results.get(node_id) != null;
             return interim_results.get(node_id);
         } else {
+            logger.warning("Tracer::get_interim(): Cannot get interim results for hash " + node_id);
             return null;
-            // TODO Exception
         }
     }
 
@@ -58,7 +59,7 @@ public class Tracer {
         if (interim_results.containsKey(old_interim_result)) {
             interim_results.put(new_node_id, interim_results.get(old_interim_result));
         } else {
-            //alert("onReturnBehaviorDefault()"); // TODO Exception
+            //logger.debug("pass_through_interim(): No interim result for key " + old_interim_result);
         }
     }
 
@@ -74,7 +75,7 @@ public class Tracer {
             interim_results.put(to_node, symbolic_frame.get(variable_name));
         } else {
             // TODO Typbestimmung oder Exception! Es wird versucht eine Variable zu lesen die nicht existiert! Oder nachschauen ob sie existiert...
-            interim_results.put(to_node, new SymbolicVariable(LanguageSemantic.JAVASCRIPT, new VariableIdentifier(variable_name), ExpressionType.NUMBER_INTEGER));
+            logger.critical("Tracer::read_frame_to_interim(): Symbolic frame does not contain key '" + variable_name + "'");
         }
     }
 
@@ -89,7 +90,7 @@ public class Tracer {
         if (interim_results.containsKey(from_node)) {
             symbolic_frame.put(variable_name, interim_results.get(from_node));
         } else {
-            //alert("onReturnBehaviorJSWriteCurrentFrameSlotNodeGen()"); // TODO Exception
+            logger.critical("Tracer::write_interim_to_frame(): No interim result for key " + from_node);
         }
     }
 
@@ -109,10 +110,9 @@ public class Tracer {
      * @param op ExpressionType of Operation, see {@link Operation} for all available operation types
      * @param node_source_a Left-hand operator
      * @param node_source_b Right-hand operator
-     * @throws SymbolicException.IncompatibleType
      * @throws SymbolicException.WrongParameterSize
      */
-    public void add_operation(Integer node_target, LanguageSemantic s, Operation op, Integer node_source_a, Integer node_source_b) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+    public void add_operation(Integer node_target, LanguageSemantic s, Operation op, Integer node_source_a, Integer node_source_b) throws SymbolicException.WrongParameterSize {
         if (interim_results.containsKey(node_source_a) && interim_results.containsKey(node_source_b)) {
             SymbolicNode a = interim_results.get(node_source_a);
             SymbolicNode b = interim_results.get(node_source_b);
@@ -151,10 +151,16 @@ public class Tracer {
                     interim_results.put(node_target, new LessThan(s, a, b));
                     break;
                 default:
-                    // TODO exception
+                    logger.critical("Tracer::add_operation(): Unknown operation " + op.toString());
             }
         } else {
-            // TODO Exception
+            if (!interim_results.containsKey(node_source_a) && !interim_results.containsKey(node_source_b)) {
+                logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() + " but interim result from " + node_source_a + " and " + node_source_b + " does not exist");
+            } else if (!interim_results.containsKey(node_source_a)) {
+                logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() + " but interim result from " + node_source_a + " does not exist");
+            } else {
+                logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() + " but interim result from " + node_source_b + " does not exist");
+            }
         }
     }
 
@@ -164,10 +170,9 @@ public class Tracer {
      * @param node_target Node-hash of the new interim result
      * @param op ExpressionType of Operation, see {@link Operation} for all available operation types
      * @param node_source child operator
-     * @throws SymbolicException.IncompatibleType
      * @throws SymbolicException.WrongParameterSize
      */
-    public void add_operation(Integer node_target, LanguageSemantic s, Operation op, Integer node_source) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize {
+    public void add_operation(Integer node_target, LanguageSemantic s, Operation op, Integer node_source) throws SymbolicException.WrongParameterSize {
         if (interim_results.containsKey(node_source)) {
             SymbolicNode k = interim_results.get(node_source);
             switch (op) {
@@ -175,10 +180,10 @@ public class Tracer {
                     interim_results.put(node_target, new Not(s, k));
                     break;
                 default:
-                    // TODO Exception
+                    logger.critical("Tracer::add_operation(): Unknown operation " + op.toString());
             }
         } else {
-            // TODO Exception
+            logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() + " but interim result from " + node_source + " does not exist");
         }
     }
 
@@ -195,6 +200,20 @@ public class Tracer {
             interim_results.put(node_target, new SymbolicConstant(s, t, v));
         } catch (SymbolicException.IncompatibleType incompatibleType) {
             logger.critical(incompatibleType.getMessage());
+        }
+    }
+
+    public void initialize_program_context(LanguageSemantic sem) {
+        if (sem == LanguageSemantic.JAVASCRIPT) {
+            // Initialize JavaScript global objects
+            try {
+                symbolic_frame.put("NaN", new SymbolicConstant(sem, ExpressionType.NUMBER_NAN, null));
+                symbolic_frame.put("Infinity", new SymbolicConstant(sem, ExpressionType.NUMBER_POS_INFINITY, null));
+            } catch (SymbolicException.IncompatibleType incompatibleType) {
+                logger.critical("Tracer::initialize_program_context(): Cannot initialize JavaScript program context");
+            }
+        } else {
+            logger.warning("Tracer::initialize_program_context(): Cannot initialize context with semantic '" + sem.toString() + "'");
         }
     }
 }

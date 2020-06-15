@@ -1,6 +1,5 @@
 package org.fuzzingtool.symbolic.logical;
 
-import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;

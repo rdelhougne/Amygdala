@@ -9,8 +9,6 @@ import org.fuzzingtool.symbolic.SymbolicException;
 import org.fuzzingtool.symbolic.SymbolicNode;
 import org.graalvm.collections.Pair;
 
-import java.util.HashSet;
-
 public class SymbolicVariable extends SymbolicNode {
     private VariableIdentifier identifier;
     private ExpressionType variableType;

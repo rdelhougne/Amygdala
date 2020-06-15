@@ -15,19 +15,19 @@ public class Logger {
     }
 
     public void debug(String msg) {
-        outStream.println("[DEBUG] " + msg);
+        outStream.println("\033[35m[DEBUG]\033[0m " + msg);
     }
 
     public void info(String msg) {
-        outStream.println("[INFO] " + msg);
+        outStream.println("\033[34m[INFO]\033[0m " + msg);
     }
 
     public void warning(String msg) {
-        outStream.println("[WARNING] " + msg);
+        outStream.println("\033[33m[WARNING]\033[0m " + msg);
     }
 
     public void critical(String msg) {
-        outStream.println("[CRITICAL] " + msg);
+        outStream.println("\033[31m[CRITICAL]\033[0m " + msg);
     }
 
     public void alert(String msg) {

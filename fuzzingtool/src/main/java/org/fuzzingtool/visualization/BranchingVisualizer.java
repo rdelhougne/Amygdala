@@ -57,21 +57,36 @@ public class BranchingVisualizer {
     }
 
     private Label getNodeContents(BranchingNode node) {
+        String label_string;
         switch (node.getBranchingNodeAttribute()) {
             case BRANCH:
-                return Label.of("BRANCH: " + node.getSourceCodeExpression());
+                label_string = "BRANCH: " + node.getSourceCodeExpression();
+                break;
             case LOOP:
-                return Label.of("LOOP: " + node.getSourceCodeExpression());
+                label_string = "LOOP: " + node.getSourceCodeExpression();
+                break;
             case UNKNOWN:
-                return Label.of("UNKNOWN");
+                label_string = "UNKNOWN";
+                break;
             case UNREACHABLE:
-                return Label.of("UNREACHABLE");
+                label_string = "UNREACHABLE";
+                break;
             case TERMINATE:
-                return Label.of("TERMINATE");
+                label_string = "TERMINATE";
+                break;
             case ERROR:
-                return Label.of("ERROR");
+                label_string = "ERROR";
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + node.getBranchingNodeAttribute());
         }
-        return Label.of("!VISUALIZING ERROR!");
+        if (node.isUndecidable()) {
+            label_string += " ↯";
+        }
+        if (node.isExplored()) {
+            label_string += " ↺";
+        }
+        return Label.of(label_string);
     }
 
     private void setNodeAttributes(MutableNode mut_node, BranchingNodeAttribute node_type) {
