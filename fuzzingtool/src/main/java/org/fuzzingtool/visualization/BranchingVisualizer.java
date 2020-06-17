@@ -4,9 +4,11 @@ import guru.nidi.graphviz.attribute.*;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.engine.GraphvizCmdLineEngine;
+import guru.nidi.graphviz.engine.GraphvizException;
 import guru.nidi.graphviz.model.Link;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
+import org.fuzzingtool.Logger;
 import org.fuzzingtool.components.BranchingNode;
 import org.fuzzingtool.components.BranchingNodeAttribute;
 
@@ -19,7 +21,10 @@ import static guru.nidi.graphviz.model.Factory.mutNode;
 public class BranchingVisualizer {
     private MutableGraph vis_graph = mutGraph("Program Decision Flow Visualization").setDirected(true);
 
-    public BranchingVisualizer(BranchingNode node) {
+    private final Logger logger;
+
+    public BranchingVisualizer(BranchingNode node, Logger l) {
+        this.logger = l;
         vis_graph.nodeAttrs().add(Font.name("Ubuntu"));
         String visualization_node_name = String.valueOf(node.hashCode());
         MutableNode root = mutNode(visualization_node_name).add(getNodeContents(node));
@@ -31,10 +36,12 @@ public class BranchingVisualizer {
     public void save_image(String path) {
         Graphviz.useEngine(new GraphvizCmdLineEngine());
         try {
+            logger.info("Saving branching-visualization to file '" + path + ".svg'");
             Graphviz.fromGraph(vis_graph).render(Format.SVG).toFile(new File(path + ".svg"));
             //Graphviz.fromGraph(vis_graph).render(Format.DOT).toFile(new File(path + ".dot"));
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (GraphvizException | IOException ex) {
+            logger.critical("Cannot save branching-visualization to file '" + path + ".svg'");
+            logger.log(ex.getMessage());
         }
     }
 

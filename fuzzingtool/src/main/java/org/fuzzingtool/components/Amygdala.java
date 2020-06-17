@@ -249,7 +249,7 @@ public class Amygdala {
      * @param path Filepath of the .svg file
      */
     public void visualizeProgramFlow(String path) {
-        BranchingVisualizer bv = new BranchingVisualizer(branchingRootNode);
+        BranchingVisualizer bv = new BranchingVisualizer(branchingRootNode, this.logger);
         bv.save_image(path);
     }
 

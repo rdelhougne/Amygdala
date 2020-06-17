@@ -34,7 +34,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
     public ExecutionEventNode create(final EventContext ec) {
         if (ec.getInstrumentedNode().getClass().getSimpleName().equals("MaterializedFunctionBodyNode")) {
-            ASTVisualizer av = new ASTVisualizer(ec.getInstrumentedNode());
+            ASTVisualizer av = new ASTVisualizer(ec.getInstrumentedNode(), amygdala.logger);
             av.save_image(Paths.get(".").toAbsolutePath().normalize().toString() + "/function_visualization_" + visualized_counter);
             visualized_counter += 1;
         }

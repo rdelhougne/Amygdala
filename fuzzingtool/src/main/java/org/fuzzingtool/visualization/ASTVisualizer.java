@@ -7,10 +7,12 @@ import guru.nidi.graphviz.attribute.*;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.engine.GraphvizCmdLineEngine;
+import guru.nidi.graphviz.engine.GraphvizException;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
 
 import org.apache.commons.text.StringEscapeUtils;
+import org.fuzzingtool.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +22,10 @@ import static guru.nidi.graphviz.model.Factory.*;
 public class ASTVisualizer {
     private MutableGraph vis_graph = mutGraph("AST Visualization").setDirected(true);
 
-    public ASTVisualizer(Node root_node) {
+    private final Logger logger;
+
+    public ASTVisualizer(Node root_node, Logger l) {
+        this.logger = l;
         vis_graph.graphAttrs().add("splines", "ortho");
         vis_graph.graphAttrs().add("nodesep", 0.5);
         vis_graph.graphAttrs().add("ordering", "out");
@@ -39,10 +44,12 @@ public class ASTVisualizer {
     public void save_image(String path) {
         Graphviz.useEngine(new GraphvizCmdLineEngine());
         try {
+            logger.info("Saving AST-visualization to file '" + path + ".svg'");
             Graphviz.fromGraph(vis_graph).render(Format.SVG).toFile(new File(path + ".svg"));
             //Graphviz.fromGraph(vis_graph).render(Format.DOT).toFile(new File(path + ".dot"));
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (GraphvizException | IOException ex) {
+            logger.critical("Cannot save AST-visualization to file '" + path + ".svg'");
+            logger.log(ex.getMessage());
         }
     }
 

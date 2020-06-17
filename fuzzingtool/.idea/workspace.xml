@@ -7,9 +7,8 @@
   <component name="ChangeListManager">
     <list default="true" id="7937b683-e266-4626-b31f-f2e51fd3d190" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingTool.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingTool.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/Logger.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/Logger.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Amygdala.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Amygdala.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/visualization/ASTVisualizer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/visualization/ASTVisualizer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/visualization/BranchingVisualizer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/visualization/BranchingVisualizer.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -176,7 +175,7 @@
       <workItem from="1592046587647" duration="5544000" />
       <workItem from="1592145211429" duration="3803000" />
       <workItem from="1592216842108" duration="8348000" />
-      <workItem from="1592389264709" duration="8755000" />
+      <workItem from="1592389264709" duration="11549000" />
     </task>
     <servers />
   </component>
@@ -209,31 +208,31 @@
       <screen x="1280" y="0" width="1920" height="1080" />
     </state>
     <state x="2023" y="297" width="424" height="479" key="FileChooserDialogImpl/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667287807" />
-    <state width="1238" height="397" key="GridCell.Tab.0.bottom" timestamp="1592402188669">
+    <state width="1238" height="397" key="GridCell.Tab.0.bottom" timestamp="1592405029541">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="397" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592402188669" />
+    <state width="1238" height="397" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592405029541" />
     <state width="1878" height="397" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592226755637" />
     <state width="1878" height="380" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1591031145450" />
     <state width="1878" height="644" key="GridCell.Tab.0.bottom/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
-    <state width="1238" height="397" key="GridCell.Tab.0.center" timestamp="1592402188669">
+    <state width="1238" height="397" key="GridCell.Tab.0.center" timestamp="1592405029541">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="397" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592402188669" />
+    <state width="1238" height="397" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592405029541" />
     <state width="1878" height="397" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592226755637" />
     <state width="1878" height="380" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1591031145449" />
     <state width="1878" height="644" key="GridCell.Tab.0.center/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
-    <state width="1238" height="397" key="GridCell.Tab.0.left" timestamp="1592402188669">
+    <state width="1238" height="397" key="GridCell.Tab.0.left" timestamp="1592405029541">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="397" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592402188669" />
+    <state width="1238" height="397" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592405029541" />
     <state width="1878" height="397" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592226755636" />
     <state width="1878" height="380" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1591031145449" />
     <state width="1878" height="644" key="GridCell.Tab.0.left/0.0.3200.984@0.0.3200.984" timestamp="1589732454122" />
-    <state width="1238" height="397" key="GridCell.Tab.0.right" timestamp="1592402188669">
+    <state width="1238" height="397" key="GridCell.Tab.0.right" timestamp="1592405029541">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="397" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592402188669" />
+    <state width="1238" height="397" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592405029541" />
     <state width="1878" height="397" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592226755637" />
     <state width="1878" height="380" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1591031145450" />
     <state width="1878" height="644" key="GridCell.Tab.0.right/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
@@ -287,10 +286,10 @@
       <screen x="0" y="0" width="1280" height="984" />
     </state>
     <state x="316" y="96" width="647" height="789" key="find.popup/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1591798472231" />
-    <state x="385" y="122" width="500" height="732" key="refactoring.ChangeSignatureDialog" timestamp="1590685134600">
+    <state x="385" y="122" width="500" height="732" key="refactoring.ChangeSignatureDialog" timestamp="1592404658651">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state x="385" y="122" width="500" height="732" key="refactoring.ChangeSignatureDialog/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1590685134600" />
+    <state x="385" y="122" width="500" height="732" key="refactoring.ChangeSignatureDialog/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592404658651" />
     <state x="1904" y="248" width="672" height="677" key="run.anything.popup" timestamp="1590669097490">
       <screen x="1280" y="0" width="1920" height="1080" />
     </state>
