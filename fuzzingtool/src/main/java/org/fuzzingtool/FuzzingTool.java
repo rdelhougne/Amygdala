@@ -99,14 +99,8 @@ public final class FuzzingTool extends TruffleInstrument {
     }
 
     private synchronized void printResults() {
-        logger.log("==Fuzzing Finished==");
-        /*logger.log("Human Readable Expressions:");
-        logger.log(amygdala.lastRunToHumanReadableExpr());
-
-        logger.log("SMT2 Expression Format:");
-        logger.log(amygdala.lastRunToSMTExpr());
-
-        amygdala.lastRunToZ3Expr();*/
+        logger.log("===Fuzzing Finished===");
+        logger.printStatistics();
 
         amygdala.visualizeProgramFlow(Paths.get(".").toAbsolutePath().normalize().toString() + "/program_flow");
     }

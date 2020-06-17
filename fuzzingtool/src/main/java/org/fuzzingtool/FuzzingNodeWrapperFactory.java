@@ -17,11 +17,15 @@ import org.graalvm.collections.Pair;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
     private final TruffleInstrument.Env env;
     private Amygdala amygdala;
     private int visualized_counter = 0;
+
+    private final Pattern assignment_pattern = Pattern.compile("(var\\s+|let\\s+|const\\s+)?\\s*([A-Za-z]\\w*)\\s*=.*"); //Capturing group 2 is variable name
 
     FuzzingNodeWrapperFactory(final TruffleInstrument.Env env, Amygdala amy) {
         this.env = env;
@@ -172,6 +176,12 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                         case "JSDivideNodeGen": // TODO richtiger Name?
                             onReturnBehaviorBinaryOperation(vFrame, result, Operation.DIVISION);
                             break;
+                        case "JSUnaryMinusNodeGen":
+                            onReturnBehaviorUnaryOperation(vFrame, result, Operation.UNARY_MINUS);
+                            break;
+                        case "JSUnaryPlusNodeGen": // TODO richtiger Name?
+                            onReturnBehaviorUnaryOperation(vFrame, result, Operation.UNARY_PLUS);
+                            break;
 
 
                         // ===== JavaScript Constant Nodes =====
@@ -199,14 +209,26 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                         case "JSLessThanNodeGen":
                             onReturnBehaviorBinaryOperation(vFrame, result, Operation.LESS_THAN);
                             break;
+                        case "JSLessOrEqualNodeGen":
+                            onReturnBehaviorBinaryOperation(vFrame, result, Operation.LESS_EQUAL);
+                            break;
                         case "JSGreaterThanNodeGen":
                             onReturnBehaviorBinaryOperation(vFrame, result, Operation.GREATER_THAN);
+                            break;
+                        case "JSGreaterOrEqualNodeGen":
+                            onReturnBehaviorBinaryOperation(vFrame, result, Operation.GREATER_EQUAL);
                             break;
                         case "JSEqualNodeGen":
                             onReturnBehaviorBinaryOperation(vFrame, result, Operation.EQUAL);
                             break;
+                        case "JSIdenticalNodeGen":
+                            onReturnBehaviorBinaryOperation(vFrame, result, Operation.STRICT_EQUAL);
+                            break;
                         case "JSAndNode":
                             onReturnBehaviorBinaryOperation(vFrame, result, Operation.AND);
+                            break;
+                        case "JSOrNode":
+                            onReturnBehaviorBinaryOperation(vFrame, result, Operation.OR);
                             break;
                         case "JSNotNodeGen":
                             onReturnBehaviorUnaryOperation(vFrame, result, Operation.NOT);
@@ -316,7 +338,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                 ArrayList<Pair<Integer, String>> child = getChildHashes();
                 assert child.size() == 1;
 
-                amygdala.tracer.write_interim_to_frame(child.get(0).getLeft(), get_variable_name());
+                String var_name = get_variable_name();
+                if (var_name != null) {
+                    amygdala.tracer.write_interim_to_frame(child.get(0).getLeft(), var_name);
+                }
             }
 
             public void onReturnBehaviorGlobalObjectNode(VirtualFrame vFrame, Object result) {
@@ -328,18 +353,20 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                 ArrayList<Pair<Integer, String>> child = getChildHashes();
                 assert child.size() >= 2;
 
-                amygdala.tracer.write_interim_to_frame(child.get(1).getLeft(), get_variable_name());
+                String var_name = get_variable_name();
+                if (var_name != null) {
+                    amygdala.tracer.write_interim_to_frame(child.get(1).getLeft(), var_name);
+                }
             }
 
             private String get_variable_name() {
-                String source = my_sourcesection.getCharacters().toString(); // TODO Benennung
-                String[] splitted = source.split("=");
-                String target = splitted[0].trim();
-                if (target.startsWith("var ")) {
-                    target = target.substring(4);
+                String source = my_sourcesection.getCharacters().toString().replace("\n", "");
+                Matcher matcher = assignment_pattern.matcher(source);
+                if (matcher.matches()) {
+                    return matcher.group(2);
+                } else {
+                    return null;
                 }
-                target = target.replace(" ", "");
-                return target;
             }
 
             // ===== JavaScript General Nodes =====

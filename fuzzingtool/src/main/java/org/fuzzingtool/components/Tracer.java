@@ -2,10 +2,7 @@ package org.fuzzingtool.components;
 
 import org.fuzzingtool.Logger;
 import org.fuzzingtool.symbolic.*;
-import org.fuzzingtool.symbolic.arithmetic.Addition;
-import org.fuzzingtool.symbolic.arithmetic.Division;
-import org.fuzzingtool.symbolic.arithmetic.Multiplication;
-import org.fuzzingtool.symbolic.arithmetic.Subtraction;
+import org.fuzzingtool.symbolic.arithmetic.*;
 import org.fuzzingtool.symbolic.basic.*;
 import org.fuzzingtool.symbolic.logical.*;
 
@@ -138,6 +135,9 @@ public class Tracer {
                 case EQUAL:
                     interim_results.put(node_target, new Equal(s, a, b));
                     break;
+                case STRICT_EQUAL:
+                    interim_results.put(node_target, new StrictEqual(s, a, b));
+                    break;
                 case GREATER_EQUAL:
                     interim_results.put(node_target, new GreaterEqual(s, a, b));
                     break;
@@ -179,6 +179,12 @@ public class Tracer {
                 case NOT:
                     interim_results.put(node_target, new Not(s, k));
                     break;
+                case UNARY_MINUS:
+                    interim_results.put(node_target, new UnaryMinus(s, k));
+                    break;
+                case UNARY_PLUS:
+                    interim_results.put(node_target, new UnaryPlus(s, k));
+                    break;
                 default:
                     logger.critical("Tracer::add_operation(): Unknown operation " + op.toString());
             }
@@ -207,8 +213,85 @@ public class Tracer {
         if (sem == LanguageSemantic.JAVASCRIPT) {
             // Initialize JavaScript global objects
             try {
+                // TODO biggest todo ever
+                // output from jsglobalsearch.js
+                symbolic_frame.put("Object", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Function", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("String", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Date", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Number", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Boolean", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("RegExp", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Math", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("JSON", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
                 symbolic_frame.put("NaN", new SymbolicConstant(sem, ExpressionType.NUMBER_NAN, null));
                 symbolic_frame.put("Infinity", new SymbolicConstant(sem, ExpressionType.NUMBER_POS_INFINITY, null));
+                symbolic_frame.put("undefined", new SymbolicConstant(sem, ExpressionType.UNDEFINED, null));
+                symbolic_frame.put("isNaN", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("isFinite", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("parseFloat", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("parseInt", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("encodeURI", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("encodeURIComponent", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("decodeURI", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("decodeURIComponent", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("eval", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("escape", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("unescape", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Error", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("EvalError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("RangeError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("ReferenceError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("SyntaxError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("TypeError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("URIError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("ArrayBuffer", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Int8Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Uint8Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Uint8ClampedArray", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Int16Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Uint16Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Int32Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Uint32Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Float32Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Float64Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("BigInt64Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("BigUint64Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("DataView", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("BigInt", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Polyglot", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Map", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Set", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("WeakMap", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("WeakSet", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Symbol", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Reflect", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Proxy", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Promise", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("SharedArrayBuffer", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Atomics", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("globalThis", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Graal", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("quit", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("readline", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("read", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("readbuffer", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("load", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("loadWithNewGlobal", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("console", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("print", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("printErr", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("performance", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Java", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("Packages", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("java", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("javafx", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("javax", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("com", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("org", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("edu", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+                symbolic_frame.put("arguments", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
             } catch (SymbolicException.IncompatibleType incompatibleType) {
                 logger.critical("Tracer::initialize_program_context(): Cannot initialize JavaScript program context");
             }
