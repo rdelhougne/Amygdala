@@ -99,7 +99,7 @@ public final class FuzzingTool extends TruffleInstrument {
     }
 
     private synchronized void printResults() {
-        logger.log("===Fuzzing Finished===");
+        amygdala.printStatistics();
         logger.printStatistics();
 
         amygdala.visualizeProgramFlow(Paths.get(".").toAbsolutePath().normalize().toString() + "/program_flow");

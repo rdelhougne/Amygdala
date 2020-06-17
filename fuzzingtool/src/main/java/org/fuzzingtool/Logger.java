@@ -55,7 +55,7 @@ public class Logger {
     }
 
     public void printStatistics() {
-        outStream.println("===Message Statistics===");
+        outStream.println("===MESSAGE STATISTICS===");
         outStream.println("LOG: " + num_log);
         outStream.println("DEBUG: " + num_debug);
         outStream.println("INFO: " + num_info);

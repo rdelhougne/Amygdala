@@ -351,4 +351,20 @@ public class Amygdala {
             return Pair.create(false, null);
         }
     }
+
+    public void printStatistics() {
+        logger.log(getStatisticsString());
+    }
+
+    public String getStatisticsString() {
+        StringBuilder stat_str = new StringBuilder();
+        stat_str.append("===FUZZING STATISTICS===\n");
+        if (fuzzing_finished) {
+            stat_str.append("Finished: yes\n");
+        } else {
+            stat_str.append("Finished: no\n");
+        }
+        stat_str.append("Iterations: " + (this.fuzzing_iterations - 1) + " of " + this.max_iterations);
+        return stat_str.toString();
+    }
 }
