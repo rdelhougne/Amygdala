@@ -397,7 +397,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                 } else if (this.isInputNode) {
                     Object next_input = amygdala.getNextInputValue(this.inputVariableIdentifier);
                     amygdala.logger.log("Next input value for variable " + this.inputVariableIdentifier.getIdentifierString() + ": " + next_input);
-                    amygdala.tracer.add_constant(node_hash, LanguageSemantic.JAVASCRIPT, type, next_input);
+                    amygdala.tracer.add_variable(node_hash, LanguageSemantic.JAVASCRIPT, this.inputVariableIdentifier, amygdala.getVariableType(this.inputVariableIdentifier));
                     throw this.event_context.createUnwind(next_input);
                 } else {
                     amygdala.tracer.add_constant(node_hash, LanguageSemantic.JAVASCRIPT, type, result);

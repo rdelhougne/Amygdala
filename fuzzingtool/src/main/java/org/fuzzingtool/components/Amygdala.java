@@ -197,6 +197,21 @@ public class Amygdala {
     }
 
     /**
+     * Returns the type of an input variable.
+     *
+     * @param var_id VariableIdentifier of the Variable
+     * @return The ExpressionType of the variable, or null if the variable is was not defined as an input variable in the YAML-file
+     */
+    public ExpressionType getVariableType(VariableIdentifier var_id) {
+        if (variable_types.containsKey(var_id)) {
+            return variable_types.get(var_id);
+        } else {
+            logger.critical("Amygdala::getVariableType() Cannot get type of variable '" + var_id.getIdentifierString() + "'");
+            return null;
+        }
+    }
+
+    /**
      * Returns the last run as SMT-Lib 2 formatted expression.
      *
      * @return A String, containing the expression in SMT-Lib 2 Format.

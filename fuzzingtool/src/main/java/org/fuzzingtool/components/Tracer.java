@@ -209,6 +209,18 @@ public class Tracer {
         }
     }
 
+    /**
+     * Add a new symbolic variable to the interim results of node_target.
+     *
+     * @param node_target The node-hash of the interim result
+     * @param s Semantic of the language
+     * @param id VariableIdentifier of the new variable, see {@link VariableIdentifier}
+     * @param t ExpressionType of the new variable, see {@link ExpressionType}
+     */
+    public void add_variable(Integer node_target, LanguageSemantic s, VariableIdentifier id, ExpressionType t) {
+        interim_results.put(node_target, new SymbolicVariable(s, id, t));
+    }
+
     public void initialize_program_context(LanguageSemantic sem) {
         if (sem == LanguageSemantic.JAVASCRIPT) {
             // Initialize JavaScript global objects
