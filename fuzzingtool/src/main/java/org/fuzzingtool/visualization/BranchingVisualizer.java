@@ -4,9 +4,11 @@ import guru.nidi.graphviz.attribute.*;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.engine.GraphvizCmdLineEngine;
+import guru.nidi.graphviz.engine.GraphvizException;
 import guru.nidi.graphviz.model.Link;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
+import org.fuzzingtool.Logger;
 import org.fuzzingtool.components.BranchingNode;
 import org.fuzzingtool.components.BranchingNodeAttribute;
 
@@ -19,7 +21,10 @@ import static guru.nidi.graphviz.model.Factory.mutNode;
 public class BranchingVisualizer {
     private MutableGraph vis_graph = mutGraph("Program Decision Flow Visualization").setDirected(true);
 
-    public BranchingVisualizer(BranchingNode node) {
+    private final Logger logger;
+
+    public BranchingVisualizer(BranchingNode node, Logger l) {
+        this.logger = l;
         vis_graph.nodeAttrs().add(Font.name("Ubuntu"));
         String visualization_node_name = String.valueOf(node.hashCode());
         MutableNode root = mutNode(visualization_node_name).add(getNodeContents(node));
@@ -31,10 +36,12 @@ public class BranchingVisualizer {
     public void save_image(String path) {
         Graphviz.useEngine(new GraphvizCmdLineEngine());
         try {
+            logger.info("Saving branching-visualization to file '" + path + ".svg'");
             Graphviz.fromGraph(vis_graph).render(Format.SVG).toFile(new File(path + ".svg"));
             //Graphviz.fromGraph(vis_graph).render(Format.DOT).toFile(new File(path + ".dot"));
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (GraphvizException | IOException ex) {
+            logger.critical("Cannot save branching-visualization to file '" + path + ".svg'");
+            logger.log(ex.getMessage());
         }
     }
 
@@ -57,21 +64,36 @@ public class BranchingVisualizer {
     }
 
     private Label getNodeContents(BranchingNode node) {
+        String label_string;
         switch (node.getBranchingNodeAttribute()) {
             case BRANCH:
-                return Label.of("BRANCH: " + node.getSourceCodeExpression());
+                label_string = "BRANCH: " + node.getSourceCodeExpression();
+                break;
             case LOOP:
-                return Label.of("LOOP: " + node.getSourceCodeExpression());
+                label_string = "LOOP: " + node.getSourceCodeExpression();
+                break;
             case UNKNOWN:
-                return Label.of("UNKNOWN");
+                label_string = "UNKNOWN";
+                break;
             case UNREACHABLE:
-                return Label.of("UNREACHABLE");
+                label_string = "UNREACHABLE";
+                break;
             case TERMINATE:
-                return Label.of("TERMINATE");
+                label_string = "TERMINATE";
+                break;
             case ERROR:
-                return Label.of("ERROR");
+                label_string = "ERROR";
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + node.getBranchingNodeAttribute());
         }
-        return Label.of("!VISUALIZING ERROR!");
+        if (node.isUndecidable()) {
+            label_string += " ↯";
+        }
+        if (node.isExplored()) {
+            label_string += " ↺";
+        }
+        return Label.of(label_string);
     }
 
     private void setNodeAttributes(MutableNode mut_node, BranchingNodeAttribute node_type) {

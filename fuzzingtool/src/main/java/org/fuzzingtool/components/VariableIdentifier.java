@@ -1,7 +1,5 @@
 package org.fuzzingtool.components;
 
-import org.fuzzingtool.symbolic.ExpressionType;
-
 /**
  * This class is for identifying Variables in the program context.
  * For now it is basically "String", but should be replaced with information like function scope, stack frame, parent object etc.

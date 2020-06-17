@@ -4,10 +4,7 @@ import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.SeqExpr;
-import org.fuzzingtool.components.VariableIdentifier;
 import org.graalvm.collections.Pair;
-
-import java.util.HashSet;
 
 public abstract class SymbolicNode {
     protected SymbolicNode[] children;
@@ -83,7 +80,7 @@ public abstract class SymbolicNode {
      * @return The casted expression, or the same expression if the ExpressionTypes are already equal.
      * @throws SymbolicException.UndecidableExpression Is thrown whenever the symbolic casting fails.
      */
-    public static final Pair<Expr, ExpressionType> tryCastZ3JS(Context ctx, Pair<Expr, ExpressionType> expression, ExpressionType goal) throws SymbolicException.UndecidableExpression { //TODO
+    public static Pair<Expr, ExpressionType> tryCastZ3JS(Context ctx, Pair<Expr, ExpressionType> expression, ExpressionType goal) throws SymbolicException.UndecidableExpression { //TODO
         if (expression.getRight() == goal) {
             return expression;
         }
@@ -145,7 +142,7 @@ public abstract class SymbolicNode {
      * @return The casted expression, or the same expression if the ExpressionTypes is already a number type
      * @throws SymbolicException.UndecidableExpression Is thrown whenever the symbolic casting fails.
      */
-    public static final Pair<Expr, ExpressionType> toNumericZ3JS(Context ctx, Pair<Expr, ExpressionType> expression) throws SymbolicException.UndecidableExpression { //TODO
+    public static Pair<Expr, ExpressionType> toNumericZ3JS(Context ctx, Pair<Expr, ExpressionType> expression) throws SymbolicException.UndecidableExpression { //TODO
         if (expression.getRight() == ExpressionType.UNDEFINED) {
             return Pair.create(null, ExpressionType.NUMBER_NAN);
         }
@@ -186,7 +183,7 @@ public abstract class SymbolicNode {
      * @param expression The expression to be casted.
      * @return The casted expression, or the same expression if the ExpressionTypes is already a boolean
      */
-    public static final Pair<Expr, ExpressionType> toBooleanZ3JS(Context ctx, Pair<Expr, ExpressionType> expression) throws SymbolicException.NotImplemented {
+    public static Pair<Expr, ExpressionType> toBooleanZ3JS(Context ctx, Pair<Expr, ExpressionType> expression) throws SymbolicException.NotImplemented {
         switch (expression.getRight()) {
             case BOOLEAN:
                 return expression;
@@ -225,7 +222,7 @@ public abstract class SymbolicNode {
      * @return The casted expression, or the same expression if the ExpressionTypes is already a number type
      * @throws SymbolicException.UndecidableExpression Is thrown whenever the symbolic casting fails.
      */
-    public static final Pair<Expr, ExpressionType> negateNumericZ3JS(Context ctx, Pair<Expr, ExpressionType> expression) throws SymbolicException.UndecidableExpression { //TODO
+    public static Pair<Expr, ExpressionType> negateNumericZ3JS(Context ctx, Pair<Expr, ExpressionType> expression) throws SymbolicException.UndecidableExpression { //TODO
         switch (expression.getRight()) {
             case BIGINT:
                 return Pair.create(ctx.mkUnaryMinus((ArithExpr) expression.getLeft()), ExpressionType.BIGINT);

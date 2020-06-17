@@ -13,12 +13,6 @@ public class Or extends SymbolicNode {
     public Or(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
         this.languageSemantic = s;
         addChildren(2, a, b);
-        /*if (a.type == ExpressionType.BOOLEAN && b.type == ExpressionType.BOOLEAN) {
-            this.type = ExpressionType.BOOLEAN;
-            addChildren(2, a, b);
-        } else {
-            throw new SymbolicException.IncompatibleType(a.type, "OR");
-        }*/
     }
 
     @Override

@@ -11,7 +11,6 @@ import org.fuzzingtool.symbolic.logical.Not;
 import org.graalvm.collections.Pair;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 public class BranchingNode {
     /**
@@ -116,8 +115,8 @@ public class BranchingNode {
         return this.branchingNodeAttribute;
     }
 
-    public void setParent(BranchingNode pnode, Boolean flag) {
-        this.parentNode = pnode;
+    public void setParent(BranchingNode parent_node, Boolean flag) {
+        this.parentNode = parent_node;
         this.parentNodeTakenFlag = flag;
     }
 
@@ -127,6 +126,36 @@ public class BranchingNode {
 
     public void setSourceCodeExpression(String source_code_expression) {
         this.source_code_expression = source_code_expression;
+    }
+
+    public boolean isUndecidable() {
+        return isUndecidable;
+    }
+
+    public void setUndecidable() {
+        this.isUndecidable = true;
+
+        if (childNodeTaken != null) {
+            childNodeTaken.setUndecidable();
+        }
+        if (childNodeNotTaken != null) {
+            childNodeNotTaken.setUndecidable();
+        }
+    }
+
+    public boolean isExplored() {
+        return isExplored;
+    }
+
+    public void setExplored() {
+        this.isExplored = true;
+
+        if (childNodeTaken != null) {
+            childNodeTaken.setExplored();
+        }
+        if (childNodeNotTaken != null) {
+            childNodeNotTaken.setExplored();
+        }
     }
 
     public String getSourceCodeExpression() {
@@ -184,8 +213,8 @@ public class BranchingNode {
                 my_expr.add(getLocalSMTExpression(taken_flag));
                 return my_expr;
             }
-        } catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize | SymbolicException.NotImplemented incompatibleType) {
-            incompatibleType.printStackTrace();
+        } catch (SymbolicException.WrongParameterSize | SymbolicException.NotImplemented ex) {
+            ex.printStackTrace();
         }
         return null;
     }
@@ -214,20 +243,30 @@ public class BranchingNode {
         if (parentNode != null) {
             return this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
         } else {
-            return ctx.mkBool(false); // TODO empty expression?
+            throw new SymbolicException.NotImplemented("Cannot get expression of root node without hint");
         }
     }
 
     public BoolExpr getSymbolicPathZ3Expression(Boolean taken_flag, Context ctx) throws SymbolicException.WrongParameterSize, SymbolicException.UndecidableExpression, SymbolicException.NotImplemented {
         if (parentNode != null) {
             BoolExpr all_from_parents = this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
-            return ctx.mkAnd(all_from_parents, getLocalZ3Expression(taken_flag, ctx));
+            try {
+                return ctx.mkAnd(all_from_parents, getLocalZ3Expression(taken_flag, ctx));
+            } catch (SymbolicException.NotImplemented | SymbolicException.UndecidableExpression ex) {
+                this.setUndecidable();
+                throw ex;
+            }
         } else {
-            return getLocalZ3Expression(taken_flag, ctx);
+            try {
+                return getLocalZ3Expression(taken_flag, ctx);
+            } catch (SymbolicException.NotImplemented | SymbolicException.UndecidableExpression ex) {
+                this.setUndecidable();
+                throw ex;
+            }
         }
     }
 
-    public String getLocalSMTExpression(Boolean taken) throws SymbolicException.IncompatibleType, SymbolicException.WrongParameterSize, SymbolicException.NotImplemented {
+    public String getLocalSMTExpression(Boolean taken) throws SymbolicException.WrongParameterSize, SymbolicException.NotImplemented {
         if (taken) {
             return this.symbolic_expression.toSMTExpr();
         } else {

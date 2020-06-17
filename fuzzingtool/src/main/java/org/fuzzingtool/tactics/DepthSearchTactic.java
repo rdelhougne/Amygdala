@@ -9,7 +9,6 @@ import org.fuzzingtool.symbolic.ExpressionType;
 import org.fuzzingtool.symbolic.SymbolicException;
 
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class DepthSearchTactic extends FuzzingTactic {
     BranchingNode root_node;
@@ -53,11 +52,11 @@ public class DepthSearchTactic extends FuzzingTactic {
                 s.add(expr);
                 if (s.check() == Status.SATISFIABLE) {
                     Model model = s.getModel();
-                    FuncDecl declarations[] = model.getConstDecls();
+                    FuncDecl[] declarations = model.getConstDecls();
                     HashMap<VariableIdentifier, Object> variable_values = new HashMap<>();
                     for (FuncDecl d: declarations) {
-                        String dname = d.getName().toString();
-                        VariableIdentifier identifier = VariableIdentifier.fromString(dname);
+                        String declaration_name = d.getName().toString();
+                        VariableIdentifier identifier = VariableIdentifier.fromString(declaration_name);
                         Expr result = model.getConstInterp(d);
 
                         if (variable_types.containsKey(identifier)) {
@@ -112,6 +111,14 @@ public class DepthSearchTactic extends FuzzingTactic {
                 decrement_loop(current_node.getNodeHash());
                 return null;
             }
+        }
+
+        if (current_node.isUndecidable()) {
+            return null;
+        }
+
+        if (current_node.isExplored()) {
+            return null;
         }
 
         BranchingNodeAttribute node_type = current_node.getBranchingNodeAttribute();

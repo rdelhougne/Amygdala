@@ -13,12 +13,6 @@ public class Subtraction extends SymbolicNode {
     public Subtraction(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
         this.languageSemantic = s;
         addChildren(2, a, b);
-        /*if (a.type == b.type && (a.type == ExpressionType.INT || a.type == ExpressionType.REAL)) {
-            this.type = a.type;
-            addChildren(2, a, b);
-        } else {
-            throw new SymbolicException.IncompatibleType(a.type, b.type, "SUB");
-        }*/
     }
 
     @Override

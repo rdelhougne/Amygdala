@@ -1,6 +1,5 @@
 package org.fuzzingtool.symbolic.logical;
 
-import com.microsoft.z3.ArithExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -14,12 +13,6 @@ public class LessEqual extends SymbolicNode {
     public LessEqual(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
         this.languageSemantic = s;
         addChildren(2, a, b);
-        /*if (a.type == b.type && (a.type == ExpressionType.INT || a.type == ExpressionType.REAL)) {
-            this.type = ExpressionType.BOOLEAN;
-            addChildren(2, a, b);
-        } else {
-            throw new SymbolicException.IncompatibleType(a.type, "LE");
-        }*/
     }
 
     @Override

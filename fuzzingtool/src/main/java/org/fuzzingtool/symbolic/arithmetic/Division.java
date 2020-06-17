@@ -16,12 +16,6 @@ public class Division extends SymbolicNode {
     public Division(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
         this.languageSemantic = s;
         addChildren(2, a, b);
-        /*if (a.type == b.type && (a.type == ExpressionType.INT || a.type == ExpressionType.REAL)) { //TODO
-            this.type = a.type;
-            addChildren(2, a, b);
-        } else {
-            throw new SymbolicException.IncompatibleType(a.type, b.type, "DIV");
-        }*/
     }
 
     @Override

@@ -5,9 +5,11 @@ import os
 import uuid
 import yaml
 
+import testgenerator
+
 FUZZINGTOOL_EXEC = "target/fuzzingtool-1.0-SNAPSHOT.jar"
 TESTING_ARGUMENTS = ""
-DEPENDENCY_PACKAGES = ["guru.nidi", "org.slf4j.slf4j-api","org.apache.logging.log4j.log4j-slf4j-impl","org.apache.logging.log4j.log4j-api", "org.apache.logging.log4j.log4j-core", "org.apache.commons", "com.amihaiemil.web"]
+DEPENDENCY_PACKAGES = ["guru.nidi", "org.slf4j.slf4j-api","org.apache.logging.log4j.log4j-slf4j-impl","org.apache.logging.log4j.log4j-api", "org.apache.logging.log4j.log4j-core", "org.apache.commons", "org.snakeyaml"]
 DEPENDENCY_REPOSITORY = "/home/robert/.m2/repository"
 ADDITIONAL_DEPENDENCIES = "/home/robert/Seafile/Studium/Master Informatik/Masterarbeit/Projekt/Software"
 
@@ -71,9 +73,14 @@ def prepare_js_program(path):
         nf.write(new_source)
     return new_filepath, main_loop_line_num, main_loop_identifier, error_line_num, error_identifier, line_offset
 
+def generate_test_program(path):
+    with open(path, "w") as new_file:
+        new_file.write(testgenerator.generate_program((2,4), (1,1), (1,2), (1,2)))
+
 def main():
     parser = argparse.ArgumentParser(description="Run fuzzing tool")
     parser.add_argument("-v", "--verbose", action="store_true", help="increases verbosity.")
+    parser.add_argument("-g", "--generate", action="store_true", help="Generate the program.")
     parser.add_argument("engine", metavar="ENGINE", help="The GraalVM Engine to run the program.")
     parser.add_argument("configuration", metavar="PROGRAM", help="The Program configuration file (yaml) to test.")
     args = parser.parse_args()
@@ -85,6 +92,7 @@ def main():
 
     engine = args.engine
     fuzzing_configuration = args.configuration
+    generate = args.generate
     
     program_path = ""
     
@@ -98,6 +106,18 @@ def main():
     if not os.path.isabs(program_path):
         working_dir, source_file_name = os.path.split(fuzzing_configuration)
         program_path = os.path.join(working_dir, program_path)
+    
+    if generate:
+        if os.path.exists(program_path):
+            choice = str(input("The program file already exists, overwrite? [y|N]: "))
+            if choice == "Y" or choice == "y":
+                generate_test_program(program_path)
+        else:
+            generate_test_program(program_path)
+    
+    if not os.path.exists(program_path):
+        print("File not found: " + program_path)
+        exit(1)
     
     dependency_classpaths = get_all_dependencies()
     dependency_classpaths += get_additional_dependencies()

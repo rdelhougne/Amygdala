@@ -1,27 +1,28 @@
 package org.fuzzingtool.components;
 
-import com.amihaiemil.eoyaml.Yaml;
-import com.amihaiemil.eoyaml.YamlMapping;
-import com.amihaiemil.eoyaml.YamlNode;
-import com.amihaiemil.eoyaml.YamlSequence;
-import com.microsoft.z3.*;
+import com.microsoft.z3.Context;
 import org.fuzzingtool.Logger;
 import org.fuzzingtool.symbolic.ExpressionType;
+import org.fuzzingtool.symbolic.LanguageSemantic;
 import org.fuzzingtool.symbolic.SymbolicException;
 import org.fuzzingtool.tactics.DepthSearchTactic;
 import org.fuzzingtool.tactics.FuzzingException;
 import org.fuzzingtool.visualization.BranchingVisualizer;
 import org.graalvm.collections.Pair;
+import org.snakeyaml.engine.v2.api.Load;
+import org.snakeyaml.engine.v2.api.LoadSettings;
 
-import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Central class for managing execution flow events and fuzzing attempts
- * The class is contructed as a state-machine. Methods like {@link #branching_event(Integer, BranchingNodeAttribute, Integer, Boolean, String)} modify said machine.
+ * The class is designed as a state-machine. Methods like {@link #branching_event(Integer, BranchingNodeAttribute, Integer, Boolean, String)} modify said machine.
  */
 public class Amygdala {
     public Tracer tracer;
@@ -38,14 +39,15 @@ public class Amygdala {
     private boolean is_first_run = true;
 
     //Fuzzing Configuration TODO
-    public int input_line_num = 26;
     public int main_loop_line_num = 1;
     public String main_loop_identifier_string = "fuzzing_main_loop"; // Needed if the program happens to be combined of several files
     public int error_line_num = 7;
     public String error_identifier_string = "fuzzing_error"; // Needed if the program happens to be combined of several files
+    private int max_iterations = 1024;
 
     public Amygdala(Logger lgr) {
         this.tracer = new Tracer(lgr);
+        this.tracer.initialize_program_context(LanguageSemantic.JAVASCRIPT);
         this.logger = lgr;
         this.variable_values = new HashMap<>();
         this.variable_types = new HashMap<>();
@@ -150,14 +152,19 @@ public class Amygdala {
      * @return The Boolean value that is DIRECTLY fed into the JSConstantBooleanNode, which is the child of the global_while_node
      */
     public Boolean calculateNextPath() {
-        DepthSearchTactic tac = new DepthSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
-        try {
-            variable_values = tac.getNextValues(variable_types);
-        } catch (FuzzingException.NoMorePaths noMorePaths) {
-            fuzzing_finished = true;
+        if (fuzzing_iterations <= max_iterations) {
+            DepthSearchTactic tac = new DepthSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
+            try {
+                variable_values = tac.getNextValues(variable_types);
+            } catch (FuzzingException.NoMorePaths noMorePaths) {
+                fuzzing_finished = true;
+                return false;
+            }
+            return true;
+        } else {
+            logger.info("Max iterations reached (" + max_iterations + ")");
             return false;
         }
-        return true;
     }
 
     /**
@@ -186,6 +193,21 @@ public class Amygdala {
                     logger.critical("Variable " + var_id.getIdentifierString() + " has not allowed type '" + variable_types.get(var_id).toString() + "'.");
                     return null;
             }
+        }
+    }
+
+    /**
+     * Returns the type of an input variable.
+     *
+     * @param var_id VariableIdentifier of the Variable
+     * @return The ExpressionType of the variable, or null if the variable is was not defined as an input variable in the YAML-file
+     */
+    public ExpressionType getVariableType(VariableIdentifier var_id) {
+        if (variable_types.containsKey(var_id)) {
+            return variable_types.get(var_id);
+        } else {
+            logger.critical("Amygdala::getVariableType() Cannot get type of variable '" + var_id.getIdentifierString() + "'");
+            return null;
         }
     }
 
@@ -242,35 +264,52 @@ public class Amygdala {
      * @param path Filepath of the .svg file
      */
     public void visualizeProgramFlow(String path) {
-        BranchingVisualizer bv = new BranchingVisualizer(branchingRootNode);
+        BranchingVisualizer bv = new BranchingVisualizer(branchingRootNode, this.logger);
         bv.save_image(path);
     }
 
     public void loadOptions(String path, Integer lineOffset) {
-        final YamlMapping map;
+        FileInputStream fis = null;
+        Map<String, Object> map;
         try {
-            map = Yaml.createYamlInput(new File(path)).readYamlMapping();
-        } catch (IOException ioe) {
-            logger.critical("Cannot open file " + path);
+            Load load = new Load(LoadSettings.builder().build());
+            fis = new FileInputStream(path);
+            map = (Map<String, Object>) load.loadFromInputStream(fis);
+        } catch (FileNotFoundException e) {
+            logger.critical("File not found: " + path);
             return;
+        } finally {
+            if (fis != null) {
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return;
+                }
+            }
         }
 
-        YamlSequence variables = map.yamlSequence("variables");
-        YamlMapping parameters = map.yamlMapping("fuzzing_parameters");
+        if (map.containsKey("variables") && map.get("variables") instanceof List) {
+            loadVariables((List<Map<String, Object>>) map.get("variables"), lineOffset);
+        } else {
+            logger.warning("No variable configuration found in file " + path);
+        }
 
-        loadVariables(variables, lineOffset);
-        loadFuzzingParameters(parameters);
+        if (map.containsKey("fuzzing_parameters") && map.get("fuzzing_parameters") instanceof Map) {
+            loadFuzzingParameters((Map<String, Object>) map.get("fuzzing_parameters"));
+        } else {
+            logger.warning("No general configuration found in file " + path);
+        }
     }
 
     /**
      * This Method initializes all given variables and sample-inputs.
      */
-    private void loadVariables(YamlSequence variable_list, Integer lineOffset) {
-        for (YamlNode yamlNode : variable_list) {
-            YamlMapping var_declaration = (YamlMapping) yamlNode;
-            Integer line_num = var_declaration.integer("line_num") + lineOffset;
-            String name = var_declaration.string("name");
-            String var_type = var_declaration.string("type");
+    private void loadVariables(List<Map<String, Object>> variable_list, Integer lineOffset) {
+        for (Map<String, Object> var_declaration : variable_list) {
+            Integer line_num = (Integer) var_declaration.get("line_num") + lineOffset;
+            String name = (String) var_declaration.get("name");
+            String var_type = (String) var_declaration.get("type");
 
             ExpressionType var_type_enum;
             switch (var_type) {
@@ -300,29 +339,24 @@ public class Amygdala {
 
             switch (var_type_enum) {
                 case BOOLEAN:
-                    String bool_string = var_declaration.string("sample");
-                    if (bool_string.equals("true")) {
-                        variable_values.put(new_identifier, true);
-                    } else {
-                        variable_values.put(new_identifier, false);
-                    }
+                    variable_values.put(new_identifier, (Boolean) var_declaration.get("sample"));
                     break;
                 case STRING:
-                    variable_values.put(new_identifier, var_declaration.string("sample"));
+                    variable_values.put(new_identifier, (String) var_declaration.get("sample"));
                     break;
                 case BIGINT:
                 case NUMBER_INTEGER:
-                    variable_values.put(new_identifier, var_declaration.integer("sample"));
+                    variable_values.put(new_identifier, (Integer) var_declaration.get("sample"));
                     break;
                 case NUMBER_REAL:
-                    variable_values.put(new_identifier, var_declaration.doubleNumber("sample"));
+                    variable_values.put(new_identifier, (Double) var_declaration.get("sample"));
                     break;
             }
         }
     }
 
-    private void loadFuzzingParameters(YamlMapping parameters) {
-
+    private void loadFuzzingParameters(Map<String, Object> parameters) {
+        this.max_iterations = (int) parameters.getOrDefault("max_iterations", this.max_iterations);
     }
 
     public Pair<Boolean, VariableIdentifier> getInputNodeConfiguration(Integer line_num) {
@@ -331,5 +365,21 @@ public class Amygdala {
         } else {
             return Pair.create(false, null);
         }
+    }
+
+    public void printStatistics() {
+        logger.log(getStatisticsString());
+    }
+
+    public String getStatisticsString() {
+        StringBuilder stat_str = new StringBuilder();
+        stat_str.append("===FUZZING STATISTICS===\n");
+        if (fuzzing_finished) {
+            stat_str.append("Finished: yes\n");
+        } else {
+            stat_str.append("Finished: no\n");
+        }
+        stat_str.append("Iterations: " + (this.fuzzing_iterations - 1) + " of " + this.max_iterations);
+        return stat_str.toString();
     }
 }
