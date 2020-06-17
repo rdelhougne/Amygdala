@@ -103,5 +103,4 @@ public final class FuzzingTool extends TruffleInstrument {
         amygdala.printStatistics();
         logger.printStatistics();
     }
-
 }

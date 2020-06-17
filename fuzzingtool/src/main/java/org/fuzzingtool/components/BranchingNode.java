@@ -252,16 +252,16 @@ public class BranchingNode {
             BoolExpr all_from_parents = this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
             try {
                 return ctx.mkAnd(all_from_parents, getLocalZ3Expression(taken_flag, ctx));
-            } catch (SymbolicException.UndecidableExpression ue) {
+            } catch (SymbolicException.NotImplemented | SymbolicException.UndecidableExpression ex) {
                 this.setUndecidable();
-                throw ue;
+                throw ex;
             }
         } else {
             try {
                 return getLocalZ3Expression(taken_flag, ctx);
-            } catch (SymbolicException.UndecidableExpression ue) {
+            } catch (SymbolicException.NotImplemented | SymbolicException.UndecidableExpression ex) {
                 this.setUndecidable();
-                throw ue;
+                throw ex;
             }
         }
     }
