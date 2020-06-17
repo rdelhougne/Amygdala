@@ -17,18 +17,6 @@ public class Addition extends SymbolicNode {
     public Addition(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
         this.languageSemantic = s;
         addChildren(2, a, b);
-        /*if (a.type == b.type && (a.type == ExpressionType.INT || a.type == ExpressionType.REAL)) {
-            this.type = a.type;
-            addChildren(2, a, b);
-        } else if (a.type == ExpressionType.INT && b.type == ExpressionType.REAL || a.type == ExpressionType.REAL && b.type == ExpressionType.INT) {
-            this.type = ExpressionType.REAL;
-            addChildren(2, a, b);
-        } else if (a.type == ExpressionType.STRING || b.type == ExpressionType.STRING) {
-            this.type = ExpressionType.STRING;
-            addChildren(2, a, b);
-        } else {
-            throw new SymbolicException.IncompatibleType(a.type, b.type, "ADD");
-        }*/
     }
 
     @Override

@@ -12,12 +12,6 @@ public class GreaterThan extends SymbolicNode {
     public GreaterThan(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
         this.languageSemantic = s;
         addChildren(2, a, b);
-        /*if (a.type == b.type && (a.type == ExpressionType.INT || a.type == ExpressionType.REAL)) {
-            this.type = ExpressionType.BOOLEAN;
-            addChildren(2, a, b);
-        } else {
-            throw new SymbolicException.IncompatibleType(a.type, "GT");
-        }*/
     }
 
     @Override

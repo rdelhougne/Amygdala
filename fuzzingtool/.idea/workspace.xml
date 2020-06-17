@@ -6,9 +6,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7937b683-e266-4626-b31f-f2e51fd3d190" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingTool.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingTool.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNode.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNode.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Addition.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Addition.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Division.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Division.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Multiplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Multiplication.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Subtraction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Subtraction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/And.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/And.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Equal.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Equal.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/GreaterEqual.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/GreaterEqual.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/GreaterThan.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/GreaterThan.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/LessEqual.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/LessEqual.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Or.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Or.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -175,7 +182,7 @@
       <workItem from="1592046587647" duration="5544000" />
       <workItem from="1592145211429" duration="3803000" />
       <workItem from="1592216842108" duration="8348000" />
-      <workItem from="1592389264709" duration="12226000" />
+      <workItem from="1592389264709" duration="13003000" />
     </task>
     <servers />
   </component>
@@ -208,31 +215,31 @@
       <screen x="1280" y="0" width="1920" height="1080" />
     </state>
     <state x="2023" y="297" width="424" height="479" key="FileChooserDialogImpl/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667287807" />
-    <state width="1238" height="397" key="GridCell.Tab.0.bottom" timestamp="1592405539871">
+    <state width="1238" height="397" key="GridCell.Tab.0.bottom" timestamp="1592406359286">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="397" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592405539871" />
+    <state width="1238" height="397" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592406359286" />
     <state width="1878" height="397" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592226755637" />
     <state width="1878" height="380" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1591031145450" />
     <state width="1878" height="644" key="GridCell.Tab.0.bottom/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
-    <state width="1238" height="397" key="GridCell.Tab.0.center" timestamp="1592405539871">
+    <state width="1238" height="397" key="GridCell.Tab.0.center" timestamp="1592406359286">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="397" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592405539871" />
+    <state width="1238" height="397" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592406359286" />
     <state width="1878" height="397" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592226755637" />
     <state width="1878" height="380" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1591031145449" />
     <state width="1878" height="644" key="GridCell.Tab.0.center/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
-    <state width="1238" height="397" key="GridCell.Tab.0.left" timestamp="1592405539871">
+    <state width="1238" height="397" key="GridCell.Tab.0.left" timestamp="1592406359286">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="397" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592405539871" />
+    <state width="1238" height="397" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592406359286" />
     <state width="1878" height="397" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592226755636" />
     <state width="1878" height="380" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1591031145449" />
     <state width="1878" height="644" key="GridCell.Tab.0.left/0.0.3200.984@0.0.3200.984" timestamp="1589732454122" />
-    <state width="1238" height="397" key="GridCell.Tab.0.right" timestamp="1592405539871">
+    <state width="1238" height="397" key="GridCell.Tab.0.right" timestamp="1592406359286">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state width="1238" height="397" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592405539871" />
+    <state width="1238" height="397" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592406359286" />
     <state width="1878" height="397" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592226755637" />
     <state width="1878" height="380" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1591031145450" />
     <state width="1878" height="644" key="GridCell.Tab.0.right/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
