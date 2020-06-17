@@ -40,11 +40,9 @@ public class DepthSearchTactic extends FuzzingTactic {
                     expr = new_target.getSymbolicPathZ3Expression(ctx);
                 } catch (SymbolicException.NotImplemented ni) {
                     logger.warning(ni.getMessage());
-                    new_target.setUndecidable();
                     continue;
                 } catch (SymbolicException.UndecidableExpression ue) {
                     logger.info(ue.getMessage());
-                    new_target.setUndecidable();
                     continue;
                 } catch (SymbolicException.WrongParameterSize wrongParameterSize) {
                     wrongParameterSize.printStackTrace();

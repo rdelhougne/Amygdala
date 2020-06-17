@@ -243,16 +243,26 @@ public class BranchingNode {
         if (parentNode != null) {
             return this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
         } else {
-            return ctx.mkBool(false); // TODO empty expression?
+            throw new SymbolicException.NotImplemented("Cannot get expression of root node without hint");
         }
     }
 
     public BoolExpr getSymbolicPathZ3Expression(Boolean taken_flag, Context ctx) throws SymbolicException.WrongParameterSize, SymbolicException.UndecidableExpression, SymbolicException.NotImplemented {
         if (parentNode != null) {
             BoolExpr all_from_parents = this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
-            return ctx.mkAnd(all_from_parents, getLocalZ3Expression(taken_flag, ctx));
+            try {
+                return ctx.mkAnd(all_from_parents, getLocalZ3Expression(taken_flag, ctx));
+            } catch (SymbolicException.UndecidableExpression ue) {
+                this.setUndecidable();
+                throw ue;
+            }
         } else {
-            return getLocalZ3Expression(taken_flag, ctx);
+            try {
+                return getLocalZ3Expression(taken_flag, ctx);
+            } catch (SymbolicException.UndecidableExpression ue) {
+                this.setUndecidable();
+                throw ue;
+            }
         }
     }
 
