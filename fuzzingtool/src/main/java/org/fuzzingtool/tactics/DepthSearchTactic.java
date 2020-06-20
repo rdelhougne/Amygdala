@@ -63,7 +63,11 @@ public class DepthSearchTactic extends FuzzingTactic {
                         if (variable_types.containsKey(identifier)) {
                             switch (variable_types.get(identifier)) {
                                 case BOOLEAN:
-                                    logger.critical("Boolean Type not supported.");
+                                    if (result.isBool()) {
+                                        variable_values.put(identifier, result.isTrue());
+                                    } else {
+                                        logger.critical("Cannot cast Z3 Expression '" + result.getString() + "' to Bool.");
+                                    }
                                     break;
                                 case STRING:
                                     logger.critical("String Type not supported.");
