@@ -7,6 +7,7 @@ import org.fuzzingtool.symbolic.LanguageSemantic;
 import org.fuzzingtool.symbolic.SymbolicException;
 import org.fuzzingtool.tactics.DepthSearchTactic;
 import org.fuzzingtool.tactics.FuzzingException;
+import org.fuzzingtool.tactics.FuzzingTactic;
 import org.fuzzingtool.visualization.BranchingVisualizer;
 import org.graalvm.collections.Pair;
 import org.snakeyaml.engine.v2.api.Load;
@@ -33,6 +34,7 @@ public class Amygdala {
     public HashMap<VariableIdentifier, Object> variable_values;
     public HashMap<VariableIdentifier, ExpressionType> variable_types;
     public HashMap<Integer, VariableIdentifier> variable_line_to_identifier;
+    private FuzzingTactic tactic;
     public boolean fuzzing_finished = false;
     private int fuzzing_iterations = 1;
     private boolean suppress_next_terminate = false;
@@ -153,9 +155,8 @@ public class Amygdala {
      */
     public Boolean calculateNextPath() {
         if (fuzzing_iterations <= max_iterations) {
-            DepthSearchTactic tac = new DepthSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
             try {
-                variable_values = tac.getNextValues(variable_types);
+                variable_values = this.tactic.getNextValues(variable_types);
             } catch (FuzzingException.NoMorePaths noMorePaths) {
                 fuzzing_finished = true;
                 return false;
@@ -357,6 +358,27 @@ public class Amygdala {
 
     private void loadFuzzingParameters(Map<String, Object> parameters) {
         this.max_iterations = (int) parameters.getOrDefault("max_iterations", this.max_iterations);
+        logger.info("Option max_iterations set to " + this.max_iterations);
+
+        String tactic_string = (String) parameters.getOrDefault("tactic", "DEPTH_SEARCH");
+        switch (tactic_string) {
+            case "DEPTH_SEARCH":
+                logger.info("Using tactic DEPTH_SEARCH");
+                this.tactic = new DepthSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
+                if (parameters.containsKey("tactic_depth_search")) {
+                    Map<String, Object> ds_params = (Map<String, Object>) parameters.get("tactic_depth_search");
+                    if (ds_params.containsKey("max_loop_unrolling")) {
+                        this.tactic.setOption("max_loop_unrolling", ds_params.get("max_loop_unrolling"));
+                    }
+                    if (ds_params.containsKey("max_depth")) {
+                        this.tactic.setOption("max_depth", ds_params.get("max_depth"));
+                    }
+                }
+                break;
+            default:
+                logger.warning("Unknown tactic '" + tactic_string + "', using tactic DEPTH_SEARCH with default params");
+                this.tactic = new DepthSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
+        }
     }
 
     public Pair<Boolean, VariableIdentifier> getInputNodeConfiguration(Integer line_num) {

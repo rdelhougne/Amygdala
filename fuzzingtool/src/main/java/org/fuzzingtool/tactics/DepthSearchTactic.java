@@ -11,15 +11,15 @@ import org.fuzzingtool.symbolic.SymbolicException;
 import java.util.HashMap;
 
 public class DepthSearchTactic extends FuzzingTactic {
-    BranchingNode root_node;
-    Context ctx;
-    Logger logger;
+    private final BranchingNode root_node;
+    private final Context ctx;
+    private final Logger logger;
 
     //Options
     private Integer max_loop_unrolling = 16;
     private Integer max_depth = 32;
 
-    HashMap<Integer, Integer> loop_unrolls;
+    private HashMap<Integer, Integer> loop_unrolls;
 
     public DepthSearchTactic(BranchingNode n, Context c, Logger l) {
         this.root_node = n;
@@ -28,6 +28,7 @@ public class DepthSearchTactic extends FuzzingTactic {
         loop_unrolls = new HashMap<>();
     }
 
+    @Override
     public HashMap<VariableIdentifier, Object> getNextValues(HashMap<VariableIdentifier, ExpressionType> variable_types) throws FuzzingException.NoMorePaths {
         boolean path_found = true;
         while (path_found) {
@@ -87,12 +88,14 @@ public class DepthSearchTactic extends FuzzingTactic {
                             logger.critical("No type for variable: " + identifier.getIdentifierString());
                         }
                     }
+                    this.loop_unrolls.clear();
                     return variable_values;
                 } else {
                     new_target.setBranchingNodeAttribute(BranchingNodeAttribute.UNREACHABLE);
                 }
             }
         }
+        this.loop_unrolls.clear();
         throw new FuzzingException.NoMorePaths();
     }
 
@@ -164,6 +167,7 @@ public class DepthSearchTactic extends FuzzingTactic {
             case "max_loop_unrolling":
                 try {
                     this.max_loop_unrolling = (Integer) value;
+                    logger.info("DEPTH_SEARCH.max_loop_unrolling option set: " + value);
                 } catch (ClassCastException cce) {
                     logger.warning("DepthSearchTactic: Wrong parameter type for option 'max_loop_unrolling' (Integer).");
                 }
@@ -171,12 +175,13 @@ public class DepthSearchTactic extends FuzzingTactic {
             case "max_depth":
                 try {
                     this.max_depth = (Integer) value;
+                    logger.info("DEPTH_SEARCH.max_depth option set: " + value);
                 } catch (ClassCastException cce) {
                     logger.warning("DepthSearchTactic: Wrong parameter type for option 'max_depth' (Integer).");
                 }
                 break;
             default:
-                logger.warning("DepthSearchTactic: Unknown option '" + option_name + "'.");
+                logger.warning("DEPTH_SEARCH: Unknown option '" + option_name + "'.");
         }
     }
 
@@ -191,5 +196,10 @@ public class DepthSearchTactic extends FuzzingTactic {
                 logger.warning("DepthSearchTactic: Unknown option '" + option_name + "'.");
                 return null;
         }
+    }
+
+    @Override
+    public String getTactic() {
+        return "DEPTH_SEARCH";
     }
 }
