@@ -101,6 +101,16 @@ public class Tracer {
     }
 
     /**
+     * Resets all states and re-initializes the program context to the given semantic.
+     *
+     * @param ls The language semantic used to re-initialize the program context
+     */
+    public void reset(LanguageSemantic ls) {
+        clearAll();
+        initialize_program_context(ls);
+    }
+
+    /**
      * This function adds a new symbolic operation to the interim results of the given node-hash.
      *
      * @param node_target Node-hash of the new interim result

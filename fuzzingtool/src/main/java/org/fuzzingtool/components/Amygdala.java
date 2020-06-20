@@ -99,7 +99,7 @@ public class Amygdala {
         }
         currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.TERMINATE);
         currentBranch = branchingRootNode;
-        tracer.clearAll();
+        tracer.reset(LanguageSemantic.JAVASCRIPT);
         this.fuzzing_iterations += 1;
     }
 
@@ -110,7 +110,7 @@ public class Amygdala {
     public void error_event() {
         currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.ERROR);
         currentBranch = branchingRootNode;
-        tracer.clearAll();
+        tracer.reset(LanguageSemantic.JAVASCRIPT);
         this.fuzzing_iterations += 1;
         suppress_terminate();
     }
