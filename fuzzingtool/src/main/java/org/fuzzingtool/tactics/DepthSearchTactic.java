@@ -66,23 +66,40 @@ public class DepthSearchTactic extends FuzzingTactic {
                                     if (result.isBool()) {
                                         variable_values.put(identifier, result.isTrue());
                                     } else {
-                                        logger.critical("Cannot cast Z3 Expression '" + result.getString() + "' to Bool.");
+                                        logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Bool.");
                                     }
                                     break;
                                 case STRING:
-                                    logger.critical("String Type not supported.");
+                                    if (result.isString()) {
+                                        variable_values.put(identifier, result.getString());
+                                    } else {
+                                        logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to String.");
+                                    }
                                     break;
                                 case BIGINT:
                                 case NUMBER_INTEGER:
-                                    try {
-                                        IntNum cast_result = (IntNum) result;
-                                        variable_values.put(identifier, cast_result.getInt());
-                                    } catch (ClassCastException cce) {
-                                        logger.critical("Cannot cast Z3 Expression '" + result.getString() + "' to Integer.");
+                                    if (result.isIntNum()) {
+                                        try {
+                                            IntNum cast_result = (IntNum) result;
+                                            variable_values.put(identifier, cast_result.getInt());
+                                        } catch (ClassCastException cce) {
+                                            logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer.");
+                                        }
+                                    } else {
+                                        logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer.");
                                     }
                                     break;
-                                case NUMBER_REAL:
-                                    logger.critical("Real Type not supported.");
+                                case NUMBER_REAL: //TODO Z3 RatNum to Double conversion
+                                    if (result.isRatNum()) {
+                                        try {
+                                            RatNum cast_result = (RatNum) result;
+                                            variable_values.put(identifier, Double.parseDouble(cast_result.toDecimalString(128)));
+                                        } catch (ClassCastException cce) {
+                                            logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double.");
+                                        }
+                                    } else {
+                                        logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double.");
+                                    }
                                     break;
                                 default:
                                     logger.critical("Variable " + identifier.getIdentifierString() + " has not allowed type '" + variable_types.get(identifier).toString() + "'.");
