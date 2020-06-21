@@ -24,6 +24,7 @@ variables:
     sample: "abc"
 fuzzing_parameters:
   max_iterations: 10
+  tactic: "DEPTH_SEARCH"
   tactic_depth_search:
     max_loop_unrolling: 16
     max_depth: 32

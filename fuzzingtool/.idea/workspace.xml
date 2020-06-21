@@ -8,8 +8,41 @@
     <list default="true" id="7937b683-e266-4626-b31f-f2e51fd3d190" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingNodeWrapperFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingNodeWrapperFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingTool.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/FuzzingTool.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/Logger.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/Logger.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Amygdala.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Amygdala.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNode.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNode.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNodeAttribute.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/BranchingNodeAttribute.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/ComponentException.java" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Tracer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/Tracer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/VariableIdentifier.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/components/VariableIdentifier.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/ExpressionType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/ExpressionType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/LanguageSemantic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/LanguageSemantic.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/Operation.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/Operation.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/SymbolicException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/SymbolicException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/SymbolicNode.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/SymbolicNode.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Addition.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Addition.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Division.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Division.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Multiplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Multiplication.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Subtraction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/Subtraction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/UnaryMinus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/UnaryMinus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/UnaryPlus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/arithmetic/UnaryPlus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/SymbolicConstant.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/SymbolicConstant.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/SymbolicVariable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/basic/SymbolicVariable.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/And.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/And.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Equal.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Equal.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/GreaterEqual.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/GreaterEqual.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/GreaterThan.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/GreaterThan.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/LessEqual.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/LessEqual.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/LessThan.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/LessThan.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Not.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Not.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Or.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/Or.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/StrictEqual.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/symbolic/logical/StrictEqual.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/tactics/DepthSearchTactic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/tactics/DepthSearchTactic.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/tactics/FuzzingException.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/tactics/FuzzingException.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/tactics/FuzzingTactic.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/tactics/FuzzingTactic.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/visualization/ASTVisualizer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/visualization/ASTVisualizer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/visualization/BranchingVisualizer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/fuzzingtool/visualization/BranchingVisualizer.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -66,7 +99,7 @@
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
-    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+    <property name="settings.editor.selected.configurable" value="preferences.sourceCode.Java" />
   </component>
   <component name="RunAnythingCache">
     <option name="myCommands">
@@ -176,7 +209,10 @@
       <workItem from="1592046587647" duration="5544000" />
       <workItem from="1592145211429" duration="3803000" />
       <workItem from="1592216842108" duration="8348000" />
-      <workItem from="1592389264709" duration="14668000" />
+      <workItem from="1592389264709" duration="15034000" />
+      <workItem from="1592559751409" duration="653000" />
+      <workItem from="1592649827436" duration="6297000" />
+      <workItem from="1592734525356" duration="8350000" />
     </task>
     <servers />
   </component>
@@ -192,50 +228,51 @@
       <screen x="0" y="0" width="1280" height="984" />
     </state>
     <state x="98" y="149" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1588350357598" />
-    <state x="448" y="203" width="478" height="570" key="#com.intellij.ide.util.MemberChooser" timestamp="1591785547582">
+    <state x="448" y="203" width="478" height="570" key="#com.intellij.ide.util.MemberChooser" timestamp="1592652059041">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
-    <state x="448" y="203" width="478" height="570" key="#com.intellij.ide.util.MemberChooser/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1591785547582" />
+    <state x="448" y="203" width="478" height="570" key="#com.intellij.ide.util.MemberChooser/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592652059041" />
     <state x="1952" y="223" width="374" height="570" key="#com.intellij.ide.util.MemberChooser/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590669992227" />
     <state x="0" y="0" width="1270" height="979" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog" timestamp="1591442237217">
       <screen x="0" y="0" width="1280" height="984" />
     </state>
     <state x="0" y="0" width="1270" height="979" key="#com.intellij.refactoring.rename.AutomaticRenamingDialog/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1591442237217" />
-    <state x="384" y="340" width="502" height="296" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1592226137842">
-      <screen x="0" y="0" width="1280" height="984" />
+    <state x="576" y="359" width="502" height="296" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1592741621218">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="384" y="340" width="502" height="296" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592226137842" />
+    <state x="576" y="359" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.0.1920.1040@0.0.1920.1040" timestamp="1592741621218" />
     <state x="2023" y="297" width="424" height="479" key="FileChooserDialogImpl" timestamp="1590667287807">
       <screen x="1280" y="0" width="1920" height="1080" />
     </state>
     <state x="2023" y="297" width="424" height="479" key="FileChooserDialogImpl/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667287807" />
-    <state width="1238" height="397" key="GridCell.Tab.0.bottom" timestamp="1592416833630">
-      <screen x="0" y="0" width="1280" height="984" />
+    <state width="1878" height="423" key="GridCell.Tab.0.bottom" timestamp="1592744743676">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1238" height="397" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592416833630" />
-    <state width="1878" height="397" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592226755637" />
-    <state width="1878" height="380" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1591031145450" />
+    <state width="1238" height="396" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592660040596" />
+    <state width="1878" height="444" key="GridCell.Tab.0.bottom/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592652750871" />
+    <state width="1878" height="423" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1592744743676" />
     <state width="1878" height="644" key="GridCell.Tab.0.bottom/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
-    <state width="1238" height="397" key="GridCell.Tab.0.center" timestamp="1592416833629">
-      <screen x="0" y="0" width="1280" height="984" />
+    <state width="1878" height="423" key="GridCell.Tab.0.center" timestamp="1592744743675">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1238" height="397" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592416833629" />
-    <state width="1878" height="397" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592226755637" />
-    <state width="1878" height="380" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1591031145449" />
+    <state width="1238" height="396" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592660040596" />
+    <state width="1878" height="444" key="GridCell.Tab.0.center/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592652750871" />
+    <state width="1878" height="423" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1592744743675" />
     <state width="1878" height="644" key="GridCell.Tab.0.center/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
-    <state width="1238" height="397" key="GridCell.Tab.0.left" timestamp="1592416833629">
-      <screen x="0" y="0" width="1280" height="984" />
+    <state width="1878" height="423" key="GridCell.Tab.0.left" timestamp="1592744743675">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1238" height="397" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592416833629" />
-    <state width="1878" height="397" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592226755636" />
-    <state width="1878" height="380" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1591031145449" />
+    <state width="1238" height="396" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592660040596" />
+    <state width="1878" height="444" key="GridCell.Tab.0.left/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592652750870" />
+    <state width="1878" height="423" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1592744743675" />
     <state width="1878" height="644" key="GridCell.Tab.0.left/0.0.3200.984@0.0.3200.984" timestamp="1589732454122" />
-    <state width="1238" height="397" key="GridCell.Tab.0.right" timestamp="1592416833629">
-      <screen x="0" y="0" width="1280" height="984" />
+    <state width="1878" height="423" key="GridCell.Tab.0.right" timestamp="1592744743676">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1238" height="397" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592416833629" />
-    <state width="1878" height="397" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592226755637" />
-    <state width="1878" height="380" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1591031145450" />
+    <state width="1238" height="396" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1592660040596" />
+    <state width="1878" height="444" key="GridCell.Tab.0.right/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1592652750871" />
+    <state width="1878" height="423" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1592744743675" />
     <state width="1878" height="644" key="GridCell.Tab.0.right/0.0.3200.984@0.0.3200.984" timestamp="1589732454123" />
     <state width="1878" height="357" key="GridCell.Tab.1.bottom" timestamp="1589313973673">
       <screen x="0" y="0" width="1280" height="984" />
@@ -262,11 +299,11 @@
     </state>
     <state x="329" y="167" width="924" height="679" key="Maven.ArtifactSearchDialog/0.0.1280.984/1280.0.1920.1080@0.0.1280.984" timestamp="1589817435803" />
     <state x="493" y="177" width="924" height="679" key="Maven.ArtifactSearchDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1589718685192" />
-    <state x="464" y="168" width="1024" height="840" key="SettingsEditor" timestamp="1590849588871">
+    <state x="263" y="73" width="1484" height="846" key="SettingsEditor" timestamp="1592739598674">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="1744" y="174" width="1024" height="840" key="SettingsEditor/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590667420248" />
-    <state x="464" y="168" key="SettingsEditor/0.0.1920.1040@0.0.1920.1040" timestamp="1590849588871" />
+    <state x="263" y="73" width="1484" height="846" key="SettingsEditor/0.0.1920.1040@0.0.1920.1040" timestamp="1592739598674" />
     <state x="2041" y="320" width="387" height="433" key="chooseDestDirectoryDialog" timestamp="1588349249556">
       <screen x="1280" y="0" width="1920" height="1080" />
     </state>
@@ -295,5 +332,9 @@
       <screen x="1280" y="0" width="1920" height="1080" />
     </state>
     <state x="1904" y="248" width="672" height="677" key="run.anything.popup/0.0.1280.984/1280.0.1920.1080@1280.0.1920.1080" timestamp="1590669097490" />
+    <state x="555" y="180" width="800" height="672" key="scopes" timestamp="1592738791247">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="555" y="180" width="800" height="672" key="scopes/0.0.1920.1040@0.0.1920.1040" timestamp="1592738791247" />
   </component>
 </project>

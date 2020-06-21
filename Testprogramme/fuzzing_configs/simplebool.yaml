@@ -1,0 +1,10 @@
+---
+program_path: "../javascript/simplebool.js"
+variables:
+  - line_num: 1
+    name: "k"
+    type: BOOLEAN
+    sample: false
+fuzzing_parameters:
+  max_iterations: 3
+...

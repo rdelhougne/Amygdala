@@ -5,9 +5,6 @@ import subprocess
 import testgenerator
 
 def main(iterations):
-	
-
-def fuzz_graaljs(iterations):
 	for i in range(iterations):
 		print("Iteration " + str(i + 1))
 		expr = testgenerator.generate_simple_expression((1,19))
@@ -21,5 +18,4 @@ def fuzz_graaljs(iterations):
 
 
 if __name__ == "__main__":
-	main()
-	#fuzz_graaljs(int(sys.argv[1]))
+	main(int(sys.argv[1]))
