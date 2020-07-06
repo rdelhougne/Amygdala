@@ -1,9 +1,9 @@
 'use strict';
 
 {
-if (true) {
-	var i = 5;
-}
+	if (true) {
+		var i = 5;
+	}
 }
 
 print(i);

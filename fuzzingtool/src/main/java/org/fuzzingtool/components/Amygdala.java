@@ -49,7 +49,6 @@ public class Amygdala {
 
 	public Amygdala(Logger lgr) {
 		this.tracer = new Tracer(lgr);
-		this.tracer.initialize_program_context(LanguageSemantic.JAVASCRIPT);
 		this.logger = lgr;
 		this.variable_values = new HashMap<>();
 		this.variable_types = new HashMap<>();
@@ -82,7 +81,7 @@ public class Amygdala {
 				currentBranch.getBranchingNodeAttribute() == BranchingNodeAttribute.LOOP) {
 			currentBranch = currentBranch.getChildBranch(taken);
 		} else {
-			currentBranch.setProperties(tracer.get_interim(predicate_interim_key), branching_node_hash, bt);
+			currentBranch.setProperties(tracer.getIntermediate(predicate_interim_key), branching_node_hash, bt);
 			currentBranch.setSourceCodeExpression(vis_predicate_string);
 			currentBranch.initializeChildren();
 			currentBranch = currentBranch.getChildBranch(taken);
@@ -100,7 +99,6 @@ public class Amygdala {
 		}
 		currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.TERMINATE);
 		currentBranch = branchingRootNode;
-		tracer.reset(LanguageSemantic.JAVASCRIPT);
 		this.fuzzing_iterations += 1;
 	}
 
@@ -111,7 +109,6 @@ public class Amygdala {
 	public void error_event() {
 		currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.ERROR);
 		currentBranch = branchingRootNode;
-		tracer.reset(LanguageSemantic.JAVASCRIPT);
 		this.fuzzing_iterations += 1;
 		suppress_terminate();
 	}

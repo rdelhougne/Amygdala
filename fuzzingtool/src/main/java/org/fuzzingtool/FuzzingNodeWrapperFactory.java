@@ -1,10 +1,14 @@
 package org.fuzzingtool;
 
+import com.oracle.truffle.api.Scope;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.*;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.js.nodes.access.JSConstantNode;
+import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
 import org.fuzzingtool.components.Amygdala;
 import org.fuzzingtool.components.BranchingNodeAttribute;
 import org.fuzzingtool.components.VariableIdentifier;
@@ -24,6 +28,8 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 	private final TruffleInstrument.Env env;
 	private final Amygdala amygdala;
 	private int visualized_counter = 0;
+
+	private static final InteropLibrary INTEROP = LibraryFactory.resolve(InteropLibrary.class).getUncached();
 
 	// Capture group 2 is variable name
     private final Pattern assignment_pattern = Pattern.compile("(var\\s+|let\\s+|const\\s+)?\\s*([A-Za-z]\\w*)\\s*=.*");
@@ -76,7 +82,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			private final VariableIdentifier inputVariableIdentifier = create_inputVariableIdentifier;
 			private final boolean isMainLoopInputNode = create_nodeIsMainLoopInputNode;
 
-			protected String getSignature() {
+			protected String getSignatureString() {
 				String node_type_padded = String.format("%1$-" + 36 + "s", node_type);
 				String hash_padded = String.format("%1$-" + 12 + "s", node_hash);
 				if (my_sourcesection != null && my_sourcesection.isAvailable()) {
@@ -89,9 +95,87 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				}
 			}
 
+			protected String getLocalScopesString(VirtualFrame vFrame) {
+				StringBuilder builder = new StringBuilder();
+				Iterable<Scope> a = env.findLocalScopes(my_node, vFrame);
+				if (a != null) {
+					builder.append("=== LOCAL SCOPES ===\n\n");
+					for (Scope s: a) {
+						builder.append("Scope Object: ").append(s.toString()).append("\n");
+						try {
+							builder.append("getName: ").append(s.getName()).append("\n");
+						} catch (java.lang.Exception ex) {
+							builder.append("NOT GOOD\n");
+						}
+						try {
+							builder.append("getReceiverName: ").append(s.getReceiverName()).append("\n");
+						} catch (java.lang.Exception ex) {
+							builder.append("NOT GOOD\n");
+						}
+						try {
+							builder.append("getReceiver: ").append(s.getReceiver().toString()).append("\n");
+						} catch (java.lang.Exception ex) {
+							builder.append("NOT GOOD\n");
+						}
+						try {
+							builder.append("getVariables: ").append(s.getVariables().toString()).append("\n");
+							if (INTEROP.hasMembers(s.getVariables())) {
+								builder.append("Members:\n");
+								InteropList members = (InteropList) INTEROP.getMembers(s.getVariables());
+								for (int i = 0; i < INTEROP.getArraySize(members); i++) {
+									builder.append(INTEROP.readArrayElement(members, i).toString()).append("\n");
+								}
+							} else {
+								builder.append("Has no Members\n");
+							}
+						} catch (java.lang.Exception ex) {
+							builder.append("NOT GOOD\n");
+						}
+						try {
+							builder.append("getNode: ").append(s.getNode().toString()).append("\n");
+						} catch (java.lang.Exception ex) {
+							builder.append("NOT GOOD\n");
+						}
+						try {
+							builder.append("getArguments: ").append(s.getArguments().toString()).append("\n");
+						} catch (java.lang.Exception ex) {
+							builder.append("NOT GOOD\n");
+						}
+						try {
+							builder.append("getRootInstance: ").append(s.getRootInstance().toString()).append("\n");
+						} catch (java.lang.Exception ex) {
+							builder.append("NOT GOOD\n");
+						}
+						builder.append("\n");
+					}
+				}
+				return builder.toString();
+			}
+
+			/**
+			 * Returns the hash-code of the current receiver object instance (aka. "this" in JavaScript)
+			 *
+			 * @param vFrame The current frame
+			 * @return The corresponding hash-code, or 0 if an error occurs
+			 */
+			protected Integer getThisObjectHash(VirtualFrame vFrame) {
+				Iterable<Scope> localScopes = env.findLocalScopes(my_node, vFrame);
+				if (localScopes != null && localScopes.iterator().hasNext()) {
+					Scope innermost_scope = localScopes.iterator().next();
+					try {
+						return innermost_scope.getReceiver().hashCode();
+					} catch (java.lang.Exception ex) {
+						amygdala.logger.critical("ExecutionEventNode.getThisObjectHash(): Node " + getSignatureString() + " has no Receiver-Object.");
+						return 0;
+					}
+				}
+				amygdala.logger.critical("ExecutionEventNode.getThisObjectHash(): Node " + getSignatureString() + " has no local scopes.");
+				return 0;
+			}
+
 			@Override
 			protected void onEnter(VirtualFrame vFrame) {
-				amygdala.logger.log(getSignature() + " \033[32m→\033[0m");
+				amygdala.logger.log(getSignatureString() + " \033[32m→\033[0m");
 
 				switch (node_type) {
 					case "Call1Node":
@@ -133,7 +217,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			@Override
 			protected void onInputValue(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
                                         Object inputValue) {
-				amygdala.logger.log(getSignature() + " \033[34m•\033[0m");
+				amygdala.logger.log(getSignatureString() + " \033[34m•\033[0m");
 
 				switch (node_type) {
 					case "IfNode":
@@ -149,7 +233,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			@Override
 			public void onReturnValue(VirtualFrame vFrame, Object result) {
-				amygdala.logger.log(getSignature() + " \033[31m↵\033[0m");
+				amygdala.logger.log(getSignatureString() + " \033[31m↵\033[0m");
 
 				try {
 					switch (node_type) {
@@ -253,7 +337,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			// This method is only for testing for inconsistencies in the symbolic flow, should be removed later
 			public void invalidate_interim(ArrayList<Pair<Integer, String>> old_results) {
 				for (Pair<Integer, String> to_destroy: old_results) {
-					amygdala.tracer.remove_interim(to_destroy.getLeft());
+					amygdala.tracer.removeIntermediate(to_destroy.getLeft());
 				}
 			}
 
@@ -338,7 +422,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				ArrayList<Pair<Integer, String>> child = getChildHashes();
 				// Kann kein Verhalten aus mehrern Kindern ableiten
 				if (child.size() == 1) {
-					amygdala.tracer.pass_through_interim(node_hash, child.get(0).getLeft());
+					amygdala.tracer.passThroughIntermediate(node_hash, child.get(0).getLeft());
 				}
 			}
 
@@ -390,8 +474,8 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					SymbolicException.WrongParameterSize {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				assert children.size() == 2;
-				amygdala.tracer.add_operation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft(),
-											  children.get(1).getLeft());
+				amygdala.tracer.addOperation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft(),
+											 children.get(1).getLeft());
 				invalidate_interim(children);
 			}
 
@@ -399,7 +483,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					SymbolicException.WrongParameterSize {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				assert children.size() == 1;
-				amygdala.tracer.add_operation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft());
+				amygdala.tracer.addOperation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft());
 				invalidate_interim(children);
 			}
 
@@ -408,21 +492,21 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					if (!amygdala.isFirstRun()) {
 						// An diesem Punkt ist das Programm eigentlich beendet, wird aber jetzt neu gestartet.
 						amygdala.terminate_event();
-
 						// Hier wird entschieden ob ein weiterer Fuzzing-Durchlauf stattfindet
 						throw this.event_context.createUnwind(amygdala.calculateNextPath());
 					}
+					amygdala.tracer.reset(LanguageSemantic.JAVASCRIPT, getThisObjectHash(vFrame));
 				} else if (this.isInputNode) {
 					Object next_input = amygdala.getNextInputValue(this.inputVariableIdentifier);
 					amygdala.logger
 							.log("Next input value for variable " +
                                          this.inputVariableIdentifier.getIdentifierString() +
 										 ": " + next_input);
-					amygdala.tracer.add_variable(node_hash, LanguageSemantic.JAVASCRIPT, this.inputVariableIdentifier,
-												 amygdala.getVariableType(this.inputVariableIdentifier));
+					amygdala.tracer.addVariable(node_hash, LanguageSemantic.JAVASCRIPT, this.inputVariableIdentifier,
+												amygdala.getVariableType(this.inputVariableIdentifier));
 					throw this.event_context.createUnwind(next_input);
 				} else {
-					amygdala.tracer.add_constant(node_hash, LanguageSemantic.JAVASCRIPT, type, result);
+					amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, type, result);
 				}
 			}
 		};
