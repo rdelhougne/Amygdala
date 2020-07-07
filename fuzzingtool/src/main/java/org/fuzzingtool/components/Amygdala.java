@@ -30,8 +30,8 @@ public class Amygdala {
 	public final BranchingNode branchingRootNode;
 	public final Context z3_ctx;
 	public HashMap<VariableIdentifier, Object> variable_values;
-	public final HashMap<VariableIdentifier, ExpressionType> variable_types;
 	public final HashMap<Integer, VariableIdentifier> variable_line_to_identifier;
+	public final HashMap<VariableIdentifier, String> variable_names;
 	public boolean fuzzing_finished = false;
 	// Fuzzing Configuration
 	public int main_loop_line_num = 1;
@@ -51,7 +51,7 @@ public class Amygdala {
 		this.tracer = new Tracer(lgr);
 		this.logger = lgr;
 		this.variable_values = new HashMap<>();
-		this.variable_types = new HashMap<>();
+		this.variable_names = new HashMap<>();
 		this.variable_line_to_identifier = new HashMap<>();
 
 		HashMap<String, String> cfg = new HashMap<>();
@@ -156,7 +156,7 @@ public class Amygdala {
 	public Boolean calculateNextPath() {
 		if (fuzzing_iterations <= max_iterations) {
 			try {
-				variable_values = this.tactic.getNextValues(variable_types);
+				variable_values = this.tactic.getNextValues();
 			} catch (FuzzingException.NoMorePaths noMorePaths) {
 				fuzzing_finished = true;
 				return false;
@@ -179,7 +179,7 @@ public class Amygdala {
 			return variable_values.get(var_id);
 		} else {
 			logger.warning("No new value for variable: " + var_id.getIdentifierString());
-			switch (variable_types.get(var_id)) {
+			switch (var_id.getVariableType()) {
 				case BOOLEAN:
 					return true;
 				case STRING:
@@ -191,26 +191,9 @@ public class Amygdala {
 					return 1.5;
 				default:
 					logger.critical("Variable " + var_id.getIdentifierString() + " has not allowed type '" +
-											variable_types.get(var_id).toString() + "'.");
+											var_id.getVariableType().toString() + "'.");
 					return null;
 			}
-		}
-	}
-
-	/**
-	 * Returns the type of an input variable.
-	 *
-	 * @param var_id VariableIdentifier of the Variable
-	 * @return The ExpressionType of the variable, or null if the variable is was not defined as an input variable in
-	 * the YAML-file
-	 */
-	public ExpressionType getVariableType(VariableIdentifier var_id) {
-		if (variable_types.containsKey(var_id)) {
-			return variable_types.get(var_id);
-		} else {
-			logger.critical("Amygdala::getVariableType() Cannot get type of variable '"
-									+ var_id.getIdentifierString() + "'");
-			return null;
 		}
 	}
 
@@ -275,14 +258,12 @@ public class Amygdala {
 	private void loadVariables(List<Map<String, Object>> variable_list, Integer lineOffset) {
 		for (Map<String, Object> var_declaration: variable_list) {
 			Integer line_num = (Integer) var_declaration.get("line_num") + lineOffset;
-			String name = (String) var_declaration.get("name");
+			String name = (String) var_declaration.getOrDefault("name", "(no name)");
 			String var_type = (String) var_declaration.get("type");
 
 			ExpressionType var_type_enum;
 			switch (var_type) {
 				case "BIGINT":
-					var_type_enum = ExpressionType.BIGINT;
-					break;
 				case "INTEGER":
 					var_type_enum = ExpressionType.NUMBER_INTEGER;
 					break;
@@ -300,9 +281,9 @@ public class Amygdala {
 					continue;
 			}
 
-			VariableIdentifier new_identifier = VariableIdentifier.fromString(name);
+			VariableIdentifier new_identifier = new VariableIdentifier(var_type_enum, tracer.getNewGID());
 			variable_line_to_identifier.put(line_num, new_identifier);
-			variable_types.put(new_identifier, var_type_enum);
+			variable_names.put(new_identifier, name);
 
 			switch (var_type_enum) {
 				case BOOLEAN:

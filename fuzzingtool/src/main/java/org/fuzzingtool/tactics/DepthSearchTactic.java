@@ -29,7 +29,7 @@ public class DepthSearchTactic extends FuzzingTactic {
 	}
 
 	@Override
-	public HashMap<VariableIdentifier, Object> getNextValues(HashMap<VariableIdentifier, ExpressionType> variable_types) throws FuzzingException.NoMorePaths {
+	public HashMap<VariableIdentifier, Object> getNextValues() throws FuzzingException.NoMorePaths {
 		boolean path_found = true;
 		while (path_found) {
 			BranchingNode new_target = find_unexplored(root_node, 1);
@@ -60,53 +60,49 @@ public class DepthSearchTactic extends FuzzingTactic {
 						VariableIdentifier identifier = VariableIdentifier.fromString(declaration_name);
 						Expr result = model.getConstInterp(d);
 
-						if (variable_types.containsKey(identifier)) {
-							switch (variable_types.get(identifier)) {
-								case BOOLEAN:
-									if (result.isBool()) {
-										variable_values.put(identifier, result.isTrue());
-									} else {
-										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Bool.");
-									}
-									break;
-								case STRING:
-									if (result.isString()) {
-										variable_values.put(identifier, result.getString());
-									} else {
-										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to String.");
-									}
-									break;
-								case BIGINT:
-								case NUMBER_INTEGER:
-									if (result.isIntNum()) {
-										try {
-											IntNum cast_result = (IntNum) result;
-											variable_values.put(identifier, cast_result.getInt());
-										} catch (ClassCastException cce) {
-											logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer.");
-										}
-									} else {
+						switch (identifier.getVariableType()) {
+							case BOOLEAN:
+								if (result.isBool()) {
+									variable_values.put(identifier, result.isTrue());
+								} else {
+									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Bool.");
+								}
+								break;
+							case STRING:
+								if (result.isString()) {
+									variable_values.put(identifier, result.getString());
+								} else {
+									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to String.");
+								}
+								break;
+							case BIGINT:
+							case NUMBER_INTEGER:
+								if (result.isIntNum()) {
+									try {
+										IntNum cast_result = (IntNum) result;
+										variable_values.put(identifier, cast_result.getInt());
+									} catch (ClassCastException cce) {
 										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer.");
 									}
-									break;
-								case NUMBER_REAL: //TODO Z3 RatNum to Double conversion
-									if (result.isRatNum()) {
-										try {
-											RatNum cast_result = (RatNum) result;
-											variable_values.put(identifier, Double.parseDouble(cast_result.toDecimalString(128)));
-										} catch (ClassCastException cce) {
-											logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double.");
-										}
-									} else {
+								} else {
+									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer.");
+								}
+								break;
+							case NUMBER_REAL: //TODO Z3 RatNum to Double conversion
+								if (result.isRatNum()) {
+									try {
+										RatNum cast_result = (RatNum) result;
+										variable_values.put(identifier, Double.parseDouble(cast_result.toDecimalString(128)));
+									} catch (ClassCastException cce) {
 										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double.");
 									}
-									break;
-								default:
-									logger.critical("Variable " + identifier.getIdentifierString() + " has not allowed type '" + variable_types.get(identifier).toString() + "'.");
-									break;
-							}
-						} else {
-							logger.critical("No type for variable: " + identifier.getIdentifierString());
+								} else {
+									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double.");
+								}
+								break;
+							default:
+								logger.critical("Variable " + identifier.getIdentifierString() + " has not allowed type '" + identifier.getVariableType().toString() + "'.");
+								break;
 						}
 					}
 					this.loop_unrolls.clear();

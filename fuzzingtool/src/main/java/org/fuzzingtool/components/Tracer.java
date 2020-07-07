@@ -125,7 +125,7 @@ public class Tracer {
 	 */
 	public void intermediateToFrameSlot(ArrayList<Integer> frame_stack, String key, Integer node_id_intermediate) {
 		if (frame_stack.size() == 1) {
-			// Behavior for JSWriteCurrentFrameSlotNodeGen
+			// Behavior for JSWriteCurrentFrameSlotNodeGen (or block scopes)?
 			if (!symbolic_program.containsKey(frame_stack.get(0))) {
 				symbolic_program.put(frame_stack.get(0), new VariableContext(VariableContext.ContextType.FUNCTION_SCOPE));
 			}
@@ -340,10 +340,9 @@ public class Tracer {
 	 * @param node_target The node-hash of the intermediate result
 	 * @param s           Semantic of the language
 	 * @param id          VariableIdentifier of the new variable, see {@link VariableIdentifier}
-	 * @param t           ExpressionType of the new variable, see {@link ExpressionType}
 	 */
-	public void addVariable(Integer node_target, LanguageSemantic s, VariableIdentifier id, ExpressionType t) {
-		intermediate_results.put(node_target, new SymbolicVariable(s, id, t));
+	public void addVariable(Integer node_target, LanguageSemantic s, VariableIdentifier id) {
+		intermediate_results.put(node_target, new SymbolicVariable(s, id));
 	}
 
 	/**

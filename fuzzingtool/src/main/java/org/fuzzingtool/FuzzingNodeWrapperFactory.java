@@ -1,13 +1,15 @@
 package org.fuzzingtool;
 
 import com.oracle.truffle.api.Scope;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.*;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
-import com.oracle.truffle.js.nodes.access.JSConstantNode;
+import com.oracle.truffle.js.nodes.access.*;
+import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
 import org.fuzzingtool.components.Amygdala;
 import org.fuzzingtool.components.BranchingNodeAttribute;
@@ -21,6 +23,7 @@ import org.graalvm.collections.Pair;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,10 +80,14 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			private final String node_type = my_node.getClass().getSimpleName();
 			private final int node_hash = my_node.hashCode();
 
-			//Input node config
+			// Input node config
 			private final boolean isInputNode = create_nodeIsInputNode;
 			private final VariableIdentifier inputVariableIdentifier = create_inputVariableIdentifier;
 			private final boolean isMainLoopInputNode = create_nodeIsMainLoopInputNode;
+
+			// Various save spots
+			// used by PropertyNode and WritePropertyNode to save the hash of the object
+			private int object_context_hash = 0;
 
 			protected String getSignatureString() {
 				String node_type_padded = String.format("%1$-" + 36 + "s", node_type);
@@ -175,7 +182,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			@Override
 			protected void onEnter(VirtualFrame vFrame) {
-				amygdala.logger.log(getSignatureString() + " \033[32m→\033[0m");
+				//amygdala.logger.log(getSignatureString() + " \033[32m→\033[0m");
 
 				switch (node_type) {
 					case "Call1Node":
@@ -184,40 +191,12 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					default:
 						onEnterBehaviorDefault(vFrame);
 				}
-                /*highlight("Entering vFrame: " + vFrame);
-
-                Node n = ec.getInstrumentedNode();
-                Iterable<Scope> a = env.findLocalScopes(n, vFrame);
-                if (a != null) {
-                    for (Scope s : env.findLocalScopes(n, vFrame)) {
-                        try {
-                            highlight("Local: " + s.getName());
-                            Object args = s.getArguments();
-                        } catch (java.lang.Exception ex) {
-                            ex.printStackTrace();
-                            outStream.println("not good");
-                        }
-                    }
-                }
-
-                a = env.findTopScopes("js");
-                if (a != null) {
-                    for (Scope s : env.findLocalScopes(n, vFrame)) {
-                        try {
-                            highlight("Global:" + s.getName());
-                            Object args = s.getArguments();
-                        } catch (java.lang.Exception ex) {
-                            ex.printStackTrace();
-                            outStream.println("not good");
-                        }
-                    }
-                }*/
 			}
 
 			@Override
 			protected void onInputValue(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
                                         Object inputValue) {
-				amygdala.logger.log(getSignatureString() + " \033[34m•\033[0m");
+				//amygdala.logger.log(getSignatureString() + " \033[34m•\033[0m");
 
 				switch (node_type) {
 					case "IfNode":
@@ -226,6 +205,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "WhileNode":
 						onInputValueBehaviorWhileNode(vFrame, inputContext, inputIndex, inputValue);
 						break;
+					case "PropertyNode":
+					case "WritePropertyNode":
+						onInputValueBehaviorPropertyNode_WritePropertyNode(vFrame, inputContext, inputIndex, inputValue);
+						break;
 					default:
 						onInputValueBehaviorDefault(vFrame, inputContext, inputIndex, inputValue);
 				}
@@ -233,22 +216,28 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			@Override
 			public void onReturnValue(VirtualFrame vFrame, Object result) {
-				amygdala.logger.log(getSignatureString() + " \033[31m↵\033[0m");
+				//amygdala.logger.log(getSignatureString() + " \033[31m↵\033[0m");
 
 				try {
 					switch (node_type) {
 						// ===== JavaScript Read/Write =====
+						case "PropertyNode":
+							onReturnBehaviorPropertyNode(vFrame, result);
+							break;
+						case "WritePropertyNode":
+							onReturnBehaviorWritePropertyNode(vFrame, result);
+							break;
 						case "JSReadCurrentFrameSlotNodeGen":
 							onReturnBehaviorJSReadCurrentFrameSlotNodeGen(vFrame, result);
 							break;
 						case "JSWriteCurrentFrameSlotNodeGen":
 							onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(vFrame, result);
 							break;
-						case "WritePropertyNode":
-							onReturnBehaviorWritePropertyNode(vFrame, result);
+						case "JSReadScopeFrameSlotNodeGen":
+							onReturnBehaviorJSReadScopeFrameSlotNodeGen(vFrame, result);
 							break;
-						case "GlobalObjectNode":
-							onReturnBehaviorGlobalObjectNode(vFrame, result);
+						case "JSWriteScopeFrameSlotNodeGen":
+							onReturnBehaviorJSWriteScopeFrameSlotNodeGen(vFrame, result);
 							break;
 
 						// ===== JavaScript Arithmetic Nodes =====
@@ -388,6 +377,14 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				}
 			}
 
+			public void onInputValueBehaviorPropertyNode_WritePropertyNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
+																		   Object inputValue) {
+				// Save the hash of the object that is written to/read from
+				if (inputIndex == 0) {
+					object_context_hash = inputValue.hashCode();
+				}
+			}
+
 			public void onInputValueBehaviorWhileNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
                                                       Object inputValue) {
 				if (!(my_sourcesection.getStartLine() == amygdala.main_loop_line_num &&
@@ -428,43 +425,92 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			// ===== JavaScript Read/Write =====
 
-			public void onReturnBehaviorJSReadCurrentFrameSlotNodeGen(VirtualFrame vFrame, Object result) {
-				String variable_name = my_sourcesection.getCharacters().toString();
-				amygdala.tracer.read_frame_to_interim(variable_name, node_hash);
-			}
-
-			public void onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(VirtualFrame vFrame, Object result) {
-				ArrayList<Pair<Integer, String>> child = getChildHashes();
-				assert child.size() == 1;
-
-				String var_name = get_variable_name();
-				if (var_name != null) {
-					amygdala.tracer.write_interim_to_frame(child.get(0).getLeft(), var_name);
-				}
-			}
-
-			public void onReturnBehaviorGlobalObjectNode(VirtualFrame vFrame, Object result) {
-				String variable_name = my_sourcesection.getCharacters().toString();
-				amygdala.tracer.read_frame_to_interim(variable_name, node_hash);
+			public void onReturnBehaviorPropertyNode(VirtualFrame vFrame, Object result) {
+				PropertyNode pnode = (PropertyNode) my_node;
+				amygdala.tracer.getSymbolicObjectProperty(object_context_hash, pnode.getPropertyKey().toString(), node_hash);
 			}
 
 			public void onReturnBehaviorWritePropertyNode(VirtualFrame vFrame, Object result) {
-				ArrayList<Pair<Integer, String>> child = getChildHashes();
-				assert child.size() >= 2;
+				WritePropertyNode wpnode = (WritePropertyNode) my_node;
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				amygdala.tracer.setSymbolicObjectProperty(object_context_hash, wpnode.getKey().toString(), children.get(1).getLeft());
+			}
 
-				String var_name = get_variable_name();
-				if (var_name != null) {
-					amygdala.tracer.write_interim_to_frame(child.get(1).getLeft(), var_name);
+			public void onReturnBehaviorJSReadCurrentFrameSlotNodeGen(VirtualFrame vFrame, Object result) {
+				JSReadFrameSlotNode jsrfsn = (JSReadFrameSlotNode) my_node;
+				Iterator<Scope> local_scopes = env.findLocalScopes(my_node, vFrame).iterator();
+				if (local_scopes != null && local_scopes.hasNext()) {
+					Scope innermost_scope = local_scopes.next();
+					Object root_instance = innermost_scope.getRootInstance();
+					if (root_instance != null) {
+						ArrayList<Integer> scope_hashes = new ArrayList<>();
+						scope_hashes.add(root_instance.hashCode());
+						amygdala.tracer.frameSlotToIntermediate(scope_hashes, JSFrameUtil.getPublicName(jsrfsn.getFrameSlot()), node_hash);
+					} else {
+						amygdala.logger.critical("onReturnBehaviorJSReadCurrentFrameSlotNodeGen(): Cannot get root instance.");
+					}
+				} else {
+					amygdala.logger.critical("onReturnBehaviorJSReadCurrentFrameSlotNodeGen(): Cannot find any local scopes.");
 				}
 			}
 
-			private String get_variable_name() {
-				String source = my_sourcesection.getCharacters().toString().replace("\n", "");
-				Matcher matcher = assignment_pattern.matcher(source);
-				if (matcher.matches()) {
-					return matcher.group(2);
+			public void onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(VirtualFrame vFrame, Object result) {
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				JSWriteFrameSlotNode jswfsn = (JSWriteFrameSlotNode) my_node;
+				Iterator<Scope> local_scopes = env.findLocalScopes(my_node, vFrame).iterator();
+				if (local_scopes != null && local_scopes.hasNext()) {
+					Scope innermost_scope = local_scopes.next();
+					Object root_instance = innermost_scope.getRootInstance();
+					if (root_instance != null) {
+						ArrayList<Integer> scope_hashes = new ArrayList<>();
+						scope_hashes.add(root_instance.hashCode());
+						amygdala.tracer.intermediateToFrameSlot(scope_hashes, JSFrameUtil.getPublicName(jswfsn.getFrameSlot()), children.get(0).getLeft());
+					} else {
+						amygdala.logger.critical("onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(): Cannot get root instance.");
+					}
 				} else {
-					return null;
+					amygdala.logger.critical("onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(): Cannot find any local scopes.");
+				}
+			}
+
+			public void onReturnBehaviorJSReadScopeFrameSlotNodeGen(VirtualFrame vFrame, Object result) {
+				JSReadFrameSlotNode jsrfsn = (JSReadFrameSlotNode) my_node;
+				Iterator<Scope> local_scopes = env.findLocalScopes(my_node, vFrame).iterator();
+				if (local_scopes != null && local_scopes.hasNext()) {
+					ArrayList<Integer> scope_hashes = new ArrayList<>();
+					while (local_scopes.hasNext()) {
+						Scope curr_scope = local_scopes.next();
+						Object root_instance = curr_scope.getRootInstance();
+						if (root_instance != null) {
+							scope_hashes.add(root_instance.hashCode());
+						} else {
+							amygdala.logger.critical("onReturnBehaviorJSScopeFrameSlotNodeGen(): Cannot get root instance.");
+						}
+					}
+					amygdala.tracer.frameSlotToIntermediate(scope_hashes, JSFrameUtil.getPublicName(jsrfsn.getFrameSlot()), node_hash);
+				} else {
+					amygdala.logger.critical("onReturnBehaviorJSReadScopeFrameSlotNodeGen(): Cannot find any local scopes.");
+				}
+			}
+
+			public void onReturnBehaviorJSWriteScopeFrameSlotNodeGen(VirtualFrame vFrame, Object result) {
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				JSWriteFrameSlotNode jswfsn = (JSWriteFrameSlotNode) my_node;
+				Iterator<Scope> local_scopes = env.findLocalScopes(my_node, vFrame).iterator();
+				if (local_scopes != null && local_scopes.hasNext()) {
+					ArrayList<Integer> scope_hashes = new ArrayList<>();
+					while (local_scopes.hasNext()) {
+						Scope curr_scope = local_scopes.next();
+						Object root_instance = curr_scope.getRootInstance();
+						if (root_instance != null) {
+							scope_hashes.add(root_instance.hashCode());
+						} else {
+							amygdala.logger.critical("onReturnBehaviorJSScopeFrameSlotNodeGen(): Cannot get root instance.");
+						}
+					}
+					amygdala.tracer.intermediateToFrameSlot(scope_hashes, JSFrameUtil.getPublicName(jswfsn.getFrameSlot()), children.get(0).getLeft());
+				} else {
+					amygdala.logger.critical("onReturnBehaviorJSReadScopeFrameSlotNodeGen(): Cannot find any local scopes.");
 				}
 			}
 
@@ -502,8 +548,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 							.log("Next input value for variable " +
                                          this.inputVariableIdentifier.getIdentifierString() +
 										 ": " + next_input);
-					amygdala.tracer.addVariable(node_hash, LanguageSemantic.JAVASCRIPT, this.inputVariableIdentifier,
-												amygdala.getVariableType(this.inputVariableIdentifier));
+					amygdala.tracer.addVariable(node_hash, LanguageSemantic.JAVASCRIPT, this.inputVariableIdentifier);
 					throw this.event_context.createUnwind(next_input);
 				} else {
 					amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, type, result);
