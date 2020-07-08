@@ -19,6 +19,10 @@ public class Tracer {
 	// Saves a symbolic representation of the entire program
 	private final HashMap<Integer, VariableContext> symbolic_program = new HashMap<>();
 
+	// These two are for crossing function boundaries
+	private VariableContext arguments_array = new VariableContext(VariableContext.ContextType.ARRAY);
+	private SymbolicNode function_return_value;
+
 	private final HashSet<String> used_gids = new HashSet<>();
 	private final RandomStringGenerator gid_generator;
 
@@ -28,6 +32,36 @@ public class Tracer {
 		RandomStringGenerator.Builder rand_builder = new RandomStringGenerator.Builder();
 		rand_builder.selectFrom('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0');
 		this.gid_generator = rand_builder.build();
+
+		resetFunctionReturnValue();
+	}
+
+	public void setArgumentsArray(VariableContext arguments) {
+		this.arguments_array = arguments;
+	}
+
+	public void argumentToIntermediate(Integer argument_index, Integer node_id_intermediate) {
+		this.intermediate_results.put(node_id_intermediate, this.arguments_array.getIndex(argument_index));
+	}
+
+	public void resetFunctionReturnValue() {
+		try {
+			function_return_value = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
+		} catch (SymbolicException.IncompatibleType incompatibleType) {
+			incompatibleType.printStackTrace();
+		}
+	}
+
+	public void intermediateToFunctionReturnValue(Integer intermediate_key) {
+		if (intermediate_results.containsKey(intermediate_key)) {
+			this.function_return_value = intermediate_results.get(intermediate_key);
+		} else {
+			logger.critical("Tracer.setFunctionReturnValueFromIntermediate(): Trying to set return value to result from " + intermediate_key + " but it does not exist.");
+		}
+	}
+
+	public void functionReturnValueToIntermediate(Integer intermediate_key) {
+		this.intermediate_results.put(intermediate_key, this.function_return_value);
 	}
 
 	public String getNewGID() {

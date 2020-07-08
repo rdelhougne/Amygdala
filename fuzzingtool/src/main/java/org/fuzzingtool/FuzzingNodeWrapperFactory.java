@@ -1,7 +1,6 @@
 package org.fuzzingtool;
 
 import com.oracle.truffle.api.Scope;
-import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.*;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -9,10 +8,12 @@ import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.js.nodes.access.*;
+import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
 import org.fuzzingtool.components.Amygdala;
 import org.fuzzingtool.components.BranchingNodeAttribute;
+import org.fuzzingtool.components.VariableContext;
 import org.fuzzingtool.components.VariableIdentifier;
 import org.fuzzingtool.symbolic.ExpressionType;
 import org.fuzzingtool.symbolic.LanguageSemantic;
@@ -24,7 +25,6 @@ import org.graalvm.collections.Pair;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
@@ -88,6 +88,8 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			// Various save spots
 			// used by PropertyNode and WritePropertyNode to save the hash of the object
 			private int object_context_hash = 0;
+			// used by Call1..NNodes to construct the arguments array
+			private VariableContext arguments_array = new VariableContext(VariableContext.ContextType.ARRAY);
 
 			protected String getSignatureString() {
 				String node_type_padded = String.format("%1$-" + 36 + "s", node_type);
@@ -185,9 +187,13 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				//amygdala.logger.log(getSignatureString() + " \033[32m→\033[0m");
 
 				switch (node_type) {
+					case "Call0Node":
 					case "Call1Node":
+					case "CallNNode":
 						onEnterBehaviorCallNode(vFrame);
 						break;
+					case "MaterializedFunctionBodyNode":
+						onEnterBehaviorFunctionBodyNode(vFrame);
 					default:
 						onEnterBehaviorDefault(vFrame);
 				}
@@ -205,9 +211,15 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "WhileNode":
 						onInputValueBehaviorWhileNode(vFrame, inputContext, inputIndex, inputValue);
 						break;
+					case "GlobalPropertyNode":
 					case "PropertyNode":
 					case "WritePropertyNode":
-						onInputValueBehaviorPropertyNode_WritePropertyNode(vFrame, inputContext, inputIndex, inputValue);
+						onInputValueBehaviorPropertyNode(vFrame, inputContext, inputIndex, inputValue);
+						break;
+					case "Call0Node":
+					case "Call1Node":
+					case "CallNNode":
+						onInputBehaviorCallNode(vFrame, inputContext, inputIndex, inputValue);
 						break;
 					default:
 						onInputValueBehaviorDefault(vFrame, inputContext, inputIndex, inputValue);
@@ -221,6 +233,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				try {
 					switch (node_type) {
 						// ===== JavaScript Read/Write =====
+						case "GlobalPropertyNode":
+							onReturnBehaviorGlobalPropertyNode(vFrame, result);
+							break;
 						case "PropertyNode":
 							onReturnBehaviorPropertyNode(vFrame, result);
 							break;
@@ -238,6 +253,20 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 							break;
 						case "JSWriteScopeFrameSlotNodeGen":
 							onReturnBehaviorJSWriteScopeFrameSlotNodeGen(vFrame, result);
+							break;
+
+
+						// ===== JavaScript Function Handling =====
+						case "Call0Node":
+						case "Call1Node":
+						case "CallNNode":
+							onReturnBehaviorCallNode(vFrame, result);
+							break;
+						case "AccessIndexedArgumentNode":
+							onReturnBehaviorAccessIndexedArgumentNode(vFrame, result);
+							break;
+						case "TerminalPositionReturnNode":
+							onReturnBehaviorTerminalPositionReturnNode(vFrame, result);
 							break;
 
 						// ===== JavaScript Arithmetic Nodes =====
@@ -279,6 +308,12 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 							break;
 						case "JSConstantUndefinedNode":
 							onReturnBehaviorConstant(vFrame, result, ExpressionType.UNDEFINED);
+							break;
+
+
+							// ===== JavaScript Object/Function Creation Nodes
+						case "AutonomousFunctionExpressionNode":
+							onReturnBehaviorConstant(vFrame, result, ExpressionType.OBJECT);
 							break;
 
 
@@ -358,6 +393,14 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 								.contains(amygdala.error_identifier_string)) {
 					amygdala.error_event();
 				}
+				this.arguments_array.clear();
+				// if CallNode has no arguments (Call0Node)
+				amygdala.tracer.setArgumentsArray(this.arguments_array);
+			}
+
+			public void onEnterBehaviorFunctionBodyNode(VirtualFrame vFrame) {
+				// Reset the current return value to default (undefined)
+				amygdala.tracer.resetFunctionReturnValue();
 			}
 
 			public void onInputValueBehaviorDefault(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
@@ -377,14 +420,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				}
 			}
 
-			public void onInputValueBehaviorPropertyNode_WritePropertyNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
-																		   Object inputValue) {
-				// Save the hash of the object that is written to/read from
-				if (inputIndex == 0) {
-					object_context_hash = inputValue.hashCode();
-				}
-			}
-
 			public void onInputValueBehaviorWhileNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
                                                       Object inputValue) {
 				if (!(my_sourcesection.getStartLine() == amygdala.main_loop_line_num &&
@@ -396,6 +431,28 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 												 (Boolean) inputValue, extractPredicate());
 					}
 				}
+			}
+
+			public void onInputValueBehaviorPropertyNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
+														 Object inputValue) {
+				// Save the hash of the object that is written to/read from
+				if (inputIndex == 0) {
+					object_context_hash = inputValue.hashCode();
+				}
+			}
+
+			public void onInputBehaviorCallNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
+			Object inputValue) {
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				// 0 is ? node, 1 is the function object to call
+				// TODO a bit hacky
+				if (inputIndex >= 2) {
+					this.arguments_array.appendValue(amygdala.tracer.getIntermediate(children.get(inputIndex).getLeft()));
+				}
+				// Every call to onInput (or onEnter if Call0Node!)
+				// inside a call node could
+				// be the last input before the function gets called
+				amygdala.tracer.setArgumentsArray(this.arguments_array);
 			}
 
 			// TODO extremely costly...
@@ -424,6 +481,11 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			}
 
 			// ===== JavaScript Read/Write =====
+
+			public void onReturnBehaviorGlobalPropertyNode(VirtualFrame vFrame, Object result) {
+				GlobalPropertyNode gpnode = (GlobalPropertyNode) my_node;
+				amygdala.tracer.getSymbolicObjectProperty(object_context_hash, gpnode.getPropertyKey(), node_hash);
+			}
 
 			public void onReturnBehaviorPropertyNode(VirtualFrame vFrame, Object result) {
 				PropertyNode pnode = (PropertyNode) my_node;
@@ -514,6 +576,23 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				}
 			}
 
+			// ===== JavaScript Function Handling =====
+
+			public void onReturnBehaviorCallNode(VirtualFrame vFrame, Object result) {
+				amygdala.tracer.functionReturnValueToIntermediate(node_hash);
+				amygdala.tracer.resetFunctionReturnValue();
+			}
+
+			public void onReturnBehaviorAccessIndexedArgumentNode(VirtualFrame vFrame, Object result) {
+				AccessIndexedArgumentNode aian = (AccessIndexedArgumentNode) my_node;
+				amygdala.tracer.argumentToIntermediate(aian.getIndex(), node_hash);
+			}
+
+			public void onReturnBehaviorTerminalPositionReturnNode(VirtualFrame vFrame, Object result) {
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				amygdala.tracer.intermediateToFunctionReturnValue(children.get(0).getLeft());
+			}
+
 			// ===== JavaScript General Nodes =====
 
 			public void onReturnBehaviorBinaryOperation(VirtualFrame vFrame, Object result, Operation op) throws
@@ -544,10 +623,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					amygdala.tracer.reset(LanguageSemantic.JAVASCRIPT, getThisObjectHash(vFrame));
 				} else if (this.isInputNode) {
 					Object next_input = amygdala.getNextInputValue(this.inputVariableIdentifier);
-					amygdala.logger
-							.log("Next input value for variable " +
-                                         this.inputVariableIdentifier.getIdentifierString() +
-										 ": " + next_input);
 					amygdala.tracer.addVariable(node_hash, LanguageSemantic.JAVASCRIPT, this.inputVariableIdentifier);
 					throw this.event_context.createUnwind(next_input);
 				} else {

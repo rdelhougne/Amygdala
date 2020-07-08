@@ -176,7 +176,11 @@ public class Amygdala {
 	 */
 	public Object getNextInputValue(VariableIdentifier var_id) {
 		if (variable_values.containsKey(var_id)) {
-			return variable_values.get(var_id);
+			Object next_input = variable_values.get(var_id);
+			logger.info("Next input value for variable " +
+								variable_names.get(var_id) +
+								": " + next_input);
+			return next_input;
 		} else {
 			logger.warning("No new value for variable: " + var_id.getIdentifierString());
 			switch (var_id.getVariableType()) {
@@ -253,12 +257,11 @@ public class Amygdala {
 	 * This Method initializes all given variables and sample-inputs.
 	 *
 	 * @param variable_list YAML-Map of te variables
-	 * @param lineOffset    Line offset of the generated program
+	 * @param line_offset    Line offset of the generated program
 	 */
-	private void loadVariables(List<Map<String, Object>> variable_list, Integer lineOffset) {
+	private void loadVariables(List<Map<String, Object>> variable_list, Integer line_offset) {
 		for (Map<String, Object> var_declaration: variable_list) {
-			Integer line_num = (Integer) var_declaration.get("line_num") + lineOffset;
-			String name = (String) var_declaration.getOrDefault("name", "(no name)");
+			Integer line_num = (Integer) var_declaration.get("line_num");
 			String var_type = (String) var_declaration.get("type");
 
 			ExpressionType var_type_enum;
@@ -277,13 +280,23 @@ public class Amygdala {
 					var_type_enum = ExpressionType.STRING;
 					break;
 				default:
-					logger.warning("Unknown variable type '" + var_type + "' for variable " + name);
+					logger.warning("Unknown variable type '" + var_type + "' for variable in line " + line_num);
 					continue;
 			}
 
-			VariableIdentifier new_identifier = new VariableIdentifier(var_type_enum, tracer.getNewGID());
-			variable_line_to_identifier.put(line_num, new_identifier);
-			variable_names.put(new_identifier, name);
+			String var_gid = tracer.getNewGID();
+			VariableIdentifier new_identifier = new VariableIdentifier(var_type_enum, var_gid);
+			variable_line_to_identifier.put(line_num + line_offset, new_identifier);
+			StringBuilder builder = new StringBuilder();
+			builder.append("\"");
+			if (var_declaration.containsKey("name")) {
+				builder.append(var_declaration.get("name").toString());
+			} else {
+				builder.append(var_gid);
+			}
+			builder.append("\" (line ").append(line_num).append(")");
+			variable_names.put(new_identifier, builder.toString());
+
 
 			switch (var_type_enum) {
 				case BOOLEAN:

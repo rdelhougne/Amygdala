@@ -12,10 +12,9 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
-import com.oracle.truffle.js.nodes.access.JSReadFrameSlotNode;
-import com.oracle.truffle.js.nodes.access.JSWriteFrameSlotNode;
-import com.oracle.truffle.js.nodes.access.ScopeFrameNode;
-import com.oracle.truffle.js.nodes.access.WritePropertyNode;
+import com.oracle.truffle.js.nodes.access.*;
+import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
+import com.oracle.truffle.js.nodes.function.JSFunctionCallNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.objects.JSScope;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
@@ -126,6 +125,19 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				logger.log(getSignature() + " \033[32m→\033[0m");
 				Node n = ec.getInstrumentedNode();
 
+				if(n instanceof AccessIndexedArgumentNode) {
+					logger.alert(n.getClass().toString());
+					AccessIndexedArgumentNode aian = (AccessIndexedArgumentNode) n;
+					logger.alert(String.valueOf(aian.getIndex()));
+				}
+
+				if(n instanceof JSFunctionCallNode) {
+					logger.alert(n.getClass().toString());
+					JSFunctionCallNode jsfcn = (JSFunctionCallNode) n;
+					//logger.alert(String.valueOf(jsfcn.);
+				}
+
+
 				/*if(n instanceof JavaScriptFunctionCallNode) {
 					logger.alert(n.getClass().toString());
 					JavaScriptFunctionCallNode jsfcn = (JavaScriptFunctionCallNode) n;
@@ -138,7 +150,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					logger.log(fbn.expressionToString());
 				}*/
 
-				if (n instanceof JSWriteFrameSlotNode) {
+				/*if (n instanceof JSWriteFrameSlotNode) {
 					logger.highlight(n.toString());
 
 					Object this_obj = JSFrameUtil.getThisObj(vFrame);
@@ -148,9 +160,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					logger.log("func_obj: " + func_obj.toString());
 
 					logger.log(getLocalScopes(n, vFrame));
-				}
+				}*/
 
-				if (n instanceof JSReadFrameSlotNode) {
+				/*if (n instanceof JSReadFrameSlotNode) {
 					logger.highlight(n.toString());
 
 					JSReadFrameSlotNode jsrfsn = (JSReadFrameSlotNode) n;
@@ -184,26 +196,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					}
 
 					logger.log(getLocalScopes(n ,vFrame));
-
-					/*a = env.findTopScopes("js");
-					if (a != null) {
-						logger.log("Global:");
-						for (Scope s : a) {
-							try {
-								logger.highlight(s.toString());
-								logger.log("getName: " + s.getName());
-								logger.log("getReceiverName: " + s.getReceiverName());
-								logger.log("getReceiver: " + s.getReceiver().toString());
-								logger.log("getVariables: " + s.getVariables().toString());
-								logger.log("getNode: " + s.getNode().toString());
-								logger.log("getArguments: " + s.getArguments().toString());
-								logger.log("getRootInstance: " + s.getRootInstance().toString());
-							} catch (java.lang.Exception ex) {
-								logger.log("NOT GOOD");
-							}
-						}
-					}*/
-				}
+				}*/
 
 				/*if (n instanceof ObjectLiteralNode) {
 					logger.highlight(n.toString());
@@ -218,7 +211,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					logger.log(this_obj.toString());
 				}*/
 
-				if (n instanceof WritePropertyNode) {
+				/*if (n instanceof WritePropertyNode) {
 					logger.highlight(n.toString());
 					WritePropertyNode wpn = (WritePropertyNode) n;
 
@@ -240,7 +233,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 					Object func_obj = JSFrameUtil.getFunctionObject(vFrame);
 					logger.log("func_obj: " + func_obj.toString());
-				}
+				}*/
 			}
 
 			@Override
@@ -271,6 +264,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			public void onReturnValue(VirtualFrame vFrame, Object result) {
 				logger.log(getSignature() + " \033[31m↵\033[0m");
 				Node n = ec.getInstrumentedNode();
+
+				if (n instanceof GlobalObjectNode) {
+					logger.alert(result.toString());
+				}
 
 				/*if (n instanceof ObjectLiteralNode) {
 					logger.alert(n.toString());
