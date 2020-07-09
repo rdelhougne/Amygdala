@@ -88,6 +88,8 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			// Various save spots
 			// used by PropertyNode and WritePropertyNode to save the hash of the object
 			private int object_context_hash = 0;
+			// used by ReadElementNode and WriteElementNode to determine the array index
+			private int array_index = 0;
 			// used by Call1..NNodes to construct the arguments array
 			private VariableContext arguments_array = new VariableContext(VariableContext.ContextType.ARRAY);
 
@@ -216,6 +218,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "WritePropertyNode":
 						onInputValueBehaviorPropertyNode(vFrame, inputContext, inputIndex, inputValue);
 						break;
+					case "ReadElementNode":
+					case "WriteElementNode":
+						onInputValueBehaviorReadWriteElementNode(vFrame, inputContext, inputIndex, inputValue);
+						break;
 					case "Call0Node":
 					case "Call1Node":
 					case "CallNNode":
@@ -314,6 +320,17 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 							// ===== JavaScript Object/Function Creation Nodes
 						case "AutonomousFunctionExpressionNode":
 							onReturnBehaviorConstant(vFrame, result, ExpressionType.OBJECT);
+							break;
+
+							// ===== JavaScript Arrays =====
+						case "DefaultArrayLiteralNode":
+							onReturnBehaviorDefaultArrayLiteralNode(vFrame, result);
+							break;
+						case "ReadElementNode":
+							onReturnBehaviorReadElementNode(vFrame, result);
+							break;
+						case "WriteElementNode":
+							onReturnBehaviorWriteElementNode(vFrame, result);
 							break;
 
 
@@ -438,6 +455,18 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				// Save the hash of the object that is written to/read from
 				if (inputIndex == 0) {
 					object_context_hash = inputValue.hashCode();
+				}
+			}
+
+			public void onInputValueBehaviorReadWriteElementNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
+														 Object inputValue) {
+				// Save the hash of the object that is written to/read from
+				if (inputIndex == 0) {
+					object_context_hash = inputValue.hashCode();
+				}
+				// Save the array index
+				if (inputIndex == 1) {
+					array_index = (int) inputValue;
 				}
 			}
 
@@ -628,6 +657,25 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				} else {
 					amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, type, result);
 				}
+			}
+
+			public void onReturnBehaviorDefaultArrayLiteralNode(VirtualFrame vFrame, Object result) {
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				VariableContext new_array = new VariableContext(VariableContext.ContextType.ARRAY);
+				for (Pair<Integer, String> child: children) {
+					new_array.appendValue(amygdala.tracer.getIntermediate(child.getLeft()));
+				}
+				amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
+				amygdala.tracer.setSymbolicContext(result.hashCode(), new_array);
+			}
+
+			public void onReturnBehaviorReadElementNode(VirtualFrame vFrame, Object result) {
+				amygdala.tracer.getSymbolicArrayIndex(object_context_hash, array_index, node_hash);
+			}
+
+			public void onReturnBehaviorWriteElementNode(VirtualFrame vFrame, Object result) {
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				amygdala.tracer.setSymbolicArrayIndex(object_context_hash, array_index, children.get(2).getLeft());
 			}
 		};
 	}

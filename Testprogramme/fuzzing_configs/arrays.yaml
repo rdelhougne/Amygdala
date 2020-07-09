@@ -1,0 +1,14 @@
+---
+program_path: "../javascript/arrays.js"
+variables:
+  - line_num: 9
+    name: first_number
+    type: INTEGER
+    sample: 5
+fuzzing_parameters:
+  max_iterations: 1000
+  tactic: "DEPTH_SEARCH"
+  tactic_depth_search:
+    max_loop_unrolling: 16
+    max_depth: 32
+...

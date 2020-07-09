@@ -72,6 +72,19 @@ public class Tracer {
 		return new_gid;
 	}
 
+	public void setSymbolicContext(Integer context_key, VariableContext context) {
+		symbolic_program.put(context_key, context);
+	}
+
+	public VariableContext getSymbolicContext(Integer context_key) {
+		if (symbolic_program.containsKey(context_key)) {
+			return symbolic_program.get(context_key);
+		} else {
+			logger.critical("Tracer.getSymbolicContext(): Context with key " + context_key + " does not exist.");
+			return null;
+		}
+	}
+
 	/**
 	 * Load a symbolic object property to an intermediate result, used by PropertyNode.
 	 *
@@ -82,8 +95,8 @@ public class Tracer {
 	public void getSymbolicObjectProperty(Integer context, String key, Integer node_id_intermediate) {
 		if (symbolic_program.containsKey(context)) {
 			VariableContext var_ctx = symbolic_program.get(context);
-			if (var_ctx.getContextType() == VariableContext.ContextType.FUNCTION_SCOPE) {
-				logger.critical("Tracer::getSymbolicObjectProperty(): Trying to get key '" + key + "' of object " + context + ", but it is a function scope.");
+			if (var_ctx.getContextType() != VariableContext.ContextType.OBJECT) {
+				logger.critical("Tracer::getSymbolicObjectProperty(): Trying to get key '" + key + "' of context " + context + ", but it is not an object.");
 				return;
 			}
 			if (!var_ctx.hasValue(key)) {
@@ -109,8 +122,8 @@ public class Tracer {
 				symbolic_program.put(context, new VariableContext(VariableContext.ContextType.OBJECT));
 			}
 			VariableContext var_ctx = symbolic_program.get(context);
-			if (var_ctx.getContextType() == VariableContext.ContextType.FUNCTION_SCOPE) {
-				logger.critical("Tracer::setSymbolicObjectProperty(): Trying to set key '" + key + "' of object " + context + ", but it is a function scope.");
+			if (var_ctx.getContextType() != VariableContext.ContextType.OBJECT) {
+				logger.critical("Tracer::setSymbolicObjectProperty(): Trying to set key '" + key + "' of context " + context + ", but it is not an object.");
 				return;
 			}
 			var_ctx.setValue(key, intermediate_results.get(node_id_intermediate));
@@ -165,7 +178,7 @@ public class Tracer {
 			}
 			VariableContext var_ctx = symbolic_program.get(frame_stack.get(0));
 			if (var_ctx.getContextType() != VariableContext.ContextType.FUNCTION_SCOPE) {
-				logger.critical("Tracer::intermediateToFrameSlot(): Trying to set variable '" + key + "' of function scope " + frame_stack.get(0) + ", but it is an object.");
+				logger.critical("Tracer::intermediateToFrameSlot(): Trying to set variable '" + key + "' of context " + frame_stack.get(0) + ", but it is not a function scope.");
 				return;
 			}
 			var_ctx.setValue(key, intermediate_results.get(node_id_intermediate));
@@ -189,6 +202,49 @@ public class Tracer {
 			logger.critical("Tracer::intermediateToFrameSlot(): No function scope with variable '" + key + "' found.");
 		} else {
 			logger.critical("Tracer::intermediateToFrameSlot(): No function scopes provided.");
+		}
+	}
+
+	/**
+	 * Load a symbolic array value to an intermediate result, used by ReadElementNode.
+	 *
+	 * @param context The array identifier, hashCode of input 0
+	 * @param index The array index
+	 * @param node_id_intermediate hashCode of the intermediate result
+	 */
+	public void getSymbolicArrayIndex(Integer context, Integer index, Integer node_id_intermediate) {
+		if (symbolic_program.containsKey(context)) {
+			VariableContext var_ctx = symbolic_program.get(context);
+			if (var_ctx.getContextType() != VariableContext.ContextType.ARRAY) {
+				logger.critical("Tracer::getSymbolicArrayIndex(): Trying to get index '" + index + "' of context " + context + ", but it is not an array.");
+				return;
+			}
+			intermediate_results.put(node_id_intermediate, var_ctx.getIndex(index));
+		} else {
+			logger.critical("Tracer::getSymbolicArrayIndex(): No symbolic array " + context);
+		}
+	}
+
+	/**
+	 * Set a symbolic array value from an intermediate result, used by WriteElementNode.
+	 *
+	 * @param context The array identifier, hashCode of input 0
+	 * @param index The array index
+	 * @param node_id_intermediate hashCode of the intermediate result
+	 */
+	public void setSymbolicArrayIndex(Integer context, Integer index, Integer node_id_intermediate) {
+		if (intermediate_results.containsKey(node_id_intermediate)) {
+			if (!symbolic_program.containsKey(context)) {
+				symbolic_program.put(context, new VariableContext(VariableContext.ContextType.ARRAY));
+			}
+			VariableContext var_ctx = symbolic_program.get(context);
+			if (var_ctx.getContextType() != VariableContext.ContextType.ARRAY) {
+				logger.critical("Tracer::setSymbolicArrayIndex(): Trying to set index '" + index + "' of context " + context + ", but it is not an array.");
+				return;
+			}
+			var_ctx.setIndex(index, intermediate_results.get(node_id_intermediate));
+		} else {
+			logger.critical("Tracer::setSymbolicArrayIndex(): No intermediate result for " + node_id_intermediate);
 		}
 	}
 
