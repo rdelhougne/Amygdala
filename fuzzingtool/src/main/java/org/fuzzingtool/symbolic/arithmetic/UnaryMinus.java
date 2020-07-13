@@ -18,8 +18,8 @@ public class UnaryMinus extends SymbolicNode {
 	}
 
 	@Override
-	public String toHRStringJS() {
-		return "-" + this.children[0].toString();
+	public String toHRStringJS() throws SymbolicException.NotImplemented {
+		return "-" + this.children[0].toHRString();
 	}
 
 	@Override

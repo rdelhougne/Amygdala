@@ -4,12 +4,19 @@ import com.oracle.truffle.api.Scope;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.*;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.js.nodes.JSGuards;
 import com.oracle.truffle.js.nodes.access.*;
 import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
+import com.oracle.truffle.js.runtime.JSRuntime;
+import com.oracle.truffle.js.runtime.objects.JSObjectUtil;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
 import org.fuzzingtool.components.Amygdala;
 import org.fuzzingtool.components.BranchingNodeAttribute;
@@ -19,18 +26,22 @@ import org.fuzzingtool.symbolic.ExpressionType;
 import org.fuzzingtool.symbolic.LanguageSemantic;
 import org.fuzzingtool.symbolic.Operation;
 import org.fuzzingtool.symbolic.SymbolicException;
+import org.fuzzingtool.symbolic.basic.SymbolicConstant;
 import org.fuzzingtool.visualization.ASTVisualizer;
 import org.graalvm.collections.Pair;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.regex.Pattern;
 
 class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 	private final TruffleInstrument.Env env;
 	private final Amygdala amygdala;
 	private int visualized_counter = 0;
+
+	private static final boolean ENABLE_EVENT_LOGGING = true;
 
 	private static final InteropLibrary INTEROP = LibraryFactory.resolve(InteropLibrary.class).getUncached();
 
@@ -186,7 +197,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			@Override
 			protected void onEnter(VirtualFrame vFrame) {
-				//amygdala.logger.log(getSignatureString() + " \033[32m→\033[0m");
+				if (ENABLE_EVENT_LOGGING) {
+					amygdala.logger.log(getSignatureString() + " \033[32m→\033[0m");
+				}
 
 				switch (node_type) {
 					case "Call0Node":
@@ -204,7 +217,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			@Override
 			protected void onInputValue(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
                                         Object inputValue) {
-				//amygdala.logger.log(getSignatureString() + " \033[34m•\033[0m");
+				if (ENABLE_EVENT_LOGGING) {
+					amygdala.logger.log(getSignatureString() + " \033[34m•\033[0m");
+				}
 
 				switch (node_type) {
 					case "IfNode":
@@ -225,7 +240,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "Call0Node":
 					case "Call1Node":
 					case "CallNNode":
-						onInputBehaviorCallNode(vFrame, inputContext, inputIndex, inputValue);
+						onInputValueBehaviorCallNode(vFrame, inputContext, inputIndex, inputValue);
 						break;
 					default:
 						onInputValueBehaviorDefault(vFrame, inputContext, inputIndex, inputValue);
@@ -234,7 +249,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			@Override
 			public void onReturnValue(VirtualFrame vFrame, Object result) {
-				//amygdala.logger.log(getSignatureString() + " \033[31m↵\033[0m");
+				if (ENABLE_EVENT_LOGGING) {
+					amygdala.logger.log(getSignatureString() + " \033[31m↵\033[0m");
+				}
 
 				try {
 					switch (node_type) {
@@ -321,10 +338,16 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						case "AutonomousFunctionExpressionNode":
 							onReturnBehaviorConstant(vFrame, result, ExpressionType.OBJECT);
 							break;
+						case "ObjectLiteralNode":
+							onReturnBehaviorObjectLiteralNode(vFrame, result);
+							break;
 
 							// ===== JavaScript Arrays =====
 						case "DefaultArrayLiteralNode":
 							onReturnBehaviorDefaultArrayLiteralNode(vFrame, result);
+							break;
+						case "ConstantArrayLiteralNode":
+							onReturnBehaviorConstantArrayLiteralNode(vFrame, result);
 							break;
 						case "ReadElementNode":
 							onReturnBehaviorReadElementNode(vFrame, result);
@@ -470,7 +493,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				}
 			}
 
-			public void onInputBehaviorCallNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
+			public void onInputValueBehaviorCallNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
 			Object inputValue) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				// 0 is ? node, 1 is the function object to call
@@ -659,6 +682,29 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				}
 			}
 
+			public void onReturnBehaviorObjectLiteralNode(VirtualFrame vFrame, Object result) {
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				DynamicObject dobj;
+				try {
+					dobj = (DynamicObject) result;
+				} catch (ClassCastException cce) {
+					amygdala.logger.critical("onReturnBehaviorObjectLiteralNode(): Cannot cast result to DynamicObject.");
+					return;
+				}
+				Shape obj_shape = dobj.getShape();
+				List<Object> keys = obj_shape.getKeyList();
+				if (keys.size() != children.size()) {
+					amygdala.logger.critical("onReturnBehaviorObjectLiteralNode(): Resulting object has not the same number of keys as the child nodes.");
+					return;
+				}
+				VariableContext obj_ctx = new VariableContext(VariableContext.ContextType.OBJECT);
+				for (int ch_index = 0; ch_index < keys.size(); ch_index++) {
+					obj_ctx.setValue(keys.get(ch_index).toString(), amygdala.tracer.getIntermediate(children.get(ch_index).getLeft()));
+				}
+				amygdala.tracer.setSymbolicContext(result.hashCode(), obj_ctx);
+				amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
+			}
+
 			public void onReturnBehaviorDefaultArrayLiteralNode(VirtualFrame vFrame, Object result) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				VariableContext new_array = new VariableContext(VariableContext.ContextType.ARRAY);
@@ -669,6 +715,19 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				amygdala.tracer.setSymbolicContext(result.hashCode(), new_array);
 			}
 
+			public void onReturnBehaviorConstantArrayLiteralNode(VirtualFrame vFrame, Object result) {
+				VariableContext array_ctx = null;
+				try {
+					array_ctx = arrayToSymbolic((DynamicObject) result);
+				} catch (ClassCastException cce) {
+					amygdala.logger.critical("onReturnBehaviorConstantArrayLiteralNode(): Cannot cast result to DynamicObject.");
+				}
+				if (array_ctx != null) {
+					amygdala.tracer.setSymbolicContext(result.hashCode(), array_ctx);
+				}
+				amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
+			}
+
 			public void onReturnBehaviorReadElementNode(VirtualFrame vFrame, Object result) {
 				amygdala.tracer.getSymbolicArrayIndex(object_context_hash, array_index, node_hash);
 			}
@@ -676,6 +735,71 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			public void onReturnBehaviorWriteElementNode(VirtualFrame vFrame, Object result) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				amygdala.tracer.setSymbolicArrayIndex(object_context_hash, array_index, children.get(2).getLeft());
+			}
+
+			public VariableContext arrayToSymbolic(DynamicObject dyn_obj) {
+				if (JSRuntime.isArray(dyn_obj)) {
+					VariableContext array_ctx = new VariableContext(VariableContext.ContextType.ARRAY);
+					long size = 0;
+					try {
+						size = INTEROP.getArraySize(dyn_obj);
+					} catch (UnsupportedMessageException e) {
+						amygdala.logger.critical("arrayToSymbolic(): Object is an array, but we cannot get the size.");
+						return null;
+					}
+					for (int i = 0; i < size; i++) {
+						Object array_elem;
+						try {
+							array_elem = INTEROP.readArrayElement(dyn_obj, i);
+						} catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+							amygdala.logger.critical("arrayToSymbolic(): Object is an array, but we cannot read the element with index" + i + ".");
+							return null;
+						}
+						//amygdala.logger.alert(array_elem.toString());
+						try {
+							if (JSGuards.isBoolean(array_elem)) {
+								//amygdala.logger.log("is Boolean");
+								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, array_elem));
+							} else if (JSGuards.isString(array_elem)) {
+								//amygdala.logger.log("is String");
+								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.STRING, array_elem));
+							} else if (JSGuards.isBigInt(array_elem)) {
+								//amygdala.logger.log("is BigInt");
+								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BIGINT, array_elem));
+							} else if (JSGuards.isNumberInteger(array_elem)) {
+								//amygdala.logger.log("is Integer");
+								array_ctx.appendValue(
+										new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER,
+															 array_elem));
+							} else if (JSGuards.isNumberDouble(array_elem) && JSRuntime.isNaN(array_elem)) {
+								//amygdala.logger.log("is NaN");
+								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null));
+							} else if (JSGuards.isNumberDouble(array_elem) && JSRuntime.isPositiveInfinity((double) array_elem)) {
+								//amygdala.logger.log("is +Infinity");
+								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null));
+							} else if (JSGuards.isNumberDouble(array_elem)) {
+								//amygdala.logger.log("is Double");
+								array_ctx.appendValue(
+										new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_REAL, array_elem));
+							} else if (JSGuards.isUndefined(array_elem)) {
+								//amygdala.logger.log("is Undefined");
+								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null));
+							} else if (JSGuards.isJSNull(array_elem)) {
+								//amygdala.logger.log("is Null");
+								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NULL, null));
+							} else {
+								//amygdala.logger.log("is Other");
+								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null));
+							}
+						} catch (SymbolicException.IncompatibleType ite) {
+							amygdala.logger.warning("arrayToSymbolic(): Cannot create symbolic representation of " + array_elem.toString() + ".");
+						}
+					}
+					return array_ctx;
+				} else {
+					amygdala.logger.critical("arrayToSymbolic(): Object \"" + dyn_obj.toString() + "\" is not a JavaScript array.");
+					return null;
+				}
 			}
 		};
 	}

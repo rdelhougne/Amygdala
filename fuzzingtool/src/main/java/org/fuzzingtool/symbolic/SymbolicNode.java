@@ -28,7 +28,7 @@ public abstract class SymbolicNode {
 		}
 	}
 
-	public abstract String toHRStringJS();
+	public abstract String toHRStringJS() throws SymbolicException.NotImplemented;
 
 	public abstract String toSMTExprJS() throws SymbolicException.NotImplemented;
 

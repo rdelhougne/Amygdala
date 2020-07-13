@@ -1,5 +1,8 @@
 package org.fuzzingtool.components;
 
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.js.nodes.JSGuards;
+import com.oracle.truffle.js.runtime.JSRuntime;
 import org.apache.commons.text.RandomStringGenerator;
 import org.fuzzingtool.Logger;
 import org.fuzzingtool.symbolic.*;
@@ -119,6 +122,7 @@ public class Tracer {
 	public void setSymbolicObjectProperty(Integer context, String key, Integer node_id_intermediate) {
 		if (intermediate_results.containsKey(node_id_intermediate)) {
 			if (!symbolic_program.containsKey(context)) {
+				logger.warning("Tracer::setSymbolicObjectProperty(): Context " + context + " does not exist, creating a new one.");
 				symbolic_program.put(context, new VariableContext(VariableContext.ContextType.OBJECT));
 			}
 			VariableContext var_ctx = symbolic_program.get(context);
@@ -174,6 +178,7 @@ public class Tracer {
 		if (frame_stack.size() == 1) {
 			// Behavior for JSWriteCurrentFrameSlotNodeGen (or block scopes)?
 			if (!symbolic_program.containsKey(frame_stack.get(0))) {
+				logger.warning("Tracer::intermediateToFrameSlot(): Context " + frame_stack.get(0) + " does not exist, creating a new one.");
 				symbolic_program.put(frame_stack.get(0), new VariableContext(VariableContext.ContextType.FUNCTION_SCOPE));
 			}
 			VariableContext var_ctx = symbolic_program.get(frame_stack.get(0));
@@ -235,6 +240,7 @@ public class Tracer {
 	public void setSymbolicArrayIndex(Integer context, Integer index, Integer node_id_intermediate) {
 		if (intermediate_results.containsKey(node_id_intermediate)) {
 			if (!symbolic_program.containsKey(context)) {
+				logger.warning("Tracer::setSymbolicArrayIndex(): Context " + context + " does not exist, creating a new one.");
 				symbolic_program.put(context, new VariableContext(VariableContext.ContextType.ARRAY));
 			}
 			VariableContext var_ctx = symbolic_program.get(context);

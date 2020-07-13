@@ -16,8 +16,8 @@ public class Not extends SymbolicNode {
 	}
 
 	@Override
-	public String toHRStringJS() {
-		return parentheses("¬" + this.children[0].toString());
+	public String toHRStringJS() throws SymbolicException.NotImplemented {
+		return parentheses("¬" + this.children[0].toHRString());
 	}
 
 	@Override

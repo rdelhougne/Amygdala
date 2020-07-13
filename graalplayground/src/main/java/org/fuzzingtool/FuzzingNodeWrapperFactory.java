@@ -9,18 +9,29 @@ import com.oracle.truffle.api.instrumentation.ExecutionEventNode;
 import com.oracle.truffle.api.instrumentation.ExecutionEventNodeFactory;
 import com.oracle.truffle.api.instrumentation.TruffleInstrument;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Property;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.js.nodes.JSGuards;
 import com.oracle.truffle.js.nodes.access.*;
 import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
 import com.oracle.truffle.js.nodes.function.JSFunctionCallNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
+import com.oracle.truffle.js.runtime.JSRuntime;
+import com.oracle.truffle.js.runtime.objects.JSObjectUtil;
 import com.oracle.truffle.js.runtime.objects.JSScope;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
+import com.oracle.truffle.js.runtime.truffleinterop.JSInteropUtil;
 import org.fuzzingtool.visualization.ASTVisualizer;
 
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Set;
 
 class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 	private final TruffleInstrument.Env env;
@@ -122,10 +133,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			@Override
 			protected void onEnter(VirtualFrame vFrame) {
-				logger.log(getSignature() + " \033[32m→\033[0m");
+				//logger.log(getSignature() + " \033[32m→\033[0m");
 				Node n = ec.getInstrumentedNode();
 
-				if(n instanceof AccessIndexedArgumentNode) {
+				/*if(n instanceof AccessIndexedArgumentNode) {
 					logger.alert(n.getClass().toString());
 					AccessIndexedArgumentNode aian = (AccessIndexedArgumentNode) n;
 					logger.alert(String.valueOf(aian.getIndex()));
@@ -135,7 +146,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					logger.alert(n.getClass().toString());
 					JSFunctionCallNode jsfcn = (JSFunctionCallNode) n;
 					//logger.alert(String.valueOf(jsfcn.);
-				}
+				}*/
 
 
 				/*if(n instanceof JavaScriptFunctionCallNode) {
@@ -239,7 +250,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			@Override
 			protected void onInputValue(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
 										Object inputValue) {
-				logger.log(getSignature() + " \033[34m•\033[0m");
+				//logger.log(getSignature() + " \033[34m•\033[0m");
 				Node n = ec.getInstrumentedNode();
 
 				/*if (n instanceof ObjectLiteralNode) {
@@ -250,9 +261,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						logger.log(i.toString());
 					}
 					logger.log(inputValue.getClass().toString());
-				}
+				}*/
 
-				if (n instanceof WritePropertyNode && inputIndex == 0) {
+				/*if (n instanceof WritePropertyNode && inputIndex == 0) {
 					logger.log("WritePropertyInput 0:");
 					logger.log(inputValue.toString());
 				}*/
@@ -262,29 +273,49 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			@Override
 			public void onReturnValue(VirtualFrame vFrame, Object result) {
-				logger.log(getSignature() + " \033[31m↵\033[0m");
+				//logger.log(getSignature() + " \033[31m↵\033[0m");
 				Node n = ec.getInstrumentedNode();
 
-				if (n instanceof GlobalObjectNode) {
+				/*if (n instanceof GlobalObjectNode) {
 					logger.alert(result.toString());
+				}
+
+				if (n instanceof ArrayLiteralNode) {
+					logger.alert(result.toString());
+				}*/
+
+				if (n instanceof ArrayLiteralNode) {
+					ArrayLiteralNode aln = (ArrayLiteralNode) n;
+					arrayToSymbolic((DynamicObject) result);
+				}
+
+				if (n instanceof GlobalPropertyNode) {
+					arrayToSymbolic((DynamicObject) result);
 				}
 
 				/*if (n instanceof ObjectLiteralNode) {
 					logger.alert(n.toString());
 					logger.log(result.toString());
+					DynamicObject dobj = (DynamicObject) result;
+					Shape obj_shape = dobj.getShape();
+					List<Object> keys = obj_shape.getKeyList();
+					for (Object key: keys) {
+						logger.log(key.toString());
+					}
 					Node child = n.getChildren().iterator().next();
 					if (child instanceof ObjectLiteralNode.ObjectLiteralMemberNode) {
-						ObjectLiteralNode.ObjectLiteralMemberNode mn = (ObjectLiteralNode.ObjectLiteralMemberNode)
-						child;
+						ObjectLiteralNode.ObjectLiteralMemberNode mn = (ObjectLiteralNode.ObjectLiteralMemberNode) child;
 						logger.log(String.valueOf(mn.isStatic()));
 						logger.log(String.valueOf(mn.isField()));
 						logger.log(String.valueOf(mn.isAnonymousFunctionDefinition()));
+						logger.log(mn.getEncapsulatingSourceSection().toString());
+						logger.log(mn.getDebugProperties().toString());
 					} else {
 						logger.log("nope");
 					}
-				}
+				}*/
 
-				if (n instanceof GlobalPropertyNode) {
+				/*if (n instanceof GlobalPropertyNode) {
 					logger.log(result.toString());
 				}*/
 
@@ -372,6 +403,36 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						}
 					}
 				}*/
+			}
+
+			public void arrayToSymbolic(DynamicObject dyn_obj) {
+				logger.alert("array2Symbolic start");
+				try {
+					long size = INTEROP.getArraySize(dyn_obj);
+					for(int i = 0; i < size; i++) {
+						try {
+							DynamicObject array_elem = (DynamicObject) INTEROP.readArrayElement(dyn_obj, i);
+							logger.log(String.valueOf(JSRuntime.isNullOrUndefined(array_elem)));
+							logger.log(String.valueOf(JSGuards.isUndefined(array_elem)));
+						} catch (ClassCastException e) {
+							logger.log("cast err");
+						}
+					}
+				} catch (UnsupportedMessageException | InvalidArrayIndexException | ClassCastException e) {
+					logger.highlight("error");
+				}
+				logger.alert("array2Symbolic end");
+			}
+
+			public void propertyHash(DynamicObject dyn_obj) {
+				logger.alert("array2Symbolic start");
+				Shape obj_shape = dyn_obj.getShape();
+				List<Property> keys = obj_shape.getPropertyList();
+				for (Property key: keys) {
+					logger.log(key.toString());
+					logger.log(String.valueOf(key.getLocation().hashCode()));
+				}
+				logger.alert("array2Symbolic end");
 			}
 
 			@Override

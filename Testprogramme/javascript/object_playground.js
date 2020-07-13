@@ -13,8 +13,11 @@ var person_john = {
 	}
 };
 
-person_john.age = 43;
+//person_john.age = 43;
 
-person_john.inc_age(1);
+//person_john.inc_age(1);
 
-print(person_john.age);
+if (person_john.age > 50) {
+	print("John maybe is old, maybe.")
+}
+
