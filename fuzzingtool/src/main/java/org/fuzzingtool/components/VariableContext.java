@@ -53,6 +53,10 @@ public class VariableContext {
 		return null;
 	}
 
+	public boolean indexExists(int array_index) {
+		return array_contents.containsKey(array_index);
+	}
+
 	public void setIndex(int array_index, SymbolicNode value) {
 		if (context_type == ContextType.ARRAY) {
 			array_contents.put(array_index, value);

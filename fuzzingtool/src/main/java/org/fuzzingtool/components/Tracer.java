@@ -44,7 +44,22 @@ public class Tracer {
 	}
 
 	public void argumentToIntermediate(Integer argument_index, Integer node_id_intermediate) {
+		if (!this.arguments_array.indexExists(argument_index)) {
+			logger.warning("Tracer::argumentToIntermediate(): No argument with index " + argument_index + ".");
+		}
 		this.intermediate_results.put(node_id_intermediate, this.arguments_array.getIndex(argument_index));
+	}
+
+	// TODO handle "arguments" array
+	public void initializeFunctionScope(Integer context_key) {
+		VariableContext new_scope = new VariableContext(VariableContext.ContextType.FUNCTION_SCOPE);
+		try {
+			new_scope.setValue("this", new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null));
+			new_scope.setValue("arguments", new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null));
+		} catch (SymbolicException.IncompatibleType incompatibleType) {
+			incompatibleType.printStackTrace();
+		}
+		symbolic_program.put(context_key, new_scope);
 	}
 
 	public void resetFunctionReturnValue() {

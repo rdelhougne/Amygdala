@@ -11,7 +11,7 @@ FUZZINGTOOL_EXEC = "target/fuzzingtool-1.0-SNAPSHOT.jar"
 TESTING_ARGUMENTS = ""
 DEPENDENCY_PACKAGES = ["guru.nidi", "org.slf4j.slf4j-api","org.apache.logging.log4j.log4j-slf4j-impl","org.apache.logging.log4j.log4j-api", "org.apache.logging.log4j.log4j-core", "org.apache.commons", "org.snakeyaml"]
 DEPENDENCY_REPOSITORY = "/home/robert/.m2/repository"
-ADDITIONAL_DEPENDENCIES = "/home/robert/Seafile/Studium/Master Informatik/Masterarbeit/Projekt/Software"
+ADDITIONAL_DEPENDENCIES = ["/usr/share/java/com.microsoft.z3.jar"]
 
 
 def get_full_name(name):
@@ -120,7 +120,7 @@ def main():
         exit(1)
     
     dependency_classpaths = get_all_dependencies()
-    dependency_classpaths += get_additional_dependencies()
+    dependency_classpaths += ADDITIONAL_DEPENDENCIES
     classpath_string = ""
     for cp_index in range(len(dependency_classpaths)):
         if cp_index == 0:

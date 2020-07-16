@@ -207,6 +207,11 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "CallNNode":
 						onEnterBehaviorCallNode(vFrame);
 						break;
+					case "Invoke0Node":
+					case "Invoke1Node":
+					case "InvokeNNode":
+						onEnterBehaviorInvokeNode(vFrame);
+						break;
 					case "MaterializedFunctionBodyNode":
 						onEnterBehaviorFunctionBodyNode(vFrame);
 					default:
@@ -241,6 +246,11 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "Call1Node":
 					case "CallNNode":
 						onInputValueBehaviorCallNode(vFrame, inputContext, inputIndex, inputValue);
+						break;
+					case "Invoke0Node":
+					case "Invoke1Node":
+					case "InvokeNNode":
+						onInputValueBehaviorInvokeNode(vFrame, inputContext, inputIndex, inputValue);
 						break;
 					default:
 						onInputValueBehaviorDefault(vFrame, inputContext, inputIndex, inputValue);
@@ -284,6 +294,11 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						case "Call1Node":
 						case "CallNNode":
 							onReturnBehaviorCallNode(vFrame, result);
+							break;
+						case "Invoke0Node":
+						case "Invoke1Node":
+						case "InvokeNNode":
+							onReturnBehaviorInvokeNode(vFrame, result);
 							break;
 						case "AccessIndexedArgumentNode":
 							onReturnBehaviorAccessIndexedArgumentNode(vFrame, result);
@@ -438,8 +453,25 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				amygdala.tracer.setArgumentsArray(this.arguments_array);
 			}
 
+			public void onEnterBehaviorInvokeNode(VirtualFrame vFrame) {
+				this.arguments_array.clear();
+				// if InvokeNode has no arguments (Invoke0Node)
+				amygdala.tracer.setArgumentsArray(this.arguments_array);
+			}
+
 			public void onEnterBehaviorFunctionBodyNode(VirtualFrame vFrame) {
-				// Reset the current return value to default (undefined)
+				Iterator<Scope> local_scopes = env.findLocalScopes(my_node, vFrame).iterator();
+				if (local_scopes != null && local_scopes.hasNext()) {
+					Scope innermost_scope = local_scopes.next();
+					Object root_instance = innermost_scope.getRootInstance();
+					if (root_instance != null) {
+						amygdala.tracer.initializeFunctionScope(root_instance.hashCode());
+					} else {
+						amygdala.logger.critical("onEnterBehaviorFunctionBodyNode(): Cannot get root instance.");
+					}
+				} else {
+					amygdala.logger.critical("onEnterBehaviorFunctionBodyNode(): Cannot find any local scopes.");
+				}
 				amygdala.tracer.resetFunctionReturnValue();
 			}
 
@@ -502,6 +534,20 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					this.arguments_array.appendValue(amygdala.tracer.getIntermediate(children.get(inputIndex).getLeft()));
 				}
 				// Every call to onInput (or onEnter if Call0Node!)
+				// inside a call node could
+				// be the last input before the function gets called
+				amygdala.tracer.setArgumentsArray(this.arguments_array);
+			}
+
+			public void onInputValueBehaviorInvokeNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
+													 Object inputValue) {
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				// 0 is object node, 1 is the function object to call (?)
+				// TODO a bit hacky
+				if (inputIndex >= 2) {
+					this.arguments_array.appendValue(amygdala.tracer.getIntermediate(children.get(inputIndex).getLeft()));
+				}
+				// Every call to onInput (or onEnter if Invoke0Node!)
 				// inside a call node could
 				// be the last input before the function gets called
 				amygdala.tracer.setArgumentsArray(this.arguments_array);
@@ -635,6 +681,11 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				amygdala.tracer.resetFunctionReturnValue();
 			}
 
+			public void onReturnBehaviorInvokeNode(VirtualFrame vFrame, Object result) {
+				amygdala.tracer.functionReturnValueToIntermediate(node_hash);
+				amygdala.tracer.resetFunctionReturnValue();
+			}
+
 			public void onReturnBehaviorAccessIndexedArgumentNode(VirtualFrame vFrame, Object result) {
 				AccessIndexedArgumentNode aian = (AccessIndexedArgumentNode) my_node;
 				amygdala.tracer.argumentToIntermediate(aian.getIndex(), node_hash);
@@ -673,6 +724,8 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						throw this.event_context.createUnwind(amygdala.calculateNextPath());
 					}
 					amygdala.tracer.reset(LanguageSemantic.JAVASCRIPT, getThisObjectHash(vFrame));
+					//Initialize current function (again)
+					onEnterBehaviorFunctionBodyNode(vFrame);
 				} else if (this.isInputNode) {
 					Object next_input = amygdala.getNextInputValue(this.inputVariableIdentifier);
 					amygdala.tracer.addVariable(node_hash, LanguageSemantic.JAVASCRIPT, this.inputVariableIdentifier);
