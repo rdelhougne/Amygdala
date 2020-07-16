@@ -55,7 +55,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 	public ExecutionEventNode create(final EventContext ec) {
 		if (ec.getInstrumentedNode().getClass().getSimpleName().equals("MaterializedFunctionBodyNode")) {
-			ASTVisualizer av = new ASTVisualizer(ec.getInstrumentedNode(), amygdala.logger);
+			ASTVisualizer av = new ASTVisualizer(ec.getInstrumentedNode(), amygdala.logger, amygdala.getSourceCodeLineOffset());
 			av.save_image(Paths.get(".").toAbsolutePath().normalize().toString() +
                                   "/function_visualization_" + visualized_counter);
 			visualized_counter += 1;
@@ -108,7 +108,13 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				String node_type_padded = String.format("%1$-" + 36 + "s", node_type);
 				String hash_padded = String.format("%1$-" + 12 + "s", node_hash);
 				if (my_sourcesection != null && my_sourcesection.isAvailable()) {
-					String line_padded = String.format("%1$" + 3 + "s", my_sourcesection.getStartLine());
+					int start_line = my_sourcesection.getStartLine() - amygdala.getSourceCodeLineOffset();
+					String line_padded;
+					if (start_line >= 0) {
+						line_padded = String.format("%1$" + 3 + "s", start_line);
+					} else {
+						line_padded = "  ~";
+					}
 					String characters = my_sourcesection.getCharacters().toString().replace("\n", "");
 					String characters_cropped = characters.substring(0, Math.min(characters.length(), 16));
 					return "[" + node_type_padded + " " + hash_padded + " " + line_padded + ":" + characters_cropped + "]";
@@ -350,6 +356,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 
 							// ===== JavaScript Object/Function Creation Nodes
+						case "DefaultFunctionExpressionNode":
 						case "AutonomousFunctionExpressionNode":
 							onReturnBehaviorConstant(vFrame, result, ExpressionType.OBJECT);
 							break;
@@ -461,7 +468,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			public void onEnterBehaviorFunctionBodyNode(VirtualFrame vFrame) {
 				Iterator<Scope> local_scopes = env.findLocalScopes(my_node, vFrame).iterator();
-				if (local_scopes != null && local_scopes.hasNext()) {
+				if (local_scopes.hasNext()) {
 					Scope innermost_scope = local_scopes.next();
 					Object root_instance = innermost_scope.getRootInstance();
 					if (root_instance != null) {
@@ -599,7 +606,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			public void onReturnBehaviorJSReadCurrentFrameSlotNodeGen(VirtualFrame vFrame, Object result) {
 				JSReadFrameSlotNode jsrfsn = (JSReadFrameSlotNode) my_node;
 				Iterator<Scope> local_scopes = env.findLocalScopes(my_node, vFrame).iterator();
-				if (local_scopes != null && local_scopes.hasNext()) {
+				if (local_scopes.hasNext()) {
 					Scope innermost_scope = local_scopes.next();
 					Object root_instance = innermost_scope.getRootInstance();
 					if (root_instance != null) {
@@ -618,7 +625,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				JSWriteFrameSlotNode jswfsn = (JSWriteFrameSlotNode) my_node;
 				Iterator<Scope> local_scopes = env.findLocalScopes(my_node, vFrame).iterator();
-				if (local_scopes != null && local_scopes.hasNext()) {
+				if (local_scopes.hasNext()) {
 					Scope innermost_scope = local_scopes.next();
 					Object root_instance = innermost_scope.getRootInstance();
 					if (root_instance != null) {
@@ -636,7 +643,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			public void onReturnBehaviorJSReadScopeFrameSlotNodeGen(VirtualFrame vFrame, Object result) {
 				JSReadFrameSlotNode jsrfsn = (JSReadFrameSlotNode) my_node;
 				Iterator<Scope> local_scopes = env.findLocalScopes(my_node, vFrame).iterator();
-				if (local_scopes != null && local_scopes.hasNext()) {
+				if (local_scopes.hasNext()) {
 					ArrayList<Integer> scope_hashes = new ArrayList<>();
 					while (local_scopes.hasNext()) {
 						Scope curr_scope = local_scopes.next();
@@ -657,7 +664,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				JSWriteFrameSlotNode jswfsn = (JSWriteFrameSlotNode) my_node;
 				Iterator<Scope> local_scopes = env.findLocalScopes(my_node, vFrame).iterator();
-				if (local_scopes != null && local_scopes.hasNext()) {
+				if (local_scopes.hasNext()) {
 					ArrayList<Integer> scope_hashes = new ArrayList<>();
 					while (local_scopes.hasNext()) {
 						Scope curr_scope = local_scopes.next();
@@ -724,7 +731,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						throw this.event_context.createUnwind(amygdala.calculateNextPath());
 					}
 					amygdala.tracer.reset(LanguageSemantic.JAVASCRIPT, getThisObjectHash(vFrame));
-					//Initialize current function (again)
+					//Initialize current function (again, because of reset)
 					onEnterBehaviorFunctionBodyNode(vFrame);
 				} else if (this.isInputNode) {
 					Object next_input = amygdala.getNextInputValue(this.inputVariableIdentifier);

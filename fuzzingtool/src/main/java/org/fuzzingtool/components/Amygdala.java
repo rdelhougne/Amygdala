@@ -46,6 +46,7 @@ public class Amygdala {
 	private boolean suppress_next_terminate = false;
 	private boolean is_first_run = true;
 	private int max_iterations = 1024;
+	private int source_code_line_offset = 0;
 
 	public Amygdala(Logger lgr) {
 		this.tracer = new Tracer(lgr);
@@ -219,6 +220,7 @@ public class Amygdala {
 	 */
 	@SuppressWarnings("unchecked")
 	public void loadOptions(String path, Integer lineOffset) {
+		this.source_code_line_offset = lineOffset;
 		FileInputStream fis = null;
 		Map<String, Object> map;
 		try {
@@ -252,6 +254,14 @@ public class Amygdala {
 		}
 	}
 
+	/**
+	 * Returns the line offset property.
+	 *
+	 * @return The line offset
+	 */
+	public int getSourceCodeLineOffset() {
+		return this.source_code_line_offset;
+	}
 
 	/**
 	 * This Method initializes all given variables and sample-inputs.
