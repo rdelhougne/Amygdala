@@ -20,6 +20,8 @@ import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.js.nodes.JSGuards;
 import com.oracle.truffle.js.nodes.access.*;
 import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
+import com.oracle.truffle.js.nodes.binary.DualNode;
+import com.oracle.truffle.js.nodes.binary.JSAddSubNumericUnitNode;
 import com.oracle.truffle.js.nodes.function.JSFunctionCallNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.JSRuntime;
@@ -284,13 +286,33 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					logger.alert(result.toString());
 				}*/
 
-				if (n instanceof ArrayLiteralNode) {
+				/*if (n instanceof ArrayLiteralNode) {
 					ArrayLiteralNode aln = (ArrayLiteralNode) n;
 					arrayToSymbolic((DynamicObject) result);
+				}*/
+
+				if (n instanceof JSAddSubNumericUnitNode) {
+					SourceSection ss = ec.getInstrumentedSourceSection();
+					logger.log(ss.toString());
+					logger.log("index: " + String.valueOf(ss.getCharIndex()));
+					logger.log(String.valueOf(ss.getSource().getCharacters().charAt(ss.getCharIndex())));
+					String before = String.valueOf(ss.getSource().getCharacters().charAt(ss.getCharIndex() - 1));
+					String after = String.valueOf(ss.getSource().getCharacters().charAt(ss.getCharEndIndex()));
+					logger.log(before);
+					logger.log(after);
 				}
 
-				if (n instanceof GlobalPropertyNode) {
+				if (n instanceof WritePropertyNode) {
+					logger.log(result.toString());
+				}
+
+				/*if (n instanceof GlobalPropertyNode) {
 					arrayToSymbolic((DynamicObject) result);
+				}*/
+
+				if (n instanceof DualNode) {
+					DualNode dn = (DualNode) n;
+					logger.log(dn.getRight().expressionToString());
 				}
 
 				/*if (n instanceof ObjectLiteralNode) {

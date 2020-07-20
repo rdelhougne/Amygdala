@@ -294,6 +294,16 @@ public class Tracer {
 	}
 
 	/**
+	 * Sets an intermediate result for a given node-hash.
+	 *
+	 * @param node_target The hash-code of the node
+	 * @param expression The symbolic expression
+	 */
+	public void setIntermediate(Integer node_target, SymbolicNode expression) {
+		intermediate_results.put(node_target, expression);
+	}
+
+	/**
 	 * Pass through an intermediate result from old node to new node.
 	 * The old result is not deleted.
 	 *
@@ -354,6 +364,9 @@ public class Tracer {
 					break;
 				case DIVISION:
 					intermediate_results.put(node_target, new Division(s, a, b));
+					break;
+				case MODULO:
+					intermediate_results.put(node_target, new Modulo(s, a, b));
 					break;
 				case AND:
 					intermediate_results.put(node_target, new And(s, a, b));

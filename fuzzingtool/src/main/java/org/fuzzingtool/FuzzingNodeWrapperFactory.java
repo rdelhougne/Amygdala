@@ -14,6 +14,8 @@ import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.js.nodes.JSGuards;
 import com.oracle.truffle.js.nodes.access.*;
 import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
+import com.oracle.truffle.js.nodes.binary.JSAddSubNumericUnitNode;
+import com.oracle.truffle.js.nodes.binary.JSAddSubNumericUnitNodeGen;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.JSRuntime;
 import com.oracle.truffle.js.runtime.objects.JSObjectUtil;
@@ -22,10 +24,9 @@ import org.fuzzingtool.components.Amygdala;
 import org.fuzzingtool.components.BranchingNodeAttribute;
 import org.fuzzingtool.components.VariableContext;
 import org.fuzzingtool.components.VariableIdentifier;
-import org.fuzzingtool.symbolic.ExpressionType;
-import org.fuzzingtool.symbolic.LanguageSemantic;
-import org.fuzzingtool.symbolic.Operation;
-import org.fuzzingtool.symbolic.SymbolicException;
+import org.fuzzingtool.symbolic.*;
+import org.fuzzingtool.symbolic.arithmetic.Addition;
+import org.fuzzingtool.symbolic.arithmetic.Subtraction;
 import org.fuzzingtool.symbolic.basic.SymbolicConstant;
 import org.fuzzingtool.visualization.ASTVisualizer;
 import org.graalvm.collections.Pair;
@@ -34,6 +35,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
@@ -46,7 +48,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 	private static final InteropLibrary INTEROP = LibraryFactory.resolve(InteropLibrary.class).getUncached();
 
 	// Capture group 2 is variable name
-    private final Pattern assignment_pattern = Pattern.compile("(var\\s+|let\\s+|const\\s+)?\\s*([A-Za-z]\\w*)\\s*=.*");
+    private final Pattern assignment_pattern = Pattern.compile("(var\\s+|let\\s+|const\\s+)?\\s*([A-Za-z_]\\w*)\\s*=.*");
+    private final Pattern increment_pattern = Pattern.compile("[A-Za-z_]\\w*\\+\\+");
+    private final Pattern decrement_pattern = Pattern.compile("[A-Za-z_]\\w*--");
 
 	FuzzingNodeWrapperFactory(final TruffleInstrument.Env env, Amygdala amy) {
 		this.env = env;
@@ -332,6 +336,12 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						case "JSUnaryPlusNodeGen":
 							onReturnBehaviorUnaryOperation(vFrame, result, Operation.UNARY_PLUS);
 							break;
+						case "JSModuloNodeGen":
+							onReturnBehaviorBinaryOperation(vFrame, result, Operation.MODULO);
+							break;
+						case "JSAddSubNumericUnitNodeGen":
+							onReturnBehaviorJSAddSubNumericUnitNodeGen(vFrame, result);
+							break;
 
 
 						// ===== JavaScript Constant Nodes =====
@@ -358,6 +368,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 							// ===== JavaScript Object/Function Creation Nodes
 						case "DefaultFunctionExpressionNode":
 						case "AutonomousFunctionExpressionNode":
+						case "JSNewNodeGen":
 							onReturnBehaviorConstant(vFrame, result, ExpressionType.OBJECT);
 							break;
 						case "ObjectLiteralNode":
@@ -406,6 +417,11 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 							break;
 						case "JSNotNodeGen":
 							onReturnBehaviorUnaryOperation(vFrame, result, Operation.NOT);
+							break;
+
+						// ===== JavaScript Miscellaneous =====
+						case "DualNode":
+							onReturnBehaviorDualNode(vFrame, result);
 							break;
 						default:
 							onReturnBehaviorDefault(vFrame, result);
@@ -601,6 +617,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				WritePropertyNode wpnode = (WritePropertyNode) my_node;
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				amygdala.tracer.setSymbolicObjectProperty(object_context_hash, wpnode.getKey().toString(), children.get(1).getLeft());
+				amygdala.tracer.passThroughIntermediate(node_hash, children.get(1).getLeft());
 			}
 
 			public void onReturnBehaviorJSReadCurrentFrameSlotNodeGen(VirtualFrame vFrame, Object result) {
@@ -638,6 +655,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				} else {
 					amygdala.logger.critical("onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(): Cannot find any local scopes.");
 				}
+				amygdala.tracer.passThroughIntermediate(node_hash, children.get(0).getLeft());
 			}
 
 			public void onReturnBehaviorJSReadScopeFrameSlotNodeGen(VirtualFrame vFrame, Object result) {
@@ -679,6 +697,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				} else {
 					amygdala.logger.critical("onReturnBehaviorJSReadScopeFrameSlotNodeGen(): Cannot find any local scopes.");
 				}
+				amygdala.tracer.passThroughIntermediate(node_hash, children.get(0).getLeft());
 			}
 
 			// ===== JavaScript Function Handling =====
@@ -712,6 +731,36 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				amygdala.tracer.addOperation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft(),
 											 children.get(1).getLeft());
 				invalidate_interim(children);
+			}
+
+			// TODO
+			public void onReturnBehaviorJSAddSubNumericUnitNodeGen(VirtualFrame vFrame, Object result) throws
+					SymbolicException.WrongParameterSize {
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				assert children.size() == 1;
+				String before = String.valueOf(my_sourcesection.getSource().getCharacters().charAt(my_sourcesection.getCharIndex() - 1));
+				String after = String.valueOf(my_sourcesection.getSource().getCharacters().charAt(my_sourcesection.getCharEndIndex()));
+				if (before.equals("+") || after.equals("+")) {
+					SymbolicNode pre_add = amygdala.tracer.getIntermediate(children.get(0).getLeft());
+					SymbolicNode add_result = null;
+					try {
+						add_result = new Addition(LanguageSemantic.JAVASCRIPT, pre_add, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
+					} catch (SymbolicException.IncompatibleType incompatibleType) {
+						incompatibleType.printStackTrace();
+					}
+					amygdala.tracer.setIntermediate(node_hash, add_result);
+				} else if (before.equals("-") || after.equals("-")) {
+					SymbolicNode pre_sub = amygdala.tracer.getIntermediate(children.get(0).getLeft());
+					SymbolicNode sub_result = null;
+					try {
+						sub_result = new Subtraction(LanguageSemantic.JAVASCRIPT, pre_sub, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
+					} catch (SymbolicException.IncompatibleType incompatibleType) {
+						incompatibleType.printStackTrace();
+					}
+					amygdala.tracer.setIntermediate(node_hash, sub_result);
+				} else {
+					amygdala.logger.critical("onReturnBehaviorJSAddSubNumericUnitNodeGen(): Cannot determine operation from source code.");
+				}
 			}
 
 			public void onReturnBehaviorUnaryOperation(VirtualFrame vFrame, Object result, Operation op) throws
@@ -795,6 +844,37 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			public void onReturnBehaviorWriteElementNode(VirtualFrame vFrame, Object result) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				amygdala.tracer.setSymbolicArrayIndex(object_context_hash, array_index, children.get(2).getLeft());
+			}
+
+			//TODO extremely hacky
+			public void onReturnBehaviorDualNode(VirtualFrame vFrame, Object result) {
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				Matcher inc_matcher = increment_pattern.matcher(my_sourcesection.getCharacters().toString());
+				Matcher dec_matcher = decrement_pattern.matcher(my_sourcesection.getCharacters().toString());
+				// if DualNode is part of an increment/decrement operation
+				if (inc_matcher.matches()) {
+					assert children.size() == 1;
+					SymbolicNode pre = amygdala.tracer.getIntermediate(children.get(0).getLeft());
+					SymbolicNode revert_increment = null;
+					try {
+						revert_increment = new Subtraction(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
+					} catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize ex) {
+						ex.printStackTrace();
+					}
+					amygdala.tracer.setIntermediate(node_hash, revert_increment);
+				} else if (dec_matcher.matches()) {
+					assert children.size() == 1;
+					SymbolicNode pre = amygdala.tracer.getIntermediate(children.get(0).getLeft());
+					SymbolicNode revert_decrement = null;
+					try {
+						revert_decrement = new Addition(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
+					} catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize ex) {
+						ex.printStackTrace();
+					}
+					amygdala.tracer.setIntermediate(node_hash, revert_decrement);
+				} else {
+					// nothing to do for now
+				}
 			}
 
 			public VariableContext arrayToSymbolic(DynamicObject dyn_obj) {
