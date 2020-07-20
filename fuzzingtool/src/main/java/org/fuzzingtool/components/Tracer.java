@@ -349,63 +349,88 @@ public class Tracer {
 	public void addOperation(Integer node_target, LanguageSemantic s, Operation op, Integer node_source_a,
 							 Integer node_source_b) throws
 			SymbolicException.WrongParameterSize {
-		if (intermediate_results.containsKey(node_source_a) && intermediate_results.containsKey(node_source_b)) {
-			SymbolicNode a = intermediate_results.get(node_source_a);
-			SymbolicNode b = intermediate_results.get(node_source_b);
-			switch (op) {
-				case ADDITION:
-					intermediate_results.put(node_target, new Addition(s, a, b));
-					break;
-				case SUBTRACTION:
-					intermediate_results.put(node_target, new Subtraction(s, a, b));
-					break;
-				case MULTIPLICATION:
-					intermediate_results.put(node_target, new Multiplication(s, a, b));
-					break;
-				case DIVISION:
-					intermediate_results.put(node_target, new Division(s, a, b));
-					break;
-				case MODULO:
-					intermediate_results.put(node_target, new Modulo(s, a, b));
-					break;
-				case AND:
-					intermediate_results.put(node_target, new And(s, a, b));
-					break;
-				case OR:
-					intermediate_results.put(node_target, new Or(s, a, b));
-					break;
-				case EQUAL:
-					intermediate_results.put(node_target, new Equal(s, a, b));
-					break;
-				case STRICT_EQUAL:
-					intermediate_results.put(node_target, new StrictEqual(s, a, b));
-					break;
-				case GREATER_EQUAL:
-					intermediate_results.put(node_target, new GreaterEqual(s, a, b));
-					break;
-				case GREATER_THAN:
-					intermediate_results.put(node_target, new GreaterThan(s, a, b));
-					break;
-				case LESS_EQUAL:
-					intermediate_results.put(node_target, new LessEqual(s, a, b));
-					break;
-				case LESS_THAN:
-					intermediate_results.put(node_target, new LessThan(s, a, b));
-					break;
-				default:
-					logger.critical("Tracer::add_operation(): Unknown operation " + op.toString());
-			}
-		} else {
+		// handle early discard
+		if (op == Operation.OR) {
 			if (!intermediate_results.containsKey(node_source_a) && !intermediate_results.containsKey(node_source_b)) {
 				logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
 										" but intermediate result from " + node_source_a + " and " + node_source_b +
 										" does not exist");
-			} else if (!intermediate_results.containsKey(node_source_a)) {
+				return;
+			}
+			try {
+				SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, false));
+				SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, false));
+				intermediate_results.put(node_target, new Or(s, a, b));
+			} catch (SymbolicException.IncompatibleType incompatibleType) {
+				incompatibleType.printStackTrace();
+			}
+		} else if (op == Operation.AND) {
+			if (!intermediate_results.containsKey(node_source_a) && !intermediate_results.containsKey(node_source_b)) {
 				logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
-										" but intermediate result from " + node_source_a + " does not exist");
+										" but intermediate result from " + node_source_a + " and " + node_source_b +
+										" does not exist");
+				return;
+			}
+			try {
+				SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, true));
+				SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, true));
+				intermediate_results.put(node_target, new And(s, a, b));
+			} catch (SymbolicException.IncompatibleType incompatibleType) {
+				incompatibleType.printStackTrace();
+			}
+		} else {
+			if (intermediate_results.containsKey(node_source_a) && intermediate_results.containsKey(node_source_b)) {
+				SymbolicNode a = intermediate_results.get(node_source_a);
+				SymbolicNode b = intermediate_results.get(node_source_b);
+				switch (op) {
+					case ADDITION:
+						intermediate_results.put(node_target, new Addition(s, a, b));
+						break;
+					case SUBTRACTION:
+						intermediate_results.put(node_target, new Subtraction(s, a, b));
+						break;
+					case MULTIPLICATION:
+						intermediate_results.put(node_target, new Multiplication(s, a, b));
+						break;
+					case DIVISION:
+						intermediate_results.put(node_target, new Division(s, a, b));
+						break;
+					case MODULO:
+						intermediate_results.put(node_target, new Modulo(s, a, b));
+						break;
+					case EQUAL:
+						intermediate_results.put(node_target, new Equal(s, a, b));
+						break;
+					case STRICT_EQUAL:
+						intermediate_results.put(node_target, new StrictEqual(s, a, b));
+						break;
+					case GREATER_EQUAL:
+						intermediate_results.put(node_target, new GreaterEqual(s, a, b));
+						break;
+					case GREATER_THAN:
+						intermediate_results.put(node_target, new GreaterThan(s, a, b));
+						break;
+					case LESS_EQUAL:
+						intermediate_results.put(node_target, new LessEqual(s, a, b));
+						break;
+					case LESS_THAN:
+						intermediate_results.put(node_target, new LessThan(s, a, b));
+						break;
+					default:
+						logger.critical("Tracer::add_operation(): Unknown operation " + op.toString());
+				}
 			} else {
-				logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
-										" but intermediate result from " + node_source_b + " does not exist");
+				if (!intermediate_results.containsKey(node_source_a) && !intermediate_results.containsKey(node_source_b)) {
+					logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
+											" but intermediate result from " + node_source_a + " and " + node_source_b +
+											" does not exist");
+				} else if (!intermediate_results.containsKey(node_source_a)) {
+					logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
+											" but intermediate result from " + node_source_a + " does not exist");
+				} else {
+					logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
+											" but intermediate result from " + node_source_b + " does not exist");
+				}
 			}
 		}
 	}
