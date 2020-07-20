@@ -276,6 +276,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "JSNewNodeGen":
 						onInputValueBehaviorJSNewNodeGen(vFrame, inputContext, inputIndex, inputValue);
 						break;
+					case "FrameReturnNode":
+						// FrameReturnNode has no onReturnValue event, f*cking whyyyy
+						behaviorFrameReturnTerminalPositionReturnNode();
+						break;
 					default:
 						onInputValueBehaviorDefault(vFrame, inputContext, inputIndex, inputValue);
 				}
@@ -286,165 +290,161 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				if (ENABLE_EVENT_LOGGING) {
 					amygdala.logger.log(getSignatureString() + " \033[31m↵\033[0m");
 				}
-
-				try {
-					switch (node_type) {
-						// ===== JavaScript Read/Write =====
-						case "GlobalPropertyNode":
-							onReturnBehaviorGlobalPropertyNode(vFrame, result);
-							break;
-						case "PropertyNode":
-							onReturnBehaviorPropertyNode(vFrame, result);
-							break;
-						case "WritePropertyNode":
-							onReturnBehaviorWritePropertyNode(vFrame, result);
-							break;
-						case "JSReadCurrentFrameSlotNodeGen":
-							onReturnBehaviorJSReadCurrentFrameSlotNodeGen(vFrame, result);
-							break;
-						case "JSWriteCurrentFrameSlotNodeGen":
-							onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(vFrame, result);
-							break;
-						case "JSReadScopeFrameSlotNodeGen":
-						case "JSReadScopeFrameSlotWithTDZNodeGen":
-							onReturnBehaviorJSReadScopeFrameSlotNodeGen(vFrame, result);
-							break;
-						case "JSWriteScopeFrameSlotNodeGen":
-							onReturnBehaviorJSWriteScopeFrameSlotNodeGen(vFrame, result);
-							break;
-
-
-						// ===== JavaScript Function Handling =====
-						case "Call0Node":
-						case "Call1Node":
-						case "CallNNode":
-							onReturnBehaviorCallNode(vFrame, result);
-							break;
-						case "Invoke0Node":
-						case "Invoke1Node":
-						case "InvokeNNode":
-							onReturnBehaviorInvokeNode(vFrame, result);
-							break;
-						case "JSNewNodeGen":
-							onReturnBehaviorJSNewNodeGen(vFrame, result);
-							break;
-						case "AccessIndexedArgumentNode":
-							onReturnBehaviorAccessIndexedArgumentNode(vFrame, result);
-							break;
-						case "TerminalPositionReturnNode":
-							onReturnBehaviorTerminalPositionReturnNode(vFrame, result);
-							break;
-
-						// ===== JavaScript Arithmetic Nodes =====
-						case "JSAddNodeGen":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.ADDITION);
-							break;
-						case "JSSubtractNodeGen":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.SUBTRACTION);
-							break;
-						case "JSMultiplyNodeGen":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.MULTIPLICATION);
-							break;
-						case "JSDivideNodeGen":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.DIVISION);
-							break;
-						case "JSUnaryMinusNodeGen":
-							onReturnBehaviorUnaryOperation(vFrame, result, Operation.UNARY_MINUS);
-							break;
-						case "JSUnaryPlusNodeGen":
-							onReturnBehaviorUnaryOperation(vFrame, result, Operation.UNARY_PLUS);
-							break;
-						case "JSModuloNodeGen":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.MODULO);
-							break;
-						case "JSAddSubNumericUnitNodeGen":
-							onReturnBehaviorJSAddSubNumericUnitNodeGen(vFrame, result);
-							break;
+				
+				switch (node_type) {
+					// ===== JavaScript Read/Write =====
+					case "GlobalPropertyNode":
+						onReturnBehaviorGlobalPropertyNode(vFrame, result);
+						break;
+					case "PropertyNode":
+						onReturnBehaviorPropertyNode(vFrame, result);
+						break;
+					case "WritePropertyNode":
+						onReturnBehaviorWritePropertyNode(vFrame, result);
+						break;
+					case "JSReadCurrentFrameSlotNodeGen":
+						onReturnBehaviorJSReadCurrentFrameSlotNodeGen(vFrame, result);
+						break;
+					case "JSWriteCurrentFrameSlotNodeGen":
+						onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(vFrame, result);
+						break;
+					case "JSReadScopeFrameSlotNodeGen":
+					case "JSReadScopeFrameSlotWithTDZNodeGen":
+						onReturnBehaviorJSReadScopeFrameSlotNodeGen(vFrame, result);
+						break;
+					case "JSWriteScopeFrameSlotNodeGen":
+						onReturnBehaviorJSWriteScopeFrameSlotNodeGen(vFrame, result);
+						break;
 
 
-						// ===== JavaScript Constant Nodes =====
-						case "JSConstantBooleanNode":
-							onReturnBehaviorConstant(vFrame, result, ExpressionType.BOOLEAN);
-							break;
-						case "JSConstantIntegerNode":
-							onReturnBehaviorConstant(vFrame, result, ExpressionType.NUMBER_INTEGER);
-							break;
-						case "JSConstantDoubleNode":
-							onReturnBehaviorConstant(vFrame, result, ExpressionType.NUMBER_REAL);
-							break;
-						case "JSConstantStringNode":
-							onReturnBehaviorConstant(vFrame, result, ExpressionType.STRING);
-							break;
-						case "JSConstantNullNode":
-							onReturnBehaviorConstant(vFrame, result, ExpressionType.NULL);
-							break;
-						case "JSConstantUndefinedNode":
-							onReturnBehaviorConstant(vFrame, result, ExpressionType.UNDEFINED);
-							break;
+					// ===== JavaScript Function Handling =====
+					case "Call0Node":
+					case "Call1Node":
+					case "CallNNode":
+						onReturnBehaviorCallNode(vFrame, result);
+						break;
+					case "Invoke0Node":
+					case "Invoke1Node":
+					case "InvokeNNode":
+						onReturnBehaviorInvokeNode(vFrame, result);
+						break;
+					case "JSNewNodeGen":
+						onReturnBehaviorJSNewNodeGen(vFrame, result);
+						break;
+					case "AccessIndexedArgumentNode":
+						onReturnBehaviorAccessIndexedArgumentNode(vFrame, result);
+						break;
+					case "TerminalPositionReturnNode":
+						behaviorFrameReturnTerminalPositionReturnNode();
+						break;
+
+					// ===== JavaScript Arithmetic Nodes =====
+					case "JSAddNodeGen":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.ADDITION);
+						break;
+					case "JSSubtractNodeGen":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.SUBTRACTION);
+						break;
+					case "JSMultiplyNodeGen":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.MULTIPLICATION);
+						break;
+					case "JSDivideNodeGen":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.DIVISION);
+						break;
+					case "JSUnaryMinusNodeGen":
+						onReturnBehaviorUnaryOperation(vFrame, result, Operation.UNARY_MINUS);
+						break;
+					case "JSUnaryPlusNodeGen":
+						onReturnBehaviorUnaryOperation(vFrame, result, Operation.UNARY_PLUS);
+						break;
+					case "JSModuloNodeGen":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.MODULO);
+						break;
+					case "JSAddSubNumericUnitNodeGen":
+						onReturnBehaviorJSAddSubNumericUnitNodeGen(vFrame, result);
+						break;
 
 
-							// ===== JavaScript Object/Function Creation Nodes
-						case "DefaultFunctionExpressionNode":
-						case "AutonomousFunctionExpressionNode":
-							onReturnBehaviorConstant(vFrame, result, ExpressionType.OBJECT);
-							break;
-						case "ObjectLiteralNode":
-							onReturnBehaviorObjectLiteralNode(vFrame, result);
-							break;
-
-							// ===== JavaScript Arrays =====
-						case "DefaultArrayLiteralNode":
-							onReturnBehaviorDefaultArrayLiteralNode(vFrame, result);
-							break;
-						case "ConstantArrayLiteralNode":
-							onReturnBehaviorConstantArrayLiteralNode(vFrame, result);
-							break;
-						case "ReadElementNode":
-							onReturnBehaviorReadElementNode(vFrame, result);
-							break;
-						case "WriteElementNode":
-							onReturnBehaviorWriteElementNode(vFrame, result);
-							break;
+					// ===== JavaScript Constant Nodes =====
+					case "JSConstantBooleanNode":
+						onReturnBehaviorConstant(vFrame, result, ExpressionType.BOOLEAN);
+						break;
+					case "JSConstantIntegerNode":
+						onReturnBehaviorConstant(vFrame, result, ExpressionType.NUMBER_INTEGER);
+						break;
+					case "JSConstantDoubleNode":
+						onReturnBehaviorConstant(vFrame, result, ExpressionType.NUMBER_REAL);
+						break;
+					case "JSConstantStringNode":
+						onReturnBehaviorConstant(vFrame, result, ExpressionType.STRING);
+						break;
+					case "JSConstantNullNode":
+						onReturnBehaviorConstant(vFrame, result, ExpressionType.NULL);
+						break;
+					case "JSConstantUndefinedNode":
+						onReturnBehaviorConstant(vFrame, result, ExpressionType.UNDEFINED);
+						break;
 
 
-						// ===== JavaScript Logic Nodes =====
-						case "JSLessThanNodeGen":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.LESS_THAN);
-							break;
-						case "JSLessOrEqualNodeGen":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.LESS_EQUAL);
-							break;
-						case "JSGreaterThanNodeGen":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.GREATER_THAN);
-							break;
-						case "JSGreaterOrEqualNodeGen":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.GREATER_EQUAL);
-							break;
-						case "JSEqualNodeGen":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.EQUAL);
-							break;
-						case "JSIdenticalNodeGen":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.STRICT_EQUAL);
-							break;
-						case "JSAndNode":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.AND);
-							break;
-						case "JSOrNode":
-							onReturnBehaviorBinaryOperation(vFrame, result, Operation.OR);
-							break;
-						case "JSNotNodeGen":
-							onReturnBehaviorUnaryOperation(vFrame, result, Operation.NOT);
-							break;
+						// ===== JavaScript Object/Function Creation Nodes
+					case "DefaultFunctionExpressionNode":
+					case "AutonomousFunctionExpressionNode":
+						onReturnBehaviorConstant(vFrame, result, ExpressionType.OBJECT);
+						break;
+					case "ObjectLiteralNode":
+						onReturnBehaviorObjectLiteralNode(vFrame, result);
+						break;
 
-						// ===== JavaScript Miscellaneous =====
-						case "DualNode":
-							onReturnBehaviorDualNode(vFrame, result);
-							break;
-						default:
-							onReturnBehaviorDefault(vFrame, result);
-					}
-				} catch (SymbolicException.WrongParameterSize ex) {
-					amygdala.logger.alert(ex.getMessage());
+						// ===== JavaScript Arrays =====
+					case "DefaultArrayLiteralNode":
+						onReturnBehaviorDefaultArrayLiteralNode(vFrame, result);
+						break;
+					case "ConstantArrayLiteralNode":
+						onReturnBehaviorConstantArrayLiteralNode(vFrame, result);
+						break;
+					case "ReadElementNode":
+						onReturnBehaviorReadElementNode(vFrame, result);
+						break;
+					case "WriteElementNode":
+						onReturnBehaviorWriteElementNode(vFrame, result);
+						break;
+
+
+					// ===== JavaScript Logic Nodes =====
+					case "JSLessThanNodeGen":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.LESS_THAN);
+						break;
+					case "JSLessOrEqualNodeGen":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.LESS_EQUAL);
+						break;
+					case "JSGreaterThanNodeGen":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.GREATER_THAN);
+						break;
+					case "JSGreaterOrEqualNodeGen":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.GREATER_EQUAL);
+						break;
+					case "JSEqualNodeGen":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.EQUAL);
+						break;
+					case "JSIdenticalNodeGen":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.STRICT_EQUAL);
+						break;
+					case "JSAndNode":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.AND);
+						break;
+					case "JSOrNode":
+						onReturnBehaviorBinaryOperation(vFrame, result, Operation.OR);
+						break;
+					case "JSNotNodeGen":
+						onReturnBehaviorUnaryOperation(vFrame, result, Operation.NOT);
+						break;
+
+					// ===== JavaScript Miscellaneous =====
+					case "DualNode":
+						onReturnBehaviorDualNode(vFrame, result);
+						break;
+					default:
+						onReturnBehaviorDefault(vFrame, result);
 				}
 			}
 
@@ -760,25 +760,27 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				amygdala.tracer.argumentToIntermediate(aian.getIndex(), node_hash);
 			}
 
-			public void onReturnBehaviorTerminalPositionReturnNode(VirtualFrame vFrame, Object result) {
+			public void behaviorFrameReturnTerminalPositionReturnNode() {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				amygdala.tracer.intermediateToFunctionReturnValue(children.get(0).getLeft());
 			}
 
 			// ===== JavaScript General Nodes =====
 
-			public void onReturnBehaviorBinaryOperation(VirtualFrame vFrame, Object result, Operation op) throws
-					SymbolicException.WrongParameterSize {
+			public void onReturnBehaviorBinaryOperation(VirtualFrame vFrame, Object result, Operation op) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				assert children.size() == 2;
-				amygdala.tracer.addOperation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft(),
-											 children.get(1).getLeft());
+				try {
+					amygdala.tracer.addOperation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft(),
+												 children.get(1).getLeft());
+				} catch (SymbolicException.WrongParameterSize wrongParameterSize) {
+					amygdala.logger.critical("onReturnBehaviorBinaryOperation(): WrongParameterSize: " + wrongParameterSize.getMessage() + ".");
+				}
 				invalidate_interim(children);
 			}
 
 			// TODO
-			public void onReturnBehaviorJSAddSubNumericUnitNodeGen(VirtualFrame vFrame, Object result) throws
-					SymbolicException.WrongParameterSize {
+			public void onReturnBehaviorJSAddSubNumericUnitNodeGen(VirtualFrame vFrame, Object result) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				assert children.size() == 1;
 				String before = String.valueOf(my_sourcesection.getSource().getCharacters().charAt(my_sourcesection.getCharIndex() - 1));
@@ -788,8 +790,8 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					SymbolicNode add_result = null;
 					try {
 						add_result = new Addition(LanguageSemantic.JAVASCRIPT, pre_add, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
-					} catch (SymbolicException.IncompatibleType incompatibleType) {
-						incompatibleType.printStackTrace();
+					} catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize ex) {
+						ex.printStackTrace();
 					}
 					amygdala.tracer.setIntermediate(node_hash, add_result);
 				} else if (before.equals("-") || after.equals("-")) {
@@ -797,8 +799,8 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					SymbolicNode sub_result = null;
 					try {
 						sub_result = new Subtraction(LanguageSemantic.JAVASCRIPT, pre_sub, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
-					} catch (SymbolicException.IncompatibleType incompatibleType) {
-						incompatibleType.printStackTrace();
+					} catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize ex) {
+						ex.printStackTrace();
 					}
 					amygdala.tracer.setIntermediate(node_hash, sub_result);
 				} else {
@@ -806,11 +808,14 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				}
 			}
 
-			public void onReturnBehaviorUnaryOperation(VirtualFrame vFrame, Object result, Operation op) throws
-					SymbolicException.WrongParameterSize {
+			public void onReturnBehaviorUnaryOperation(VirtualFrame vFrame, Object result, Operation op) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				assert children.size() == 1;
-				amygdala.tracer.addOperation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft());
+				try {
+					amygdala.tracer.addOperation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft());
+				} catch (SymbolicException.WrongParameterSize wrongParameterSize) {
+					amygdala.logger.critical("onReturnBehaviorUnaryOperation(): WrongParameterSize: " + wrongParameterSize.getMessage() + ".");
+				}
 				invalidate_interim(children);
 			}
 
