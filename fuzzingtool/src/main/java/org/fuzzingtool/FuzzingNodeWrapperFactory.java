@@ -8,17 +8,16 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.js.nodes.JSGuards;
+import com.oracle.truffle.js.nodes.JSNodeUtil;
 import com.oracle.truffle.js.nodes.access.*;
 import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
-import com.oracle.truffle.js.nodes.binary.JSAddSubNumericUnitNode;
-import com.oracle.truffle.js.nodes.binary.JSAddSubNumericUnitNodeGen;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.JSRuntime;
-import com.oracle.truffle.js.runtime.objects.JSObjectUtil;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
 import org.fuzzingtool.components.Amygdala;
 import org.fuzzingtool.components.BranchingNodeAttribute;
@@ -41,7 +40,6 @@ import java.util.regex.Pattern;
 class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 	private final TruffleInstrument.Env env;
 	private final Amygdala amygdala;
-	private int visualized_counter = 0;
 
 	private static final boolean ENABLE_EVENT_LOGGING = true;
 
@@ -60,9 +58,18 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 	public ExecutionEventNode create(final EventContext ec) {
 		if (ec.getInstrumentedNode().getClass().getSimpleName().equals("MaterializedFunctionBodyNode")) {
 			ASTVisualizer av = new ASTVisualizer(ec.getInstrumentedNode(), amygdala.logger, amygdala.getSourceCodeLineOffset());
-			av.save_image(Paths.get(".").toAbsolutePath().normalize().toString() +
-                                  "/function_visualization_" + visualized_counter);
-			visualized_counter += 1;
+			StringBuilder save_path = new StringBuilder();
+			save_path.append(Paths.get(".").toAbsolutePath().normalize().toString()).append("/");
+			save_path.append("function_");
+			save_path.append(ec.getInstrumentedSourceSection().getStartLine()).append("-");
+			save_path.append(ec.getInstrumentedSourceSection().getEndLine()).append("_");
+			RootNode rn = ec.getInstrumentedNode().getRootNode();
+			if (rn != null) {
+				save_path.append(JSNodeUtil.resolveName(rn).replace(":", ""));
+			} else {
+				save_path.append("(unknown)");
+			}
+			av.save_image(save_path.toString());
 		}
 
 		final boolean create_nodeIsInputNode;
