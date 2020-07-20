@@ -222,8 +222,12 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "InvokeNNode":
 						onEnterBehaviorInvokeNode(vFrame);
 						break;
+					case "JSNewNodeGen":
+						onEnterBehaviorJSNewNodeGen(vFrame);
+						break;
 					case "MaterializedFunctionBodyNode":
 						onEnterBehaviorFunctionBodyNode(vFrame);
+						break;
 					default:
 						onEnterBehaviorDefault(vFrame);
 				}
@@ -262,6 +266,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "InvokeNNode":
 						onInputValueBehaviorInvokeNode(vFrame, inputContext, inputIndex, inputValue);
 						break;
+					case "JSNewNodeGen":
+						onInputValueBehaviorJSNewNodeGen(vFrame, inputContext, inputIndex, inputValue);
+						break;
 					default:
 						onInputValueBehaviorDefault(vFrame, inputContext, inputIndex, inputValue);
 				}
@@ -292,6 +299,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 							onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(vFrame, result);
 							break;
 						case "JSReadScopeFrameSlotNodeGen":
+						case "JSReadScopeFrameSlotWithTDZNodeGen":
 							onReturnBehaviorJSReadScopeFrameSlotNodeGen(vFrame, result);
 							break;
 						case "JSWriteScopeFrameSlotNodeGen":
@@ -309,6 +317,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						case "Invoke1Node":
 						case "InvokeNNode":
 							onReturnBehaviorInvokeNode(vFrame, result);
+							break;
+						case "JSNewNodeGen":
+							onReturnBehaviorJSNewNodeGen(vFrame, result);
 							break;
 						case "AccessIndexedArgumentNode":
 							onReturnBehaviorAccessIndexedArgumentNode(vFrame, result);
@@ -368,7 +379,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 							// ===== JavaScript Object/Function Creation Nodes
 						case "DefaultFunctionExpressionNode":
 						case "AutonomousFunctionExpressionNode":
-						case "JSNewNodeGen":
 							onReturnBehaviorConstant(vFrame, result, ExpressionType.OBJECT);
 							break;
 						case "ObjectLiteralNode":
@@ -482,6 +492,12 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				amygdala.tracer.setArgumentsArray(this.arguments_array);
 			}
 
+			public void onEnterBehaviorJSNewNodeGen(VirtualFrame vFrame) {
+				this.arguments_array.clear();
+				// if JSNewNodeGen has no arguments
+				amygdala.tracer.setArgumentsArray(this.arguments_array);
+			}
+
 			public void onEnterBehaviorFunctionBodyNode(VirtualFrame vFrame) {
 				Iterator<Scope> local_scopes = env.findLocalScopes(my_node, vFrame).iterator();
 				if (local_scopes.hasNext()) {
@@ -571,6 +587,20 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					this.arguments_array.appendValue(amygdala.tracer.getIntermediate(children.get(inputIndex).getLeft()));
 				}
 				// Every call to onInput (or onEnter if Invoke0Node!)
+				// inside a call node could
+				// be the last input before the function gets called
+				amygdala.tracer.setArgumentsArray(this.arguments_array);
+			}
+
+			public void onInputValueBehaviorJSNewNodeGen(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
+													   Object inputValue) {
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				// 0 is object to create, others are arguments (?)
+				// TODO a bit hacky
+				if (inputIndex >= 1) {
+					this.arguments_array.appendValue(amygdala.tracer.getIntermediate(children.get(inputIndex).getLeft()));
+				}
+				// Every call to onInput
 				// inside a call node could
 				// be the last input before the function gets called
 				amygdala.tracer.setArgumentsArray(this.arguments_array);
@@ -709,6 +739,12 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			public void onReturnBehaviorInvokeNode(VirtualFrame vFrame, Object result) {
 				amygdala.tracer.functionReturnValueToIntermediate(node_hash);
+				amygdala.tracer.resetFunctionReturnValue();
+			}
+
+			public void onReturnBehaviorJSNewNodeGen(VirtualFrame vFrame, Object result) {
+				//TODO always an object, never a basic type?
+				amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
 				amygdala.tracer.resetFunctionReturnValue();
 			}
 

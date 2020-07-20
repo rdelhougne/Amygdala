@@ -1,10 +1,10 @@
 ---
-program_path: "../javascript/example.js"
+program_path: "../javascript/new.js"
 variables:
-  - line_num: 42
-    name: last expected prime
+  - line_num: 1
+    name: singularity
     type: INTEGER
-    sample: 7
+    sample: 5
 fuzzing_parameters:
   max_iterations: 10
   tactic: "DEPTH_SEARCH"

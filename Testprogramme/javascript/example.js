@@ -38,8 +38,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-var N = 2000;
-var EXPECTED = 17393;
+var N = 3;
+var EXPECTED = 7;
 
 function Natural() {
     x = 2;
