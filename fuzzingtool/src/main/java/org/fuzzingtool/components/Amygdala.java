@@ -15,6 +15,7 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,9 @@ public class Amygdala {
 	private boolean is_first_run = true;
 	private int max_iterations = 1024;
 	private int source_code_line_offset = 0;
+
+	//Debugging
+	public HashMap<String, BitSet> node_type_instrumented = new HashMap<>();
 
 	public Amygdala(Logger lgr) {
 		this.tracer = new Tracer(lgr);
@@ -392,7 +396,64 @@ public class Amygdala {
 		} else {
 			stat_str.append("Finished: no\n");
 		}
-		stat_str.append("Iterations: ").append(this.fuzzing_iterations - 1).append(" of ").append(this.max_iterations);
+		stat_str.append("Iterations: ").append(this.fuzzing_iterations - 1).append(" of ").append(this.max_iterations).append("\n");
+		return stat_str.toString();
+	}
+
+	/**
+	 * Print instrumentation statistics
+	 */
+	public void printInstrumentation(boolean only_non_instrumented) {
+		logger.log(getInstrumentationString(only_non_instrumented));
+	}
+
+	/**
+	 * Returns a string-representation of the instrumentation statistics
+	 *
+	 * @return A string-representation of the statistics
+	 */
+	public String getInstrumentationString(boolean only_non_instrumented) {
+		int NAME_WIDTH = 36;
+		StringBuilder stat_str = new StringBuilder();
+		stat_str.append("===NODE INSTRUMENTATION INSIGHT===\n");
+		stat_str.append(String.format("%-" + NAME_WIDTH + "s", "NODE NAME")).append("E I R\n");
+		for (String key : node_type_instrumented.keySet()) {
+			BitSet curr_set = node_type_instrumented.get(key);
+			boolean not_instrumented = curr_set.cardinality() == 0;
+
+			String node_name = key;
+			if (node_name.length() > NAME_WIDTH - 1) {
+				node_name = node_name.substring(0, NAME_WIDTH - 4) + "...";
+			}
+			node_name = String.format("%-" + NAME_WIDTH + "s", node_name);
+
+			if (not_instrumented) {
+				stat_str.append("\033[41m").append(node_name).append("\033[0m");
+			} else {
+				if (!only_non_instrumented) {
+					stat_str.append(node_name);
+				}
+			}
+
+			if (not_instrumented || !only_non_instrumented) {
+				if (curr_set.get(0)) {
+					stat_str.append("✔ ");
+				} else {
+					stat_str.append("✗ ");
+				}
+				if (curr_set.get(1)) {
+					stat_str.append("✔ ");
+				} else {
+					stat_str.append("✗ ");
+				}
+				if (curr_set.get(2)) {
+					stat_str.append("✔");
+				} else {
+					stat_str.append("✗");
+				}
+				stat_str.append("\n");
+			}
+		}
 		return stat_str.toString();
 	}
 }

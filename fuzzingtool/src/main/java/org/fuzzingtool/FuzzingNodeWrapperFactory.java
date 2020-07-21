@@ -32,6 +32,7 @@ import org.graalvm.collections.Pair;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -93,6 +94,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					source_code_line.contains(amygdala.main_loop_identifier_string);
 		} else {
 			create_nodeIsMainLoopInputNode = false;
+		}
+
+		if (!amygdala.node_type_instrumented.containsKey(ec.getInstrumentedNode().getClass().getSimpleName())) {
+			amygdala.node_type_instrumented.put(ec.getInstrumentedNode().getClass().getSimpleName(), new BitSet(3));
 		}
 
 		return new ExecutionEventNode() {
@@ -218,6 +223,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					amygdala.logger.log(getSignatureString() + " \033[32m→\033[0m");
 				}
 
+				boolean was_instrumented_on_enter = true;
 				switch (node_type) {
 					case "Call0Node":
 					case "Call1Node":
@@ -236,7 +242,11 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						onEnterBehaviorFunctionBodyNode(vFrame);
 						break;
 					default:
-						onEnterBehaviorDefault(vFrame);
+						was_instrumented_on_enter = false;
+				}
+				
+				if (was_instrumented_on_enter) {
+					amygdala.node_type_instrumented.get(node_type).set(0);
 				}
 			}
 
@@ -247,6 +257,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					amygdala.logger.log(getSignatureString() + " \033[34m•\033[0m");
 				}
 
+				boolean was_instrumented_on_input_value = true;
 				switch (node_type) {
 					case "IfNode":
 						onInputValueBehaviorIfNode(vFrame, inputContext, inputIndex, inputValue);
@@ -281,7 +292,11 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						behaviorFrameReturnTerminalPositionReturnNode();
 						break;
 					default:
-						onInputValueBehaviorDefault(vFrame, inputContext, inputIndex, inputValue);
+						was_instrumented_on_input_value = false;
+				}
+				
+				if (was_instrumented_on_input_value) {
+					amygdala.node_type_instrumented.get(node_type).set(1);
 				}
 			}
 
@@ -291,10 +306,14 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					amygdala.logger.log(getSignatureString() + " \033[31m↵\033[0m");
 				}
 				
+				boolean was_instrumented_on_return_value = true;
 				switch (node_type) {
 					// ===== JavaScript Read/Write =====
 					case "GlobalPropertyNode":
 						onReturnBehaviorGlobalPropertyNode(vFrame, result);
+						break;
+					case "GlobalObjectNode":
+						onReturnBehaviorGlobalObjectNode(vFrame, result);
 						break;
 					case "PropertyNode":
 						onReturnBehaviorPropertyNode(vFrame, result);
@@ -399,6 +418,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "DefaultArrayLiteralNode":
 						onReturnBehaviorDefaultArrayLiteralNode(vFrame, result);
 						break;
+					case "ConstantEmptyArrayLiteralNode":
 					case "ConstantArrayLiteralNode":
 						onReturnBehaviorConstantArrayLiteralNode(vFrame, result);
 						break;
@@ -443,8 +463,19 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "DualNode":
 						onReturnBehaviorDualNode(vFrame, result);
 						break;
+					case "JSGlobalPrintNodeGen":
+						onReturnBehaviorJSGlobalPrintNodeGen(vFrame, result);
+						break;
+					case "JSInputGeneratingNodeWrapper":
+					case "JSTaggedExecutionNode":
+						onReturnBehaviorPassthrough(vFrame, result);
+						break;
 					default:
-						onReturnBehaviorDefault(vFrame, result);
+						was_instrumented_on_return_value = false;
+				}
+
+				if (was_instrumented_on_return_value) {
+					amygdala.node_type_instrumented.get(node_type).set(2);
 				}
 			}
 
@@ -476,10 +507,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					}
 				}
 				return children;
-			}
-
-			public void onEnterBehaviorDefault(VirtualFrame vFrame) {
-				return;
 			}
 
 			public void onEnterBehaviorCallNode(VirtualFrame vFrame) {
@@ -519,11 +546,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					amygdala.logger.critical("onEnterBehaviorFunctionBodyNode(): Cannot find any local scopes.");
 				}
 				amygdala.tracer.resetFunctionReturnValue();
-			}
-
-			public void onInputValueBehaviorDefault(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
-                                                    Object inputValue) {
-				return;
 			}
 
 			public void onInputValueBehaviorIfNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
@@ -630,7 +652,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			}
 
 			// Default Behavior is to just pass through any symbolic flow
-			public void onReturnBehaviorDefault(VirtualFrame vFrame, Object result) {
+			public void onReturnBehaviorPassthrough(VirtualFrame vFrame, Object result) {
 				ArrayList<Pair<Integer, String>> child = getChildHashes();
 				// Kann kein Verhalten aus mehrern Kindern ableiten
 				if (child.size() == 1) {
@@ -643,6 +665,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			public void onReturnBehaviorGlobalPropertyNode(VirtualFrame vFrame, Object result) {
 				GlobalPropertyNode gpnode = (GlobalPropertyNode) my_node;
 				amygdala.tracer.getSymbolicObjectProperty(object_context_hash, gpnode.getPropertyKey(), node_hash);
+			}
+
+			public void onReturnBehaviorGlobalObjectNode(VirtualFrame vFrame, Object result) {
+				amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
 			}
 
 			public void onReturnBehaviorPropertyNode(VirtualFrame vFrame, Object result) {
@@ -923,6 +949,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				} else {
 					// nothing to do for now
 				}
+			}
+
+			public void onReturnBehaviorJSGlobalPrintNodeGen(VirtualFrame vFrame, Object result) {
+				amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
 			}
 
 			public VariableContext arrayToSymbolic(DynamicObject dyn_obj) {
