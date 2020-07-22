@@ -16,8 +16,8 @@ public class LessEqual extends SymbolicNode {
 	}
 
 	@Override
-	public String toHRStringJS() {
-		return parentheses(this.children[0].toString() + " ≤ " + this.children[1].toString());
+	public String toHRStringJS() throws SymbolicException.NotImplemented {
+		return parentheses(this.children[0].toHRString() + " ≤ " + this.children[1].toHRString());
 	}
 
 	@Override

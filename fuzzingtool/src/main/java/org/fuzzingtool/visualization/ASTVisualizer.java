@@ -21,10 +21,12 @@ import static guru.nidi.graphviz.model.Factory.*;
 
 public class ASTVisualizer {
 	private final MutableGraph vis_graph = mutGraph("AST Visualization").setDirected(true);
+	private final int source_code_line_offset;
 
 	private final Logger logger;
 
-	public ASTVisualizer(Node root_node, Logger l) {
+	public ASTVisualizer(Node root_node, Logger l, int source_code_line_offset) {
+		this.source_code_line_offset = source_code_line_offset;
 		this.logger = l;
 		vis_graph.graphAttrs().add("splines", "ortho");
 		vis_graph.graphAttrs().add("nodesep", 0.5);
@@ -88,10 +90,16 @@ public class ASTVisualizer {
 				characters = characters.substring(0, 13) + "...";
 			}
 			String line_numbering;
-			if (node_source.getStartLine() == node_source.getEndLine()) {
-				line_numbering = "<b>" + node_source.getStartLine() + ":</b>  ";
+			int start_line = node_source.getStartLine() - this.source_code_line_offset;
+			int end_line = node_source.getEndLine() - this.source_code_line_offset;
+			if (start_line >= 0) {
+				if (start_line == end_line) {
+					line_numbering = "<b>" + start_line + ":</b>  ";
+				} else {
+					line_numbering = "<b>" + start_line + "-" + end_line + ":</b>  ";
+				}
 			} else {
-				line_numbering = "<b>" + node_source.getStartLine() + "-" + node_source.getEndLine() + ":</b>  ";
+				line_numbering = "<b>~:</b>  ";
 			}
 			source = line_numbering + StringEscapeUtils.escapeHtml4(characters);
 		}

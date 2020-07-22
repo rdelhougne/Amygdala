@@ -12,6 +12,6 @@ public abstract class FuzzingTactic {
 
 	public abstract String getTactic();
 
-	public abstract HashMap<VariableIdentifier, Object> getNextValues(HashMap<VariableIdentifier, ExpressionType> variable_types) throws
+	public abstract HashMap<VariableIdentifier, Object> getNextValues() throws
 			FuzzingException.NoMorePaths;
 }

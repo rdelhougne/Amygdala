@@ -1,0 +1,14 @@
+---
+program_path: "../javascript/new.js"
+variables:
+  - line_num: 1
+    name: singularity
+    type: INTEGER
+    sample: 5
+fuzzing_parameters:
+  max_iterations: 10
+  tactic: "DEPTH_SEARCH"
+  tactic_depth_search:
+    max_loop_unrolling: 16
+    max_depth: 32
+...

@@ -76,3 +76,81 @@ fuzzingtool/*.dot
 
 fuzzingtool/__pycache__/
 
+# User-specific stuff
+graalplayground/.idea/**/workspace.xml
+graalplayground/.idea/**/tasks.xml
+graalplayground/.idea/**/usage.statistics.xml
+graalplayground/.idea/**/dictionaries
+graalplayground/.idea/**/shelf
+
+# Generated files
+graalplayground/.idea/**/contentModel.xml
+
+# Sensitive or high-churn files
+graalplayground/.idea/**/dataSources/
+graalplayground/.idea/**/dataSources.ids
+graalplayground/.idea/**/dataSources.local.xml
+graalplayground/.idea/**/sqlDataSources.xml
+graalplayground/.idea/**/dynamic.xml
+graalplayground/.idea/**/uiDesigner.xml
+graalplayground/.idea/**/dbnavigator.xml
+
+# Gradle
+graalplayground/.idea/**/gradle.xml
+graalplayground/.idea/**/libraries
+
+# Gradle and Maven with auto-import
+# When using Gradle or Maven with auto-import, you should exclude module files,
+# since they will be recreated, and may cause churn.  Uncomment if using
+# auto-import.
+# .idea/artifacts
+# .idea/compiler.xml
+# .idea/modules.xml
+# .idea/*.iml
+# .idea/modules
+# *.iml
+# *.ipr
+
+# CMake
+graalplayground/cmake-build-*/
+
+# Mongo Explorer plugin
+graalplayground/.idea/**/mongoSettings.xml
+
+# File-based project format
+graalplayground/*.iws
+
+# IntelliJ
+graalplayground/out/
+
+# mpeltonen/sbt-idea plugin
+graalplayground/.idea_modules/
+
+# JIRA plugin
+graalplayground/atlassian-ide-plugin.xml
+
+# Cursive Clojure plugin
+graalplayground/.idea/replstate.xml
+
+# Crashlytics plugin (for Android Studio and IntelliJ)
+graalplayground/com_crashlytics_export_strings.xml
+graalplayground/crashlytics.properties
+graalplayground/crashlytics-build.properties
+graalplayground/fabric.properties
+
+# Editor-based Rest Client
+graalplayground/.idea/httpRequests
+
+# Android studio 3.1+ serialized cache file
+graalplayground/.idea/caches/build_file_checksums.ser
+
+graalplayground/target/
+
+graalplayground/*.svg
+graalplayground/*.dot
+
+graalplayground/__pycache__/
+
+
+
+Testprogramme/nodejs/node_modules/

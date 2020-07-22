@@ -211,7 +211,8 @@ public class BranchingNode {
 		return null;
 	}
 
-	public ArrayList<String> getSymbolicPathHRExpression() throws SymbolicException.WrongParameterSize {
+	public ArrayList<String> getSymbolicPathHRExpression() throws SymbolicException.WrongParameterSize,
+			SymbolicException.NotImplemented {
 		if (parentNode != null) {
 			return this.parentNode.getSymbolicPathHRExpression(this.parentNodeTakenFlag);
 		} else {
@@ -220,7 +221,7 @@ public class BranchingNode {
 	}
 
 	public ArrayList<String> getSymbolicPathHRExpression(Boolean taken_flag) throws
-			SymbolicException.WrongParameterSize {
+			SymbolicException.WrongParameterSize, SymbolicException.NotImplemented {
 		if (parentNode != null) {
 			ArrayList<String> all_from_parents = this.parentNode.getSymbolicPathHRExpression(this.parentNodeTakenFlag);
 			all_from_parents.add(getLocalHRExpression(taken_flag));
@@ -272,12 +273,13 @@ public class BranchingNode {
 		}
 	}
 
-	public String getLocalHRExpression(Boolean taken) throws SymbolicException.WrongParameterSize {
+	public String getLocalHRExpression(Boolean taken) throws SymbolicException.WrongParameterSize,
+			SymbolicException.NotImplemented {
 		if (taken) {
-			return this.symbolic_expression.toString();
+			return this.symbolic_expression.toHRString();
 		} else {
 			SymbolicNode not = new Not(nodeLanguageSemantic, this.symbolic_expression);
-			return not.toString();
+			return not.toHRString();
 		}
 	}
 

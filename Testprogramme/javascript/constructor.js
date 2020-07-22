@@ -7,8 +7,6 @@ function Car(make, model, year) {
 	}
 }
 
-var k = 1;
-
 car1 = new Car("Honda", "Civic", 2005);
 car2 = new Car("Landrover", "Defender", 1995);
 
@@ -17,4 +15,4 @@ ownerstr2 = car2.owner("Herbert");
 ownerstr3 = car1.owner("Frank");
 
 print(ownerstr2);
-
+print(ownerstr3);

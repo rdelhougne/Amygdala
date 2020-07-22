@@ -11,12 +11,10 @@ import org.graalvm.collections.Pair;
 
 public class SymbolicVariable extends SymbolicNode {
 	private final VariableIdentifier identifier;
-	private final ExpressionType variableType;
 
-	public SymbolicVariable(LanguageSemantic s, VariableIdentifier var_id, ExpressionType t) {
+	public SymbolicVariable(LanguageSemantic s, VariableIdentifier var_id) {
 		this.languageSemantic = s;
 		this.identifier = var_id;
-		this.variableType = t;
 	}
 
 	@Override
@@ -31,7 +29,7 @@ public class SymbolicVariable extends SymbolicNode {
 
 	@Override
 	public Pair<Expr, ExpressionType> toZ3ExprJS(Context ctx) throws SymbolicException.UndecidableExpression {
-		switch (this.variableType) {
+		switch (this.identifier.getVariableType()) {
 			case BOOLEAN:
 				return Pair.create(ctx.mkBoolConst(identifier.getIdentifierString()), ExpressionType.BOOLEAN);
 			case BIGINT:
@@ -45,7 +43,7 @@ public class SymbolicVariable extends SymbolicNode {
 								   ExpressionType.STRING);
 			default:
 				throw new SymbolicException.UndecidableExpression("Z3", "Cannot solve for type " +
-						this.variableType.toString());
+						this.identifier.getVariableType().toString());
 		}
 	}
 }

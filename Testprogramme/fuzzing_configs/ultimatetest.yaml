@@ -1,27 +1,14 @@
 ---
-program_path: "ultimatetest_generated.js"
+program_path: "../javascript/ultimatetest.js"
 variables:
-  - line_num: 3
-    name: "input_number_integer"
+  - line_num: 5
+    name: integer named k
     type: INTEGER
-    sample: 5
-  - line_num: 4
-    name: "input_number_real"
-    type: REAL
-    sample: 6.7
-#  -
-#    line_num: 5
-#    name: "input_bigint"
-#    type: BIGINT
-#    sample: 9001
+    sample: 1
   - line_num: 6
-    name: "input_boolean"
-    type: BOOLEAN
-    sample: true
-  - line_num: 7
-    name: "input_string"
-    type: STRING
-    sample: "abc"
+    name: integer named u
+    type: INTEGER
+    sample: 34
 fuzzing_parameters:
   max_iterations: 10
   tactic: "DEPTH_SEARCH"

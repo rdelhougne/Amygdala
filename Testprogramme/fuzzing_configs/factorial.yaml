@@ -1,9 +1,8 @@
 ---
 program_path: "../javascript/factorial.js"
 variables: # TODO die Bezeichnung einer Variablen ersetzen durch den eindeutigen Identifier
-  -
-    line_num: 2
-    name: n
+  - line_num: 1
+    name: integer to factorialize
     type: INTEGER
     sample: 5
 fuzzing_parameters: # Globale Parameter und Parameter für Taktiken
