@@ -6,7 +6,9 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="fuzzingtool" />
+        <module name="core" />
+        <module name="instrumentation" />
+        <module name="wrapper" />
       </profile>
     </annotationProcessing>
   </component>
