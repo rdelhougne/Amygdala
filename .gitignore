@@ -151,6 +151,10 @@ graalplayground/*.dot
 
 graalplayground/__pycache__/
 
-
-
 Testprogramme/nodejs/node_modules/
+
+fuzzingtool/instrumentation/target/
+fuzzingtool/core/target/
+fuzzingtool/wrapper/target/
+
+fuzzingtool/build/

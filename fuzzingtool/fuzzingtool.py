@@ -7,7 +7,7 @@ import yaml
 
 import testgenerator
 
-FUZZINGTOOL_EXEC = "target/fuzzingtool-1.0-SNAPSHOT.jar"
+FUZZINGTOOL_EXEC = "build/core-1.0-SNAPSHOT.jar:build/instrumentation-1.0-SNAPSHOT.jar"
 TESTING_ARGUMENTS = ""
 DEPENDENCY_PACKAGES = ["guru.nidi", "org.slf4j.slf4j-api","org.apache.logging.log4j.log4j-slf4j-impl","org.apache.logging.log4j.log4j-api", "org.apache.logging.log4j.log4j-core", "org.apache.commons", "org.snakeyaml"]
 DEPENDENCY_REPOSITORY = "/home/robert/.m2/repository"
@@ -136,7 +136,7 @@ def main():
             engine_exec_path,
             "--polyglot",
             "--jvm",
-            '--vm.Dtruffle.class.path.append=' + FUZZINGTOOL_EXEC + ':' + classpath_string,
+            "--vm.Dtruffle.class.path.append=" + FUZZINGTOOL_EXEC + ":" + classpath_string,
             "--fuzzingtool",
             "--fuzzingtool.mainLoopLineNumber=" + str(main_loop_line_num),
             "--fuzzingtool.mainLoopIdentString=" + str(main_loop_identifier),
