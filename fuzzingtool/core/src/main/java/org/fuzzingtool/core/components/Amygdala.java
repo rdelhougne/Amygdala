@@ -186,7 +186,7 @@ public class Amygdala {
 								": " + next_input);
 			return next_input;
 		} else {
-			logger.warning("No new value for variable: " + var_id.getIdentifierString());
+			logger.info("No new value for variable: " + variable_names.get(var_id));
 			switch (var_id.getVariableType()) {
 				case BOOLEAN:
 					return true;
@@ -198,7 +198,7 @@ public class Amygdala {
 				case NUMBER_REAL:
 					return 1.5;
 				default:
-					logger.critical("Variable " + var_id.getIdentifierString() + " has not allowed type '" +
+					logger.critical("Variable " + variable_names.get(var_id) + " has not allowed type '" +
 											var_id.getVariableType().toString() + "'.");
 					return null;
 			}

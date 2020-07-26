@@ -30,6 +30,7 @@ import org.fuzzingtool.core.visualization.ASTVisualizer;
 import org.fuzzingtool.core.symbolic.basic.SymbolicConstant;
 import org.graalvm.collections.Pair;
 
+import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -58,7 +59,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 	public ExecutionEventNode create(final EventContext ec) {
 		if (ec.getInstrumentedNode().getClass().getSimpleName().equals("MaterializedFunctionBodyNode")) {
-			ASTVisualizer av = new ASTVisualizer(ec.getInstrumentedNode(), amygdala.logger, amygdala.getSourceCodeLineOffset());
 			StringBuilder save_path = new StringBuilder();
 			save_path.append(Paths.get(".").toAbsolutePath().normalize().toString()).append("/");
 			save_path.append("function_");
@@ -70,7 +70,11 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			} else {
 				save_path.append("(unknown)");
 			}
-			av.save_image(save_path.toString());
+			File save_file = new File(save_path.toString() + ".svg");
+			if (!save_file.exists()) {
+				ASTVisualizer av = new ASTVisualizer(ec.getInstrumentedNode(), amygdala.logger, amygdala.getSourceCodeLineOffset());
+				av.save_image(save_path.toString());
+			}
 		}
 
 		final boolean create_nodeIsInputNode;
@@ -116,9 +120,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			// used by PropertyNode and WritePropertyNode to save the hash of the object
 			private int object_context_hash = 0;
 			// used by ReadElementNode and WriteElementNode to determine the array index
-			private int array_index = 0;
+			private Object element_access = null;
 			// used by Call1..NNodes to construct the arguments array
-			private VariableContext arguments_array = new VariableContext(VariableContext.ContextType.ARRAY);
+			private final ArrayList<SymbolicNode> arguments_array = new ArrayList<>();
 
 			protected String getSignatureString() {
 				String node_type_padded = String.format("%1$-" + 36 + "s", node_type);
@@ -207,7 +211,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				if (localScopes != null && localScopes.iterator().hasNext()) {
 					Scope innermost_scope = localScopes.iterator().next();
 					try {
-						return innermost_scope.getReceiver().hashCode();
+						return System.identityHashCode(innermost_scope.getReceiver());
 					} catch (java.lang.Exception ex) {
 						amygdala.logger.critical("ExecutionEventNode.getThisObjectHash(): Node " + getSignatureString() + " has no Receiver-Object.");
 						return 0;
@@ -466,6 +470,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "JSGlobalPrintNodeGen":
 						onReturnBehaviorJSGlobalPrintNodeGen(vFrame, result);
 						break;
+					case "ExprBlockNode":
+						onReturnBehaviorExprBlockNode(vFrame, result);
+						break;
 					case "JSInputGeneratingNodeWrapper":
 					case "JSTaggedExecutionNode":
 						onReturnBehaviorPassthrough(vFrame, result);
@@ -482,13 +489,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			@Override
 			protected Object onUnwind(VirtualFrame frame, Object info) {
 				return info;
-			}
-
-			// This method is only for testing for inconsistencies in the symbolic flow, should be removed later
-			public void invalidate_interim(ArrayList<Pair<Integer, String>> old_results) {
-				for (Pair<Integer, String> to_destroy: old_results) {
-					amygdala.tracer.removeIntermediate(to_destroy.getLeft());
-				}
 			}
 
 			public ArrayList<Pair<Integer, String>> getChildHashes() {
@@ -538,7 +538,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					Scope innermost_scope = local_scopes.next();
 					Object root_instance = innermost_scope.getRootInstance();
 					if (root_instance != null) {
-						amygdala.tracer.initializeFunctionScope(root_instance.hashCode());
+						amygdala.tracer.initializeFunctionScope(System.identityHashCode(root_instance));
 					} else {
 						amygdala.logger.critical("onEnterBehaviorFunctionBodyNode(): Cannot get root instance.");
 					}
@@ -577,7 +577,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 														 Object inputValue) {
 				// Save the hash of the object that is written to/read from
 				if (inputIndex == 0) {
-					object_context_hash = inputValue.hashCode();
+					object_context_hash = System.identityHashCode(inputValue);
 				}
 			}
 
@@ -585,11 +585,11 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 														 Object inputValue) {
 				// Save the hash of the object that is written to/read from
 				if (inputIndex == 0) {
-					object_context_hash = inputValue.hashCode();
+					object_context_hash = System.identityHashCode(inputValue);
 				}
 				// Save the array index
 				if (inputIndex == 1) {
-					array_index = (int) inputValue;
+					element_access = inputValue;
 				}
 			}
 
@@ -599,7 +599,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				// 0 is ? node, 1 is the function object to call
 				// TODO a bit hacky
 				if (inputIndex >= 2) {
-					this.arguments_array.appendValue(amygdala.tracer.getIntermediate(children.get(inputIndex).getLeft()));
+					this.arguments_array.add(amygdala.tracer.getIntermediate(children.get(inputIndex).getLeft()));
 				}
 				// Every call to onInput (or onEnter if Call0Node!)
 				// inside a call node could
@@ -613,7 +613,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				// 0 is object node, 1 is the function object to call (?)
 				// TODO a bit hacky
 				if (inputIndex >= 2) {
-					this.arguments_array.appendValue(amygdala.tracer.getIntermediate(children.get(inputIndex).getLeft()));
+					this.arguments_array.add(amygdala.tracer.getIntermediate(children.get(inputIndex).getLeft()));
 				}
 				// Every call to onInput (or onEnter if Invoke0Node!)
 				// inside a call node could
@@ -627,7 +627,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				// 0 is object to create, others are arguments (?)
 				// TODO a bit hacky
 				if (inputIndex >= 1) {
-					this.arguments_array.appendValue(amygdala.tracer.getIntermediate(children.get(inputIndex).getLeft()));
+					this.arguments_array.add(amygdala.tracer.getIntermediate(children.get(inputIndex).getLeft()));
 				}
 				// Every call to onInput
 				// inside a call node could
@@ -664,7 +664,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			public void onReturnBehaviorGlobalPropertyNode(VirtualFrame vFrame, Object result) {
 				GlobalPropertyNode gpnode = (GlobalPropertyNode) my_node;
-				amygdala.tracer.getSymbolicObjectProperty(object_context_hash, gpnode.getPropertyKey(), node_hash);
+				amygdala.tracer.propertyToIntermediate(object_context_hash, gpnode.getPropertyKey(), node_hash);
 			}
 
 			public void onReturnBehaviorGlobalObjectNode(VirtualFrame vFrame, Object result) {
@@ -673,13 +673,15 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			public void onReturnBehaviorPropertyNode(VirtualFrame vFrame, Object result) {
 				PropertyNode pnode = (PropertyNode) my_node;
-				amygdala.tracer.getSymbolicObjectProperty(object_context_hash, pnode.getPropertyKey().toString(), node_hash);
+				// TODO toString()?
+				amygdala.tracer.propertyToIntermediate(object_context_hash, pnode.getPropertyKey().toString(), node_hash);
 			}
 
 			public void onReturnBehaviorWritePropertyNode(VirtualFrame vFrame, Object result) {
 				WritePropertyNode wpnode = (WritePropertyNode) my_node;
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
-				amygdala.tracer.setSymbolicObjectProperty(object_context_hash, wpnode.getKey().toString(), children.get(1).getLeft());
+				// TODO toString()?
+				amygdala.tracer.intermediateToProperty(object_context_hash, wpnode.getKey().toString(), children.get(1).getLeft());
 				amygdala.tracer.passThroughIntermediate(node_hash, children.get(1).getLeft());
 			}
 
@@ -691,7 +693,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					Object root_instance = innermost_scope.getRootInstance();
 					if (root_instance != null) {
 						ArrayList<Integer> scope_hashes = new ArrayList<>();
-						scope_hashes.add(root_instance.hashCode());
+						scope_hashes.add(System.identityHashCode(root_instance));
 						amygdala.tracer.frameSlotToIntermediate(scope_hashes, JSFrameUtil.getPublicName(jsrfsn.getFrameSlot()), node_hash);
 					} else {
 						amygdala.logger.critical("onReturnBehaviorJSReadCurrentFrameSlotNodeGen(): Cannot get root instance.");
@@ -710,7 +712,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					Object root_instance = innermost_scope.getRootInstance();
 					if (root_instance != null) {
 						ArrayList<Integer> scope_hashes = new ArrayList<>();
-						scope_hashes.add(root_instance.hashCode());
+						scope_hashes.add(System.identityHashCode(root_instance));
 						amygdala.tracer.intermediateToFrameSlot(scope_hashes, JSFrameUtil.getPublicName(jswfsn.getFrameSlot()), children.get(0).getLeft());
 					} else {
 						amygdala.logger.critical("onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(): Cannot get root instance.");
@@ -730,7 +732,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						Scope curr_scope = local_scopes.next();
 						Object root_instance = curr_scope.getRootInstance();
 						if (root_instance != null) {
-							scope_hashes.add(root_instance.hashCode());
+							scope_hashes.add(System.identityHashCode(root_instance));
 						} else {
 							amygdala.logger.critical("onReturnBehaviorJSScopeFrameSlotNodeGen(): Cannot get root instance.");
 						}
@@ -751,7 +753,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						Scope curr_scope = local_scopes.next();
 						Object root_instance = curr_scope.getRootInstance();
 						if (root_instance != null) {
-							scope_hashes.add(root_instance.hashCode());
+							scope_hashes.add(System.identityHashCode(root_instance));
 						} else {
 							amygdala.logger.critical("onReturnBehaviorJSScopeFrameSlotNodeGen(): Cannot get root instance.");
 						}
@@ -802,7 +804,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				} catch (SymbolicException.WrongParameterSize wrongParameterSize) {
 					amygdala.logger.critical("onReturnBehaviorBinaryOperation(): WrongParameterSize: " + wrongParameterSize.getMessage() + ".");
 				}
-				invalidate_interim(children);
 			}
 
 			// TODO
@@ -842,7 +843,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				} catch (SymbolicException.WrongParameterSize wrongParameterSize) {
 					amygdala.logger.critical("onReturnBehaviorUnaryOperation(): WrongParameterSize: " + wrongParameterSize.getMessage() + ".");
 				}
-				invalidate_interim(children);
 			}
 
 			public void onReturnBehaviorConstant(VirtualFrame vFrame, Object result, ExpressionType type) {
@@ -856,6 +856,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					amygdala.tracer.reset(LanguageSemantic.JAVASCRIPT, getThisObjectHash(vFrame));
 					//Initialize current function (again, because of reset)
 					onEnterBehaviorFunctionBodyNode(vFrame);
+					amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, type, result);
 				} else if (this.isInputNode) {
 					Object next_input = amygdala.getNextInputValue(this.inputVariableIdentifier);
 					amygdala.tracer.addVariable(node_hash, LanguageSemantic.JAVASCRIPT, this.inputVariableIdentifier);
@@ -880,22 +881,24 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					amygdala.logger.critical("onReturnBehaviorObjectLiteralNode(): Resulting object has not the same number of keys as the child nodes.");
 					return;
 				}
-				VariableContext obj_ctx = new VariableContext(VariableContext.ContextType.OBJECT);
+				VariableContext obj_ctx = new VariableContext();
 				for (int ch_index = 0; ch_index < keys.size(); ch_index++) {
-					obj_ctx.setValue(keys.get(ch_index).toString(), amygdala.tracer.getIntermediate(children.get(ch_index).getLeft()));
+					//TODO toString()?
+					obj_ctx.set(keys.get(ch_index).toString(), amygdala.tracer.getIntermediate(children.get(ch_index).getLeft()));
 				}
-				amygdala.tracer.setSymbolicContext(result.hashCode(), obj_ctx);
+				amygdala.tracer.setSymbolicContext(System.identityHashCode(result), obj_ctx);
 				amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
 			}
 
 			public void onReturnBehaviorDefaultArrayLiteralNode(VirtualFrame vFrame, Object result) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
-				VariableContext new_array = new VariableContext(VariableContext.ContextType.ARRAY);
-				for (Pair<Integer, String> child: children) {
-					new_array.appendValue(amygdala.tracer.getIntermediate(child.getLeft()));
+				VariableContext new_array = new VariableContext();
+				for (int i = 0; i < children.size(); i++) {
+					Pair<Integer, String> child = children.get(i);
+					new_array.set(i, amygdala.tracer.getIntermediate(child.getLeft()));
 				}
 				amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
-				amygdala.tracer.setSymbolicContext(result.hashCode(), new_array);
+				amygdala.tracer.setSymbolicContext(System.identityHashCode(result), new_array);
 			}
 
 			public void onReturnBehaviorConstantArrayLiteralNode(VirtualFrame vFrame, Object result) {
@@ -906,18 +909,18 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					amygdala.logger.critical("onReturnBehaviorConstantArrayLiteralNode(): Cannot cast result to DynamicObject.");
 				}
 				if (array_ctx != null) {
-					amygdala.tracer.setSymbolicContext(result.hashCode(), array_ctx);
+					amygdala.tracer.setSymbolicContext(System.identityHashCode(result), array_ctx);
 				}
 				amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
 			}
 
 			public void onReturnBehaviorReadElementNode(VirtualFrame vFrame, Object result) {
-				amygdala.tracer.getSymbolicArrayIndex(object_context_hash, array_index, node_hash);
+				amygdala.tracer.propertyToIntermediate(object_context_hash, element_access, node_hash);
 			}
 
 			public void onReturnBehaviorWriteElementNode(VirtualFrame vFrame, Object result) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
-				amygdala.tracer.setSymbolicArrayIndex(object_context_hash, array_index, children.get(2).getLeft());
+				amygdala.tracer.intermediateToProperty(object_context_hash, element_access, children.get(2).getLeft());
 			}
 
 			//TODO extremely hacky
@@ -955,9 +958,14 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
 			}
 
+			public void onReturnBehaviorExprBlockNode(VirtualFrame vFrame, Object result) {
+				// TODO
+				amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.NULL, null);
+			}
+
 			public VariableContext arrayToSymbolic(DynamicObject dyn_obj) {
 				if (JSRuntime.isArray(dyn_obj)) {
-					VariableContext array_ctx = new VariableContext(VariableContext.ContextType.ARRAY);
+					VariableContext array_ctx = new VariableContext();
 					long size = 0;
 					try {
 						size = INTEROP.getArraySize(dyn_obj);
@@ -977,37 +985,37 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						try {
 							if (JSGuards.isBoolean(array_elem)) {
 								//amygdala.logger.log("is Boolean");
-								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, array_elem));
+								array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, array_elem));
 							} else if (JSGuards.isString(array_elem)) {
 								//amygdala.logger.log("is String");
-								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.STRING, array_elem));
+								array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.STRING, array_elem));
 							} else if (JSGuards.isBigInt(array_elem)) {
 								//amygdala.logger.log("is BigInt");
-								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BIGINT, array_elem));
+								array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BIGINT, array_elem));
 							} else if (JSGuards.isNumberInteger(array_elem)) {
 								//amygdala.logger.log("is Integer");
-								array_ctx.appendValue(
+								array_ctx.set(i,
 										new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER,
 															 array_elem));
 							} else if (JSGuards.isNumberDouble(array_elem) && JSRuntime.isNaN(array_elem)) {
 								//amygdala.logger.log("is NaN");
-								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null));
+								array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null));
 							} else if (JSGuards.isNumberDouble(array_elem) && JSRuntime.isPositiveInfinity((double) array_elem)) {
 								//amygdala.logger.log("is +Infinity");
-								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null));
+								array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null));
 							} else if (JSGuards.isNumberDouble(array_elem)) {
 								//amygdala.logger.log("is Double");
-								array_ctx.appendValue(
+								array_ctx.set(i,
 										new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_REAL, array_elem));
 							} else if (JSGuards.isUndefined(array_elem)) {
 								//amygdala.logger.log("is Undefined");
-								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null));
+								array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null));
 							} else if (JSGuards.isJSNull(array_elem)) {
 								//amygdala.logger.log("is Null");
-								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NULL, null));
+								array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NULL, null));
 							} else {
 								//amygdala.logger.log("is Other");
-								array_ctx.appendValue(new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null));
+								array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null));
 							}
 						} catch (SymbolicException.IncompatibleType ite) {
 							amygdala.logger.warning("arrayToSymbolic(): Cannot create symbolic representation of " + array_elem.toString() + ".");

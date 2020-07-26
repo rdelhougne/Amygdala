@@ -1,0 +1,22 @@
+---
+program_path: "../javascript/string.js"
+variables:
+  - line_num: 6
+    name: fruit name
+    type: STRING
+    sample: apple
+  - line_num: 7
+    name: product name
+    type: STRING
+    sample: juice
+  - line_num: 8
+    name: product quantity
+    type: INTEGER
+    sample: 3
+fuzzing_parameters:
+  max_iterations: 1000
+  tactic: "DEPTH_SEARCH"
+  tactic_depth_search:
+    max_loop_unrolling: 16
+    max_depth: 32
+...
