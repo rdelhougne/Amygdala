@@ -7,9 +7,6 @@ fruit = "apple";
 product = "juice";
 quantity = 3;
 
-fruit.length = 9;
-print(fruit.length);
-
 // concatenation
 if (fruit + " " + product == "lime juice") {
 	print("String concatenation 1 solved.");

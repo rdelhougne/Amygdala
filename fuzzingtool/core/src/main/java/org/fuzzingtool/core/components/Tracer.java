@@ -7,6 +7,7 @@ import org.fuzzingtool.core.symbolic.arithmetic.*;
 import org.fuzzingtool.core.symbolic.basic.SymbolicConstant;
 import org.fuzzingtool.core.symbolic.basic.SymbolicVariable;
 import org.fuzzingtool.core.symbolic.logical.*;
+import org.fuzzingtool.core.symbolic.string.StringLength;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -416,6 +417,9 @@ public class Tracer {
 					break;
 				case UNARY_PLUS:
 					intermediate_results.put(node_target, new UnaryPlus(s, k));
+					break;
+				case STR_LENGTH:
+					intermediate_results.put(node_target, new StringLength(s, k));
 					break;
 				default:
 					logger.critical("Tracer::add_operation(): Unknown operation " + op.toString());

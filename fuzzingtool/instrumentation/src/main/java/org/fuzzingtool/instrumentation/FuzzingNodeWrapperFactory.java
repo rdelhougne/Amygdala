@@ -117,8 +117,8 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			private final boolean isMainLoopInputNode = create_nodeIsMainLoopInputNode;
 
 			// Various save spots
-			// used by PropertyNode and WritePropertyNode to save the hash of the object
-			private int object_context_hash = 0;
+			// used by PropertyNode and WritePropertyNode to save the context of the operation
+			private Object context_object = null;
 			// used by ReadElementNode and WriteElementNode to determine the array index
 			private Object element_access = null;
 			// used by Call1..NNodes to construct the arguments array
@@ -198,6 +198,14 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					}
 				}
 				return builder.toString();
+			}
+
+			public String objectToString(Object obj) {
+				String info = obj.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(obj));
+				if (obj instanceof Integer || obj instanceof Double || obj instanceof Boolean || obj instanceof String) {
+					info = info + " (" + obj.toString() + ")";
+				}
+				return info;
 			}
 
 			/**
@@ -577,7 +585,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 														 Object inputValue) {
 				// Save the hash of the object that is written to/read from
 				if (inputIndex == 0) {
-					object_context_hash = System.identityHashCode(inputValue);
+					context_object = inputValue;
 				}
 			}
 
@@ -585,7 +593,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 														 Object inputValue) {
 				// Save the hash of the object that is written to/read from
 				if (inputIndex == 0) {
-					object_context_hash = System.identityHashCode(inputValue);
+					context_object = inputValue;
 				}
 				// Save the array index
 				if (inputIndex == 1) {
@@ -664,7 +672,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			public void onReturnBehaviorGlobalPropertyNode(VirtualFrame vFrame, Object result) {
 				GlobalPropertyNode gpnode = (GlobalPropertyNode) my_node;
-				amygdala.tracer.propertyToIntermediate(object_context_hash, gpnode.getPropertyKey(), node_hash);
+				amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), gpnode.getPropertyKey(), node_hash);
 			}
 
 			public void onReturnBehaviorGlobalObjectNode(VirtualFrame vFrame, Object result) {
@@ -672,16 +680,21 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			}
 
 			public void onReturnBehaviorPropertyNode(VirtualFrame vFrame, Object result) {
+				ArrayList<Pair<Integer, String>> child = getChildHashes();
 				PropertyNode pnode = (PropertyNode) my_node;
-				// TODO toString()?
-				amygdala.tracer.propertyToIntermediate(object_context_hash, pnode.getPropertyKey().toString(), node_hash);
+				String property_name = pnode.getPropertyKey().toString();
+				if (JSGuards.isString(context_object) && property_name.equals("length")) {
+					onReturnBehaviorUnaryOperation(vFrame, result, Operation.STR_LENGTH);
+				} else {
+					amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), property_name, node_hash);
+				}
 			}
 
 			public void onReturnBehaviorWritePropertyNode(VirtualFrame vFrame, Object result) {
 				WritePropertyNode wpnode = (WritePropertyNode) my_node;
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				// TODO toString()?
-				amygdala.tracer.intermediateToProperty(object_context_hash, wpnode.getKey().toString(), children.get(1).getLeft());
+				amygdala.tracer.intermediateToProperty(System.identityHashCode(context_object), wpnode.getKey().toString(), children.get(1).getLeft());
 				amygdala.tracer.passThroughIntermediate(node_hash, children.get(1).getLeft());
 			}
 
@@ -915,12 +928,12 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			}
 
 			public void onReturnBehaviorReadElementNode(VirtualFrame vFrame, Object result) {
-				amygdala.tracer.propertyToIntermediate(object_context_hash, element_access, node_hash);
+				amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), element_access, node_hash);
 			}
 
 			public void onReturnBehaviorWriteElementNode(VirtualFrame vFrame, Object result) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
-				amygdala.tracer.intermediateToProperty(object_context_hash, element_access, children.get(2).getLeft());
+				amygdala.tracer.intermediateToProperty(System.identityHashCode(context_object), element_access, children.get(2).getLeft());
 			}
 
 			//TODO extremely hacky

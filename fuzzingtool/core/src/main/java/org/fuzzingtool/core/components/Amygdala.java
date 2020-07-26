@@ -1,6 +1,7 @@
 package org.fuzzingtool.core.components;
 
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Version;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.symbolic.ExpressionType;
 import org.fuzzingtool.core.tactics.DepthSearchTactic;
@@ -57,6 +58,10 @@ public class Amygdala {
 		this.variable_values = new HashMap<>();
 		this.variable_names = new HashMap<>();
 		this.variable_line_to_identifier = new HashMap<>();
+
+		com.microsoft.z3.Global.ToggleWarningMessages(true);
+		com.microsoft.z3.Global.setParameter("smt.string_solver", "z3str3");
+		logger.info("Using Z3 " + Version.getString() + " © Copyright 2006-2016 Microsoft Corp.");
 
 		HashMap<String, String> cfg = new HashMap<>();
 		cfg.put("model", "true");
@@ -181,9 +186,11 @@ public class Amygdala {
 	public Object getNextInputValue(VariableIdentifier var_id) {
 		if (variable_values.containsKey(var_id)) {
 			Object next_input = variable_values.get(var_id);
-			logger.info("Next input value for variable " +
-								variable_names.get(var_id) +
-								": " + next_input);
+			if (var_id.getVariableType() == ExpressionType.STRING) {
+				logger.info("Next input value for variable " + variable_names.get(var_id) + ": \"" + next_input + "\" [STRING]");
+			} else {
+				logger.info("Next input value for variable " + variable_names.get(var_id) + ": " + next_input + " [" + var_id.getVariableType().name() + "]");
+			}
 			return next_input;
 		} else {
 			logger.info("No new value for variable: " + variable_names.get(var_id));
