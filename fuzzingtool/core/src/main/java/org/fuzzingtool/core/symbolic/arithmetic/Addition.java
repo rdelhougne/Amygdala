@@ -43,8 +43,8 @@ public class Addition extends SymbolicNode {
 		Pair<Expr, ExpressionType> a = this.children[0].toZ3Expr(ctx);
 		Pair<Expr, ExpressionType> b = this.children[1].toZ3Expr(ctx);
 		if (a.getRight() == ExpressionType.STRING || b.getRight() == ExpressionType.STRING) {
-			Pair<Expr, ExpressionType> a_string = tryCastZ3JS(ctx, a, ExpressionType.STRING);
-			Pair<Expr, ExpressionType> b_string = tryCastZ3JS(ctx, b, ExpressionType.STRING);
+			Pair<Expr, ExpressionType> a_string = toStringZ3JS(ctx, a);
+			Pair<Expr, ExpressionType> b_string = toStringZ3JS(ctx, b);
 			return Pair.create(ctx.mkConcat((SeqExpr) a_string.getLeft(), (SeqExpr) b_string.getLeft()),
 							   ExpressionType.STRING);
 		}

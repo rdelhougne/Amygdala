@@ -265,6 +265,9 @@ public class BranchingNode {
 
 	public String getLocalSMTExpression(Boolean taken) throws SymbolicException.WrongParameterSize,
 			SymbolicException.NotImplemented {
+		if (this.symbolic_expression == null) {
+			return "!ERROR!";
+		}
 		if (taken) {
 			return this.symbolic_expression.toSMTExpr();
 		} else {
@@ -275,6 +278,9 @@ public class BranchingNode {
 
 	public String getLocalHRExpression(Boolean taken) throws SymbolicException.WrongParameterSize,
 			SymbolicException.NotImplemented {
+		if (this.symbolic_expression == null) {
+			return "!ERROR!";
+		}
 		if (taken) {
 			return this.symbolic_expression.toHRString();
 		} else {
@@ -285,6 +291,9 @@ public class BranchingNode {
 
 	public BoolExpr getLocalZ3Expression(Boolean taken, Context ctx) throws SymbolicException.WrongParameterSize,
 			SymbolicException.NotImplemented, SymbolicException.UndecidableExpression {
+		if (this.symbolic_expression == null) {
+			throw new SymbolicException.UndecidableExpression("Z3", "Local symbolic expression is null.");
+		}
 		if (taken) {
 			Pair<Expr, ExpressionType> expr = this.symbolic_expression.toZ3Expr(ctx);
 			assert expr.getRight() == ExpressionType.BOOLEAN;

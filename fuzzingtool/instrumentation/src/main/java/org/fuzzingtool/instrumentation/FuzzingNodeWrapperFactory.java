@@ -16,6 +16,7 @@ import com.oracle.truffle.js.nodes.JSGuards;
 import com.oracle.truffle.js.nodes.JSNodeUtil;
 import com.oracle.truffle.js.nodes.access.*;
 import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
+import com.oracle.truffle.js.nodes.function.JSFunctionCallNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.JSRuntime;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
@@ -51,6 +52,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
     private final Pattern assignment_pattern = Pattern.compile("(var\\s+|let\\s+|const\\s+)?\\s*([A-Za-z_]\\w*)\\s*=.*");
     private final Pattern increment_pattern = Pattern.compile("[A-Za-z_]\\w*\\+\\+");
     private final Pattern decrement_pattern = Pattern.compile("[A-Za-z_]\\w*--");
+    private final Pattern method_pattern = Pattern.compile(".*\\.([a-zA-Z_]\\w*)\\(.*\\)");
 
 	FuzzingNodeWrapperFactory(final TruffleInstrument.Env env, Amygdala amy) {
 		this.env = env;
@@ -583,7 +585,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			public void onInputValueBehaviorPropertyNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
 														 Object inputValue) {
-				// Save the hash of the object that is written to/read from
+				// Save the the object that is written to/read from
 				if (inputIndex == 0) {
 					context_object = inputValue;
 				}
@@ -591,7 +593,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			public void onInputValueBehaviorReadWriteElementNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
 														 Object inputValue) {
-				// Save the hash of the object that is written to/read from
+				// Save the the object that is written to/read from
 				if (inputIndex == 0) {
 					context_object = inputValue;
 				}
@@ -618,6 +620,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			public void onInputValueBehaviorInvokeNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
 													 Object inputValue) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				// Save the the object which method is called
+				if (inputIndex == 0) {
+					context_object = inputValue;
+				}
 				// 0 is object node, 1 is the function object to call (?)
 				// TODO a bit hacky
 				if (inputIndex >= 2) {
@@ -786,8 +792,25 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			}
 
 			public void onReturnBehaviorInvokeNode(VirtualFrame vFrame, Object result) {
-				amygdala.tracer.functionReturnValueToIntermediate(node_hash);
-				amygdala.tracer.resetFunctionReturnValue();
+				if (JSGuards.isString(context_object)) {
+					ArrayList<Pair<Integer, String>> children = getChildHashes();
+					Matcher method_matcher = method_pattern.matcher(my_sourcesection.getCharacters().toString());
+					if (method_matcher.matches()) {
+						String method_name = method_matcher.group(1);
+						switch (method_name) {
+							case "concat":
+								amygdala.tracer.addStringOperation(node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arguments_array, Operation.STR_CONCAT);
+								break;
+							default:
+								amygdala.logger.critical("onReturnBehaviorInvokeNode(): String method '" + method_name + "' not implemented");
+						}
+					} else {
+						amygdala.logger.critical("onReturnBehaviorInvokeNode(): Trying to compute string operation, but cannot extract name.");
+					}
+				} else {
+					amygdala.tracer.functionReturnValueToIntermediate(node_hash);
+					amygdala.tracer.resetFunctionReturnValue();
+				}
 			}
 
 			public void onReturnBehaviorJSNewNodeGen(VirtualFrame vFrame, Object result) {

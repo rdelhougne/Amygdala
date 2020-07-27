@@ -74,17 +74,12 @@ public abstract class SymbolicNode {
 	 * @return The casted expression, or the same expression if the ExpressionTypes are already equal.
 	 * @throws SymbolicException.UndecidableExpression Is thrown whenever the symbolic casting fails.
 	 */
+	/* deprecated */
 	public static Pair<Expr, ExpressionType> tryCastZ3JS(Context ctx, Pair<Expr, ExpressionType> expression,
                                                          ExpressionType goal) throws
 			SymbolicException.UndecidableExpression { //TODO
 		if (expression.getRight() == goal) {
 			return expression;
-		}
-
-		if (expression.getRight() == ExpressionType.NUMBER_INTEGER) {
-			if (goal == ExpressionType.STRING) {
-				return Pair.create(ctx.intToString(expression.getLeft()), ExpressionType.STRING);
-			}
 		}
 
 		if (expression.getRight() == ExpressionType.STRING) {
@@ -94,36 +89,6 @@ public abstract class SymbolicNode {
 			}
 			if (goal == ExpressionType.BIGINT) {
 				return Pair.create(ctx.stringToInt(expression.getLeft()), ExpressionType.BIGINT);
-			}
-		}
-
-		if (expression.getRight() == ExpressionType.UNDEFINED) {
-			if (goal == ExpressionType.STRING) {
-				return Pair.create(ctx.mkString("undefined"), ExpressionType.STRING);
-			}
-		}
-
-		if (expression.getRight() == ExpressionType.NULL) {
-			if (goal == ExpressionType.STRING) {
-				return Pair.create(ctx.mkString("null"), ExpressionType.STRING);
-			}
-		}
-
-		if (expression.getRight() == ExpressionType.NUMBER_NAN) {
-			if (goal == ExpressionType.STRING) {
-				return Pair.create(ctx.mkString("NaN"), ExpressionType.STRING);
-			}
-		}
-
-		if (expression.getRight() == ExpressionType.NUMBER_POS_INFINITY) {
-			if (goal == ExpressionType.STRING) {
-				return Pair.create(ctx.mkString("Infinity"), ExpressionType.STRING);
-			}
-		}
-
-		if (expression.getRight() == ExpressionType.NUMBER_NEG_INFINITY) {
-			if (goal == ExpressionType.STRING) {
-				return Pair.create(ctx.mkString("-Infinity"), ExpressionType.STRING);
 			}
 		}
 
@@ -177,6 +142,48 @@ public abstract class SymbolicNode {
 		}
 
 		return expression;
+	}
+
+	/**
+	 * This method tries to convert an expression to a string as in https://tc39.es/ecma262/2020/#sec-tostring
+	 *
+	 * @param ctx        The Z3-Context
+	 * @param expression The expression to be casted.
+	 * @return The casted expression, or the same expression if the ExpressionTypes is already a string type
+	 * @throws SymbolicException.UndecidableExpression Is thrown whenever the symbolic casting fails.
+	 */
+	public static Pair<Expr, ExpressionType> toStringZ3JS(Context ctx, Pair<Expr, ExpressionType> expression) throws
+			SymbolicException.UndecidableExpression { //TODO
+
+		switch (expression.getRight()) {
+			case BOOLEAN:
+				if (ENHANCED_CASTING) {
+					//TODO wenn möglich einen konstanten Ausdruck auflösen
+					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
+							expression.getRight().toString() + "' to a String type.");
+				} else {
+					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
+							expression.getRight().toString() + "' to a String type.");
+				}
+			case STRING:
+				return expression;
+			case BIGINT:
+			case NUMBER_INTEGER:
+				return Pair.create(ctx.intToString(expression.getLeft()), ExpressionType.STRING);
+			case UNDEFINED:
+				return Pair.create(ctx.mkString("undefined"), ExpressionType.STRING);
+			case NULL:
+				return Pair.create(ctx.mkString("null"), ExpressionType.STRING);
+			case NUMBER_NAN:
+				return Pair.create(ctx.mkString("NaN"), ExpressionType.STRING);
+			case NUMBER_POS_INFINITY:
+				return Pair.create(ctx.mkString("Infinity"), ExpressionType.STRING);
+			case NUMBER_NEG_INFINITY:
+				return Pair.create(ctx.mkString("-Infinity"), ExpressionType.STRING);
+			default:
+				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
+						expression.getRight().toString() + "' to a String type.");
+		}
 	}
 
 	/**

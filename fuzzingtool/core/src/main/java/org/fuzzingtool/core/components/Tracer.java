@@ -248,7 +248,7 @@ public class Tracer {
 			assert intermediate_results.get(node_id) != null;
 			return intermediate_results.get(node_id);
 		} else {
-			logger.warning("Tracer::get_intermediate(): Cannot get intermediate results for hash " + node_id);
+			logger.critical("Tracer::get_intermediate(): Cannot get intermediate results for hash " + node_id);
 			return null;
 		}
 	}
@@ -455,6 +455,34 @@ public class Tracer {
 	 */
 	public void addVariable(Integer node_target, LanguageSemantic s, VariableIdentifier id) {
 		intermediate_results.put(node_target, new SymbolicVariable(s, id));
+	}
+
+	/**
+	 * Add a new operation for Strings
+	 *
+	 * @param node_target The node-hash of the intermediate result
+	 * @param s           Semantic of the language
+	 */
+	public void addStringOperation(Integer node_target, LanguageSemantic s, Integer operand_intermediate_id, ArrayList<SymbolicNode> arguments, Operation op) {
+		if (intermediate_results.containsKey(operand_intermediate_id)) {
+			SymbolicNode operand = intermediate_results.get(operand_intermediate_id);
+			switch (op) {
+				case STR_CONCAT:
+					for (SymbolicNode arg: arguments) {
+						try {
+							operand = new Addition(s, operand, arg);
+						} catch (SymbolicException.WrongParameterSize wrongParameterSize) {
+							wrongParameterSize.printStackTrace();
+						}
+					}
+					intermediate_results.put(node_target, operand);
+					break;
+				default:
+					logger.critical("Tracer::addStringOperation(): Cannot process operation " + op.name() + ".");
+			}
+		} else {
+			logger.critical("Tracer::addStringOperation(): Trying to add operation " + op.name() + " but operand " + operand_intermediate_id + " does not exist.");
+		}
 	}
 
 	/**
