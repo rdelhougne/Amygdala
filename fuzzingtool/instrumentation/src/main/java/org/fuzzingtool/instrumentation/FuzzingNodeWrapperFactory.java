@@ -487,6 +487,11 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					case "JSTaggedExecutionNode":
 						onReturnBehaviorPassthrough(vFrame, result);
 						break;
+					case "JSStringIndexOfNodeGen":
+					case "JSStringConcatNodeGen":
+					case "JSStringSubstrNodeGen":
+						// Do nothing. These nodes should not have any behavior or are instrumented otherwise.
+						break;
 					default:
 						was_instrumented_on_return_value = false;
 				}
@@ -801,6 +806,18 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 							case "concat":
 								amygdala.tracer.addStringOperation(node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arguments_array, Operation.STR_CONCAT);
 								break;
+							case "charAt":
+								amygdala.tracer.addStringOperation(node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arguments_array, Operation.STR_CHAR_AT);
+								break;
+							case "substr":
+								amygdala.tracer.addStringOperation(node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arguments_array, Operation.STR_SUBSTR);
+								break;
+							case "includes":
+								amygdala.tracer.addStringOperation(node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arguments_array, Operation.STR_INCLUDES);
+								break;
+							case "indexOf":
+								amygdala.tracer.addStringOperation(node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arguments_array, Operation.STR_INDEXOF);
+								break;
 							default:
 								amygdala.logger.critical("onReturnBehaviorInvokeNode(): String method '" + method_name + "' not implemented");
 						}
@@ -951,7 +968,14 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			}
 
 			public void onReturnBehaviorReadElementNode(VirtualFrame vFrame, Object result) {
-				amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), element_access, node_hash);
+				if (JSGuards.isString(context_object)) {
+					ArrayList<Pair<Integer, String>> children = getChildHashes();
+					ArrayList<SymbolicNode> arg = new ArrayList<>();
+					arg.add(amygdala.tracer.getIntermediate(children.get(1).getLeft()));
+					amygdala.tracer.addStringOperation(node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arg, Operation.STR_CHAR_AT);
+				} else {
+					amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), element_access, node_hash);
+				}
 			}
 
 			public void onReturnBehaviorWriteElementNode(VirtualFrame vFrame, Object result) {

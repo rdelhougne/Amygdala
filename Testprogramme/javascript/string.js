@@ -29,7 +29,7 @@ if (product[13] == "J") {
 }
 
 // Substring
-if (fruit.slice(5, 9) == "kiwi") {
+/*if (fruit.slice(5, 9) == "kiwi") {
 	print("Substring 1 solved.");
 }
 if (fruit.slice(-12, -6) == "Banana") {
@@ -47,22 +47,25 @@ if (fruit.substring(1, 5) == "nana") {
 }
 if (fruit.substring(3) == "nanas") {
 	print("Substring 6 solved.");
-}
+}*/
 
 if (fruit.substr(6, 4) == "pple") {
 	print("Substring 7 solved.");
 }
-if (fruit.substr(6) == "pples") {
+/*if (fruit.substr(6) == "pples") {
 	print("Substring 8 solved.");
 }
 if (fruit.substr(-3) == "lon") {
 	print("Substring 9 solved.");
-}
+}*/
 
 // Includes
-if (product.includes("old")) {
+/*if (product.includes("old")) {
 	print("String includes() solved.");
 }
+if (product.includes("refurbished", 42)) { // Sometimes triggers segfault in z3lib.so
+	print("String includes() solved.");
+}*/
 
 // Search
 if (product.indexOf("new") == 6) {

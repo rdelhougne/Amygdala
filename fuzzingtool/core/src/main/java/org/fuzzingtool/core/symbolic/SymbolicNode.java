@@ -1,9 +1,6 @@
 package org.fuzzingtool.core.symbolic;
 
-import com.microsoft.z3.ArithExpr;
-import com.microsoft.z3.Context;
-import com.microsoft.z3.Expr;
-import com.microsoft.z3.SeqExpr;
+import com.microsoft.z3.*;
 import org.graalvm.collections.Pair;
 
 public abstract class SymbolicNode {
@@ -105,43 +102,41 @@ public abstract class SymbolicNode {
 	 * @throws SymbolicException.UndecidableExpression Is thrown whenever the symbolic casting fails.
 	 */
 	public static Pair<Expr, ExpressionType> toNumericZ3JS(Context ctx, Pair<Expr, ExpressionType> expression) throws
-			SymbolicException.UndecidableExpression { //TODO
-		if (expression.getRight() == ExpressionType.UNDEFINED) {
-			return Pair.create(null, ExpressionType.NUMBER_NAN);
-		}
-
-		if (expression.getRight() == ExpressionType.NULL) {
-			return Pair.create(ctx.mkInt(0), ExpressionType.NUMBER_INTEGER);
-		}
-
-		if (expression.getRight() == ExpressionType.BOOLEAN) {
-			if (ENHANCED_CASTING) {
-				//TODO wenn möglich einen konstanten Ausdruck auflösen
+			SymbolicException.UndecidableExpression {
+		switch (expression.getRight()) {
+			case BOOLEAN:
+				if (ENHANCED_CASTING) {
+					//TODO wenn möglich einen konstanten Ausdruck auflösen
+					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
+							expression.getRight().toString() + "' to a Number type.");
+				} else {
+					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
+							expression.getRight().toString() + "' to a Number type.");
+				}
+			case STRING:
+				if (ENHANCED_CASTING) {
+					//TODO wenn möglich einen konstanten Ausdruck auflösen
+					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
+							expression.getRight().toString() + "' to a Number type.");
+				} else {
+					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
+							expression.getRight().toString() + "' to a Number type.");
+				}
+			case BIGINT:
+			case NUMBER_INTEGER:
+			case NUMBER_REAL:
+			case NUMBER_NAN:
+			case NUMBER_POS_INFINITY:
+			case NUMBER_NEG_INFINITY:
+				return expression;
+			case UNDEFINED:
+				return Pair.create(null, ExpressionType.NUMBER_NAN);
+			case NULL:
+				return Pair.create(ctx.mkInt(0), ExpressionType.NUMBER_INTEGER);
+			default:
 				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
 						expression.getRight().toString() + "' to a Number type.");
-			} else {
-				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-						expression.getRight().toString() + "' to a Number type.");
-			}
 		}
-
-		if (expression.getRight() == ExpressionType.STRING) {
-			if (ENHANCED_CASTING) {
-				//TODO wenn möglich einen konstanten Ausdruck auflösen
-				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-						expression.getRight().toString() + "' to a Number type.");
-			} else {
-				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-						expression.getRight().toString() + "' to a Number type.");
-			}
-		}
-
-		if (expression.getRight() == ExpressionType.SYMBOL || expression.getRight() == ExpressionType.OBJECT) {
-			throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-					expression.getRight().toString() + "' to a Number type.");
-		}
-
-		return expression;
 	}
 
 	/**
@@ -183,6 +178,35 @@ public abstract class SymbolicNode {
 			default:
 				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
 						expression.getRight().toString() + "' to a String type.");
+		}
+	}
+
+	/**
+	 * This method tries to convert an expression to an integer as in hhttps://tc39.es/ecma262/2020/#sec-tointeger
+	 *
+	 * @param ctx        The Z3-Context
+	 * @param expression The expression to be casted.
+	 * @return The casted expression, or the same expression if the ExpressionTypes is already a integer type
+	 * @throws SymbolicException.UndecidableExpression Is thrown whenever the symbolic casting fails.
+	 */
+	public static Pair<Expr, ExpressionType> toIntegerZ3JS(Context ctx, Pair<Expr, ExpressionType> expression) throws
+			SymbolicException.UndecidableExpression {
+
+		Pair<Expr, ExpressionType> exp_number = toNumericZ3JS(ctx, expression);
+		switch (exp_number.getRight()) {
+			case BIGINT:
+			case NUMBER_INTEGER:
+			case NUMBER_POS_INFINITY:
+			case NUMBER_NEG_INFINITY:
+				return exp_number;
+			case NUMBER_REAL:
+				// TODO
+				return Pair.create(ctx.mkReal2Int((RealExpr) exp_number.getLeft()), ExpressionType.NUMBER_INTEGER);
+			case NUMBER_NAN:
+				return Pair.create(ctx.mkInt(0), ExpressionType.NUMBER_INTEGER);
+			default:
+				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
+						expression.getRight().toString() + "' to Integer. This is a possible modeling inconsistency!");
 		}
 	}
 

@@ -7,7 +7,7 @@ import org.fuzzingtool.core.symbolic.arithmetic.*;
 import org.fuzzingtool.core.symbolic.basic.SymbolicConstant;
 import org.fuzzingtool.core.symbolic.basic.SymbolicVariable;
 import org.fuzzingtool.core.symbolic.logical.*;
-import org.fuzzingtool.core.symbolic.string.StringLength;
+import org.fuzzingtool.core.symbolic.string.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -463,25 +463,59 @@ public class Tracer {
 	 * @param node_target The node-hash of the intermediate result
 	 * @param s           Semantic of the language
 	 */
-	public void addStringOperation(Integer node_target, LanguageSemantic s, Integer operand_intermediate_id, ArrayList<SymbolicNode> arguments, Operation op) {
+	public void addStringOperation(Integer node_target, LanguageSemantic s, Integer operand_intermediate_id,
+								   ArrayList<SymbolicNode> arguments, Operation op) {
 		if (intermediate_results.containsKey(operand_intermediate_id)) {
 			SymbolicNode operand = intermediate_results.get(operand_intermediate_id);
-			switch (op) {
-				case STR_CONCAT:
-					for (SymbolicNode arg: arguments) {
-						try {
+			try {
+				switch (op) {
+					case STR_CONCAT:
+						for (SymbolicNode arg: arguments) {
 							operand = new Addition(s, operand, arg);
-						} catch (SymbolicException.WrongParameterSize wrongParameterSize) {
-							wrongParameterSize.printStackTrace();
 						}
-					}
-					intermediate_results.put(node_target, operand);
-					break;
-				default:
-					logger.critical("Tracer::addStringOperation(): Cannot process operation " + op.name() + ".");
+						intermediate_results.put(node_target, operand);
+						break;
+					case STR_CHAR_AT:
+						assert arguments.size() == 1;
+						intermediate_results.put(node_target, new StringCharAt(LanguageSemantic.JAVASCRIPT, operand,
+																			   arguments.get(0)));
+						break;
+					case STR_SUBSTR:
+						assert arguments.size() == 1 || arguments.size() == 2;
+						if (arguments.size() == 1) {
+							intermediate_results.put(node_target, new StringSubstr(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0)));
+						}
+						if (arguments.size() == 2) {
+							intermediate_results.put(node_target, new StringSubstr(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0), arguments.get(1)));
+						}
+						break;
+					case STR_INCLUDES:
+						assert arguments.size() == 1 || arguments.size() == 2;
+						if (arguments.size() == 1) {
+							intermediate_results.put(node_target, new StringIncludes(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0)));
+						}
+						if (arguments.size() == 2) {
+							intermediate_results.put(node_target, new StringIncludes(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0), arguments.get(1)));
+						}
+						break;
+					case STR_INDEXOF:
+						assert arguments.size() == 1 || arguments.size() == 2;
+						if (arguments.size() == 1) {
+							intermediate_results.put(node_target, new StringIndexOf(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0)));
+						}
+						if (arguments.size() == 2) {
+							intermediate_results.put(node_target, new StringIndexOf(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0), arguments.get(1)));
+						}
+						break;
+					default:
+						logger.critical("Tracer::addStringOperation(): Cannot process operation " + op.name() + ".");
+				}
+			} catch (SymbolicException.WrongParameterSize wrongParameterSize) {
+				logger.critical("Tracer::addStringOperation(): Error adding operation " + op.name() + ".");
 			}
 		} else {
-			logger.critical("Tracer::addStringOperation(): Trying to add operation " + op.name() + " but operand " + operand_intermediate_id + " does not exist.");
+			logger.critical("Tracer::addStringOperation(): Trying to add operation " + op.name() + " but operand " +
+									operand_intermediate_id + " does not exist.");
 		}
 	}
 

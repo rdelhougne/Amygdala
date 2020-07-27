@@ -56,9 +56,12 @@ public class DepthSearchTactic extends FuzzingTactic {
 					wrongParameterSize.printStackTrace();
 					logger.log(wrongParameterSize.getMessage());
 				}*/
+				logger.hypnotize(expr.getSExpr());
 				Solver s = ctx.mkSolver();
 				s.add(expr);
-				if (s.check() == Status.SATISFIABLE) {
+				Status status = s.check();
+				logger.shock("Checked.");
+				if (status == Status.SATISFIABLE) {
 					Model model = s.getModel();
 					FuncDecl[] declarations = model.getConstDecls();
 					HashMap<VariableIdentifier, Object> variable_values = new HashMap<>();
@@ -114,11 +117,19 @@ public class DepthSearchTactic extends FuzzingTactic {
 					}
 					this.loop_unrolls.clear();
 					return variable_values;
+				} else if (status == Status.UNSATISFIABLE){
+					new_target.setBranchingNodeAttribute(BranchingNodeAttribute.UNREACHABLE);
 				} else {
 					new_target.setBranchingNodeAttribute(BranchingNodeAttribute.UNREACHABLE);
+					logger.info("Satisfiability of expression unknown, reason: " + s.getReasonUnknown());
+					logger.alert(s.getStatistics().toString());
 				}
+				logger.shock("Before.");
+				s.reset();
+				logger.shock("End.");
 			}
 		}
+		logger.shock("Super-End.");
 		this.loop_unrolls.clear();
 		throw new FuzzingException.NoMorePaths();
 	}

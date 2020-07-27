@@ -61,6 +61,7 @@ public class Amygdala {
 
 		com.microsoft.z3.Global.ToggleWarningMessages(true);
 		com.microsoft.z3.Global.setParameter("smt.string_solver", "z3str3");
+		com.microsoft.z3.Global.setParameter("timeout", "1000");
 		logger.info("Using Z3 " + Version.getString() + " © Copyright 2006-2016 Microsoft Corp.");
 
 		HashMap<String, String> cfg = new HashMap<>();
