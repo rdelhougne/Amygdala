@@ -143,10 +143,10 @@ public class DepthSearchTactic extends FuzzingTactic {
 
 		// Max loop unrolling functionality
 		if (current_node.getBranchingNodeAttribute() == BranchingNodeAttribute.LOOP) {
-			increment_loop(current_node.getNodeHash());
+			increment_loop(current_node.getBranchIdentifier());
 
-			if (over_loop_limit(current_node.getNodeHash())) {
-				decrement_loop(current_node.getNodeHash());
+			if (over_loop_limit(current_node.getBranchIdentifier())) {
+				decrement_loop(current_node.getBranchIdentifier());
 				return null;
 			}
 		}
@@ -170,7 +170,7 @@ public class DepthSearchTactic extends FuzzingTactic {
 				}
 			}
 			if (node_type == BranchingNodeAttribute.LOOP) {
-				decrement_loop(current_node.getNodeHash());
+				decrement_loop(current_node.getBranchIdentifier());
 			}
 			return null;
 		} else if (node_type == BranchingNodeAttribute.UNKNOWN) {

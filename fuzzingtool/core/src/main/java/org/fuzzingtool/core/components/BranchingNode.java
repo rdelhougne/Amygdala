@@ -32,9 +32,9 @@ public class BranchingNode {
 	private boolean isExplored = false;
 
 	/**
-	 * hash-code of the corresponding TruffleNode
+	 * String.hashCode() of an identifier string consisting of <source file uri>:<character start position>:<character end position>
 	 */
-	private Integer nodeHash;
+	private Integer branch_identifier;
 
 	/**
 	 * Line number of the expression in the source code (for visualization)
@@ -83,7 +83,7 @@ public class BranchingNode {
 	}
 
 	public BranchingNode() {
-		this.nodeHash = 0;
+		this.branch_identifier = 0;
 		this.symbolic_expression = null;
 		this.branchingNodeAttribute = BranchingNodeAttribute.UNKNOWN;
 		this.parentNode = null;
@@ -91,7 +91,7 @@ public class BranchingNode {
 	}
 
 	private BranchingNode(BranchingNode parent, Boolean taken_flag) {
-		this.nodeHash = 0;
+		this.branch_identifier = 0;
 		this.symbolic_expression = null;
 		this.branchingNodeAttribute = BranchingNodeAttribute.UNKNOWN;
 		this.parentNode = parent;
@@ -103,11 +103,11 @@ public class BranchingNode {
 		this.childNodeNotTaken = new BranchingNode(this, false);
 	}
 
-	public void setProperties(SymbolicNode exp, Integer node_hash, BranchingNodeAttribute bt) {
-		assert exp != null && node_hash != null && bt != null;
+	public void setProperties(SymbolicNode exp, Integer identifier, BranchingNodeAttribute bt) {
+		assert exp != null && identifier != null && bt != null;
 		this.symbolic_expression = exp;
 		this.branchingNodeAttribute = bt;
-		this.nodeHash = node_hash;
+		this.branch_identifier = identifier;
 	}
 
 	public void setBranchingNodeAttribute(BranchingNodeAttribute branchingNodeAttribute) {
@@ -181,8 +181,8 @@ public class BranchingNode {
 		}
 	}
 
-	public Integer getNodeHash() {
-		return nodeHash;
+	public Integer getBranchIdentifier() {
+		return branch_identifier;
 	}
 
 	public ArrayList<String> getSymbolicPathSMTExpression() {

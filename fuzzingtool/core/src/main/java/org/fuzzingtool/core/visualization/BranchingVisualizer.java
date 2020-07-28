@@ -68,10 +68,8 @@ public class BranchingVisualizer {
 		String label_string;
 		switch (node.getBranchingNodeAttribute()) {
 			case BRANCH:
-				label_string = "BRANCH: " + node.getSourceCodeExpression();
-				break;
 			case LOOP:
-				label_string = "LOOP: " + node.getSourceCodeExpression();
+				label_string = node.getSourceCodeExpression();
 				break;
 			case UNKNOWN:
 				label_string = "UNKNOWN";

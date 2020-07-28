@@ -16,7 +16,6 @@ import com.oracle.truffle.js.nodes.JSGuards;
 import com.oracle.truffle.js.nodes.JSNodeUtil;
 import com.oracle.truffle.js.nodes.access.*;
 import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
-import com.oracle.truffle.js.nodes.function.JSFunctionCallNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.JSRuntime;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
@@ -27,8 +26,8 @@ import org.fuzzingtool.core.components.VariableIdentifier;
 import org.fuzzingtool.core.symbolic.*;
 import org.fuzzingtool.core.symbolic.arithmetic.Addition;
 import org.fuzzingtool.core.symbolic.arithmetic.Subtraction;
-import org.fuzzingtool.core.visualization.ASTVisualizer;
 import org.fuzzingtool.core.symbolic.basic.SymbolicConstant;
+import org.fuzzingtool.core.visualization.ASTVisualizer;
 import org.graalvm.collections.Pair;
 
 import java.io.File;
@@ -53,6 +52,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
     private final Pattern increment_pattern = Pattern.compile("[A-Za-z_]\\w*\\+\\+");
     private final Pattern decrement_pattern = Pattern.compile("[A-Za-z_]\\w*--");
     private final Pattern method_pattern = Pattern.compile(".*\\.([a-zA-Z_]\\w*)\\(.*\\)");
+    private final Pattern branch_pattern = Pattern.compile("(if|for|while)\\s*\\((.*)\\)\\s*[{\\n]");
 
 	FuzzingNodeWrapperFactory(final TruffleInstrument.Env env, Amygdala amy) {
 		this.env = env;
@@ -142,6 +142,17 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					return "[" + node_type_padded + " " + hash_padded + " " + line_padded + ":" + characters_cropped + "]";
 				} else {
 					return "[" + node_type_padded + " " + hash_padded + "     (NO SOURCE)]";
+				}
+			}
+
+			protected Integer getSourceRelativeIdentifier() {
+				if (my_sourcesection != null && my_sourcesection.isAvailable()) {
+					String identifier = my_sourcesection.getSource().getURI().toString()
+							+ ":" + my_sourcesection.getCharIndex()
+							+ ":" + my_sourcesection.getCharEndIndex();
+					return identifier.hashCode();
+				} else {
+					return 0;
 				}
 			}
 
@@ -567,9 +578,9 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
                                                    Object inputValue) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				assert children.size() == 2;
-				if (inputIndex == 0) { // Predicate
+				if (inputIndex == 0) {
 					Boolean taken = (Boolean) inputValue;
-					amygdala.branching_event(node_hash, BranchingNodeAttribute.BRANCH, children.get(0).getLeft(),
+					amygdala.branching_event(getSourceRelativeIdentifier(), BranchingNodeAttribute.BRANCH, children.get(0).getLeft(),
 											 taken,
 											 extractPredicate());
 				}
@@ -581,8 +592,8 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 						my_sourcesection.getSource().getCharacters(amygdala.main_loop_line_num).toString()
 								.contains(amygdala.main_loop_identifier_string))) {
 					ArrayList<Pair<Integer, String>> children = getChildHashes();
-					if (inputIndex == 0) { // TODO Predicate
-						amygdala.branching_event(node_hash, BranchingNodeAttribute.LOOP, children.get(0).getLeft(),
+					if (inputIndex == 0) {
+						amygdala.branching_event(getSourceRelativeIdentifier(), BranchingNodeAttribute.LOOP, children.get(0).getLeft(),
 												 (Boolean) inputValue, extractPredicate());
 					}
 				}
@@ -654,17 +665,19 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				amygdala.tracer.setArgumentsArray(this.arguments_array);
 			}
 
-			// TODO extremely costly...
 			private String extractPredicate() {
 				if (my_sourcesection != null && my_sourcesection.isAvailable()) {
-					String extracted_predicate = my_sourcesection.getCharacters().toString().replaceAll("\\s+", " ");
-					extracted_predicate = extracted_predicate
-							.substring(extracted_predicate.indexOf("(") + 1, extracted_predicate.length());
-					int last_index = extracted_predicate.indexOf(")");
-					if (last_index != -1) {
-						extracted_predicate = extracted_predicate.substring(0, last_index);
+					Matcher branch_matcher = branch_pattern.matcher(my_sourcesection.getCharacters().toString());
+					if (branch_matcher.lookingAt()) {
+						String kind = branch_matcher.group(1);
+						String predicate = branch_matcher.group(2);
+						if (predicate.length() > 16) {
+							predicate = predicate.substring(0, 12) + "...";
+						}
+						return kind.toUpperCase() + " " + predicate;
+					} else {
+						return "(NO SOURCE)";
 					}
-					return extracted_predicate;
 				} else {
 					return "(NO SOURCE)";
 				}
