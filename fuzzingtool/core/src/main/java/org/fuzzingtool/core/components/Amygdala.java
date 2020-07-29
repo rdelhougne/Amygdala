@@ -5,7 +5,6 @@ import com.microsoft.z3.Version;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.symbolic.ExpressionType;
 import org.fuzzingtool.core.tactics.DepthSearchTactic;
-import org.fuzzingtool.core.tactics.FuzzingException;
 import org.fuzzingtool.core.tactics.FuzzingTactic;
 import org.fuzzingtool.core.visualization.BranchingVisualizer;
 import org.graalvm.collections.Pair;
@@ -15,10 +14,7 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Central class for managing execution flow events and fuzzing attempts
@@ -30,6 +26,7 @@ public class Amygdala {
 	public final Logger logger;
 	public final BranchingNode branchingRootNode;
 	public final Context z3_ctx;
+	public Queue<Pair<Integer, Boolean>> next_program_path = new LinkedList<>();
 	public HashMap<VariableIdentifier, Object> variable_values;
 	public final HashMap<Integer, VariableIdentifier> variable_line_to_identifier;
 	public final HashMap<VariableIdentifier, String> variable_names;
@@ -86,16 +83,20 @@ public class Amygdala {
 	 */
 	public void branching_event(Integer branching_node_hash, BranchingNodeAttribute bt, Integer predicate_interim_key,
 								Boolean taken, String vis_predicate_string) {
-		// TODO check consistency: is this the path i want to go in the first place?
-		if (currentBranch.getBranchingNodeAttribute() == BranchingNodeAttribute.BRANCH ||
-				currentBranch.getBranchingNodeAttribute() == BranchingNodeAttribute.LOOP) {
-			currentBranch = currentBranch.getChildBranch(taken);
-		} else {
+		if (next_program_path.peek() != null) {
+			Pair<Integer, Boolean> expected_behavior = next_program_path.poll();
+			if (!expected_behavior.getLeft().equals(branching_node_hash) || !expected_behavior.getRight().equals(taken)) {
+				logger.info("Diverging program path detected.");
+				currentBranch.setDiverging();
+			}
+		}
+		if (currentBranch.getBranchingNodeAttribute() != BranchingNodeAttribute.BRANCH &&
+				currentBranch.getBranchingNodeAttribute() != BranchingNodeAttribute.LOOP) {
 			currentBranch.setProperties(tracer.getIntermediate(predicate_interim_key), branching_node_hash, bt);
 			currentBranch.setSourceCodeExpression(vis_predicate_string);
 			currentBranch.initializeChildren();
-			currentBranch = currentBranch.getChildBranch(taken);
 		}
+		currentBranch = currentBranch.getChildBranch(taken);
 	}
 
 	/**
@@ -165,13 +166,15 @@ public class Amygdala {
 	 */
 	public Boolean calculateNextPath() {
 		if (fuzzing_iterations <= max_iterations) {
-			try {
+			boolean res = this.tactic.calculate();
+			if (res) {
 				variable_values = this.tactic.getNextValues();
-			} catch (FuzzingException.NoMorePaths noMorePaths) {
+				next_program_path = this.tactic.getNextPath();
+				return true;
+			} else {
 				fuzzing_finished = true;
 				return false;
 			}
-			return true;
 		} else {
 			logger.info("Max iterations reached (" + max_iterations + ")");
 			return false;

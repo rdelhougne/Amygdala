@@ -11,6 +11,8 @@ import org.fuzzingtool.core.symbolic.logical.Not;
 import org.graalvm.collections.Pair;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class BranchingNode {
 	/**
@@ -25,6 +27,13 @@ public class BranchingNode {
 	 * but the solver can't handle string types
 	 */
 	private boolean isUndecidable = false;
+
+	/**
+	 * This node contains an expression that cannot be solved reliably, and thus
+	 * the path is diverging at this node. This happens for example if the
+	 * expression depends on a random number.
+	 */
+	private boolean isDiverging = false;
 
 	/**
 	 * All possible subsequent paths were already explored
@@ -144,6 +153,15 @@ public class BranchingNode {
 		if (childNodeNotTaken != null) {
 			childNodeNotTaken.setUndecidable();
 		}
+	}
+
+	public boolean isDiverging() {
+		return isDiverging;
+	}
+
+	public void setDiverging() {
+		this.isDiverging = true;
+		// do not traverse
 	}
 
 	public boolean isExplored() {
@@ -303,6 +321,26 @@ public class BranchingNode {
 			Pair<Expr, ExpressionType> expr = not.toZ3Expr(ctx);
 			assert expr.getRight() == ExpressionType.BOOLEAN;
 			return (BoolExpr) expr.getLeft();
+		}
+	}
+
+	public Queue<Pair<Integer, Boolean>> getProgramPath() throws SymbolicException.NotImplemented {
+		if (parentNode != null) {
+			return this.parentNode.getProgramPath(this.parentNodeTakenFlag);
+		} else {
+			throw new SymbolicException.NotImplemented("Cannot get path of root node without hint");
+		}
+	}
+
+	public Queue<Pair<Integer, Boolean>> getProgramPath(Boolean taken_flag) {
+		if (parentNode != null) {
+			Queue<Pair<Integer, Boolean>> all_from_parents = this.parentNode.getProgramPath(this.parentNodeTakenFlag);
+			all_from_parents.offer(Pair.create(this.branch_identifier, taken_flag));
+			return all_from_parents;
+		} else {
+			Queue<Pair<Integer, Boolean>> q = new LinkedList<>();
+			q.offer(Pair.create(this.branch_identifier, taken_flag));
+			return q;
 		}
 	}
 }

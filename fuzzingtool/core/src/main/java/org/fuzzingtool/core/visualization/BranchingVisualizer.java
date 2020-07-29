@@ -89,6 +89,9 @@ public class BranchingVisualizer {
 		if (node.isUndecidable()) {
 			label_string += " ↯";
 		}
+		if (node.isDiverging()) {
+			label_string += " ⇄";
+		}
 		if (node.isExplored()) {
 			label_string += " ↺";
 		}

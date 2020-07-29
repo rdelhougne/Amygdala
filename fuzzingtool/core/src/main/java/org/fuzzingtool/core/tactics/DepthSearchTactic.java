@@ -28,7 +28,12 @@ public class DepthSearchTactic extends FuzzingTactic {
 	}
 
 	@Override
-	public HashMap<VariableIdentifier, Object> getNextValues() throws FuzzingException.NoMorePaths {
+	public boolean calculate() {
+		this.next_values.clear();
+		this.has_next_path = false;
+		this.next_path.clear();
+		this.loop_unrolls.clear();
+
 		boolean path_found = true;
 		while (path_found) {
 			BranchingNode new_target = find_unexplored(root_node, 1);
@@ -64,7 +69,6 @@ public class DepthSearchTactic extends FuzzingTactic {
 				if (status == Status.SATISFIABLE) {
 					Model model = s.getModel();
 					FuncDecl[] declarations = model.getConstDecls();
-					HashMap<VariableIdentifier, Object> variable_values = new HashMap<>();
 					for (FuncDecl d: declarations) {
 						String declaration_name = d.getName().toString();
 						VariableIdentifier identifier = VariableIdentifier.fromString(declaration_name);
@@ -73,14 +77,14 @@ public class DepthSearchTactic extends FuzzingTactic {
 						switch (identifier.getVariableType()) {
 							case BOOLEAN:
 								if (result.isBool()) {
-									variable_values.put(identifier, result.isTrue());
+									next_values.put(identifier, result.isTrue());
 								} else {
 									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Bool.");
 								}
 								break;
 							case STRING:
 								if (result.isString()) {
-									variable_values.put(identifier, result.getString());
+									next_values.put(identifier, result.getString());
 								} else {
 									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to String.");
 								}
@@ -90,7 +94,7 @@ public class DepthSearchTactic extends FuzzingTactic {
 								if (result.isIntNum()) {
 									try {
 										IntNum cast_result = (IntNum) result;
-										variable_values.put(identifier, cast_result.getInt());
+										next_values.put(identifier, cast_result.getInt());
 									} catch (ClassCastException cce) {
 										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer.");
 									}
@@ -102,7 +106,7 @@ public class DepthSearchTactic extends FuzzingTactic {
 								if (result.isRatNum()) {
 									try {
 										RatNum cast_result = (RatNum) result;
-										variable_values.put(identifier, Double.parseDouble(cast_result.toDecimalString(128)));
+										next_values.put(identifier, Double.parseDouble(cast_result.toDecimalString(128)));
 									} catch (ClassCastException cce) {
 										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double.");
 									}
@@ -115,8 +119,17 @@ public class DepthSearchTactic extends FuzzingTactic {
 								break;
 						}
 					}
-					this.loop_unrolls.clear();
-					return variable_values;
+
+					try {
+						this.next_path = new_target.getProgramPath();
+					} catch (SymbolicException.NotImplemented nie) {
+						logger.critical("Cannot get program path from new target node:" + nie.getMessage());
+						new_target.setBranchingNodeAttribute(BranchingNodeAttribute.UNREACHABLE);
+						continue;
+					}
+
+					this.has_next_path = true;
+					return true;
 				} else if (status == Status.UNSATISFIABLE){
 					new_target.setBranchingNodeAttribute(BranchingNodeAttribute.UNREACHABLE);
 				} else {
@@ -130,8 +143,7 @@ public class DepthSearchTactic extends FuzzingTactic {
 			}
 		}
 		logger.shock("Super-End.");
-		this.loop_unrolls.clear();
-		throw new FuzzingException.NoMorePaths();
+		return false;
 	}
 
 	private BranchingNode find_unexplored(BranchingNode current_node, Integer current_depth) {
@@ -152,6 +164,10 @@ public class DepthSearchTactic extends FuzzingTactic {
 		}
 
 		if (current_node.isUndecidable()) {
+			return null;
+		}
+
+		if (current_node.isDiverging()) {
 			return null;
 		}
 
