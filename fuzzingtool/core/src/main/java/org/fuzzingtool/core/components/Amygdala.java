@@ -8,12 +8,7 @@ import org.fuzzingtool.core.tactics.DepthSearchTactic;
 import org.fuzzingtool.core.tactics.FuzzingTactic;
 import org.fuzzingtool.core.visualization.BranchingVisualizer;
 import org.graalvm.collections.Pair;
-import org.snakeyaml.engine.v2.api.Load;
-import org.snakeyaml.engine.v2.api.LoadSettings;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -31,20 +26,10 @@ public class Amygdala {
 	public final HashMap<Integer, VariableIdentifier> variable_line_to_identifier;
 	public final HashMap<VariableIdentifier, String> variable_names;
 	public boolean fuzzing_finished = false;
-	// Fuzzing Configuration
-	public int main_loop_line_num = 1;
-	// Needed if the program happens to be combined of several files
-	public String main_loop_identifier_string = "fuzzing_main_loop";
-	public int error_line_num = 7;
-	// Needed if the program happens to be combined of several files
-	public String error_identifier_string = "fuzzing_error";
 	private BranchingNode currentBranch;
 	private FuzzingTactic tactic;
-	private int fuzzing_iterations = 1;
-	private boolean suppress_next_terminate = false;
-	private boolean is_first_run = true;
+	private int fuzzing_iterations = 0;
 	private int max_iterations = 1024;
-	private int source_code_line_offset = 0;
 
 	//Debugging
 	public HashMap<String, BitSet> node_type_instrumented = new HashMap<>();
@@ -104,10 +89,6 @@ public class Amygdala {
 	 * program has been terminated under normal circumstances.
 	 */
 	public void terminate_event() {
-		if (suppress_next_terminate) {
-			suppress_next_terminate = false;
-			return;
-		}
 		currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.TERMINATE);
 		currentBranch = branchingRootNode;
 		this.fuzzing_iterations += 1;
@@ -121,16 +102,6 @@ public class Amygdala {
 		currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.ERROR);
 		currentBranch = branchingRootNode;
 		this.fuzzing_iterations += 1;
-		suppress_terminate();
-	}
-
-	/**
-	 * This function suppresses the next terminate event.
-	 * Useful for the first run and error events.
-	 * This function has side effects.
-	 */
-	public void suppress_terminate() {
-		suppress_next_terminate = true;
 	}
 
 	/**
@@ -143,29 +114,13 @@ public class Amygdala {
 	}
 
 	/**
-	 * This function returns if the fuzzing has just started.
-	 * The only purpose is to prevent the global fuzzing loop to execute a terminate()
-	 * signal at the beginning of the fuzzing. This function has a side-effect.
-	 *
-	 * @return A boolean, true if it is the first run, false otherwise
-	 */
-	public boolean isFirstRun() {
-		if (this.is_first_run) {
-			this.is_first_run = false;
-			return true;
-		}
-		return false;
-	}
-
-	/**
 	 * This Method uses a specified tactic to find the next path in the program flow.
 	 * If the tactic cannot find another path, the global fuzzing-loop has to be terminated.
 	 *
-	 * @return The Boolean value that is DIRECTLY fed into the JSConstantBooleanNode,
-	 * which is the child of the global_while_node
+	 * @return The Boolean value for the wrapper
 	 */
 	public Boolean calculateNextPath() {
-		if (fuzzing_iterations <= max_iterations) {
+		if (fuzzing_iterations < max_iterations) {
 			boolean res = this.tactic.calculate();
 			if (res) {
 				variable_values = this.tactic.getNextValues();
@@ -229,61 +184,29 @@ public class Amygdala {
 	/**
 	 * Load fuzzing options from YAML file.
 	 *
-	 * @param path       Path to the config file
-	 * @param lineOffset Line offset of the generated program
+	 * @param map Java Object containing the options
 	 */
 	@SuppressWarnings("unchecked")
-	public void loadOptions(String path, Integer lineOffset) {
-		this.source_code_line_offset = lineOffset;
-		FileInputStream fis = null;
-		Map<String, Object> map;
-		try {
-			Load load = new Load(LoadSettings.builder().build());
-			fis = new FileInputStream(path);
-			map = (Map<String, Object>) load.loadFromInputStream(fis);
-		} catch (FileNotFoundException e) {
-			logger.critical("File not found: " + path);
-			return;
-		} finally {
-			if (fis != null) {
-				try {
-					fis.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-					return;
-				}
-			}
-		}
-
+	public void loadOptions(Map<String, Object> map) {
 		if (map.containsKey("variables") && map.get("variables") instanceof List) {
-			loadVariables((List<Map<String, Object>>) map.get("variables"), lineOffset);
+			loadVariables((List<Map<String, Object>>) map.get("variables"));
 		} else {
-			logger.warning("No variable configuration found in file " + path);
+			logger.warning("No variable configuration found.");
 		}
 
 		if (map.containsKey("fuzzing_parameters") && map.get("fuzzing_parameters") instanceof Map) {
 			loadFuzzingParameters((Map<String, Object>) map.get("fuzzing_parameters"));
 		} else {
-			logger.warning("No general configuration found in file " + path);
+			logger.warning("No general configuration found.");
 		}
-	}
-
-	/**
-	 * Returns the line offset property.
-	 *
-	 * @return The line offset
-	 */
-	public int getSourceCodeLineOffset() {
-		return this.source_code_line_offset;
 	}
 
 	/**
 	 * This Method initializes all given variables and sample-inputs.
 	 *
 	 * @param variable_list YAML-Map of te variables
-	 * @param line_offset    Line offset of the generated program
 	 */
-	private void loadVariables(List<Map<String, Object>> variable_list, Integer line_offset) {
+	private void loadVariables(List<Map<String, Object>> variable_list) {
 		for (Map<String, Object> var_declaration: variable_list) {
 			Integer line_num = (Integer) var_declaration.get("line_num");
 			String var_type = (String) var_declaration.get("type");
@@ -310,7 +233,7 @@ public class Amygdala {
 
 			String var_gid = tracer.getNewGID();
 			VariableIdentifier new_identifier = new VariableIdentifier(var_type_enum, var_gid);
-			variable_line_to_identifier.put(line_num + line_offset, new_identifier);
+			variable_line_to_identifier.put(line_num, new_identifier);
 			StringBuilder builder = new StringBuilder();
 			builder.append("\"");
 			if (var_declaration.containsKey("name")) {
@@ -406,7 +329,7 @@ public class Amygdala {
 		} else {
 			stat_str.append("Finished: no\n");
 		}
-		stat_str.append("Iterations: ").append(this.fuzzing_iterations - 1).append(" of ").append(this.max_iterations).append("\n");
+		stat_str.append("Iterations: ").append(this.fuzzing_iterations).append(" of ").append(this.max_iterations).append("\n");
 		return stat_str.toString();
 	}
 

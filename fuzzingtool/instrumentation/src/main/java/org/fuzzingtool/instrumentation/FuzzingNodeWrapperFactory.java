@@ -74,7 +74,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			}
 			File save_file = new File(save_path.toString() + ".svg");
 			if (!save_file.exists()) {
-				ASTVisualizer av = new ASTVisualizer(ec.getInstrumentedNode(), amygdala.logger, amygdala.getSourceCodeLineOffset());
+				ASTVisualizer av = new ASTVisualizer(ec.getInstrumentedNode(), amygdala.logger);
 				av.save_image(save_path.toString());
 			}
 		}
@@ -91,17 +91,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			create_inputVariableIdentifier = null;
 		}
 
-		final boolean create_nodeIsMainLoopInputNode;
-		if (ec.getInstrumentedSourceSection() != null && ec.getInstrumentedSourceSection().isAvailable()) {
-			String source_code_line =
-					ec.getInstrumentedSourceSection().getSource().getCharacters(amygdala.main_loop_line_num).toString();
-			create_nodeIsMainLoopInputNode = ec.getInstrumentedNode() instanceof JSConstantNode &&
-					ec.getInstrumentedSourceSection().getStartLine() == amygdala.main_loop_line_num &&
-					source_code_line.contains(amygdala.main_loop_identifier_string);
-		} else {
-			create_nodeIsMainLoopInputNode = false;
-		}
-
 		if (!amygdala.node_type_instrumented.containsKey(ec.getInstrumentedNode().getClass().getSimpleName())) {
 			amygdala.node_type_instrumented.put(ec.getInstrumentedNode().getClass().getSimpleName(), new BitSet(3));
 		}
@@ -116,7 +105,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			// Input node config
 			private final boolean isInputNode = create_nodeIsInputNode;
 			private final VariableIdentifier inputVariableIdentifier = create_inputVariableIdentifier;
-			private final boolean isMainLoopInputNode = create_nodeIsMainLoopInputNode;
 
 			// Various save spots
 			// used by PropertyNode and WritePropertyNode to save the context of the operation
@@ -130,7 +118,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				String node_type_padded = String.format("%1$-" + 36 + "s", node_type);
 				String hash_padded = String.format("%1$-" + 12 + "s", node_hash);
 				if (my_sourcesection != null && my_sourcesection.isAvailable()) {
-					int start_line = my_sourcesection.getStartLine() - amygdala.getSourceCodeLineOffset();
+					int start_line = my_sourcesection.getStartLine();
 					String line_padded;
 					if (start_line >= 0) {
 						line_padded = String.format("%1$" + 3 + "s", start_line);
@@ -536,11 +524,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			}
 
 			public void onEnterBehaviorCallNode(VirtualFrame vFrame) {
-				if (my_sourcesection.getStartLine() == amygdala.error_line_num &&
-						my_sourcesection.getSource().getCharacters(amygdala.error_line_num).toString()
-								.contains(amygdala.error_identifier_string)) {
-					amygdala.error_event();
-				}
 				this.arguments_array.clear();
 				// if CallNode has no arguments (Call0Node)
 				amygdala.tracer.setArgumentsArray(this.arguments_array);
@@ -559,6 +542,16 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			}
 
 			public void onEnterBehaviorFunctionBodyNode(VirtualFrame vFrame) {
+				RootNode rn = my_node.getRootNode();
+				String function_name = "";
+				if (rn != null) {
+					function_name = JSNodeUtil.resolveName(rn);
+				}
+				// If the function is the main function (":program"), reset tracer.
+				if (function_name.equals(":program")) {
+					amygdala.tracer.reset(LanguageSemantic.JAVASCRIPT, getThisObjectHash(vFrame));
+				}
+
 				Iterator<Scope> local_scopes = env.findLocalScopes(my_node, vFrame).iterator();
 				if (local_scopes.hasNext()) {
 					Scope innermost_scope = local_scopes.next();
@@ -588,14 +581,10 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			public void onInputValueBehaviorWhileNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
                                                       Object inputValue) {
-				if (!(my_sourcesection.getStartLine() == amygdala.main_loop_line_num &&
-						my_sourcesection.getSource().getCharacters(amygdala.main_loop_line_num).toString()
-								.contains(amygdala.main_loop_identifier_string))) {
-					ArrayList<Pair<Integer, String>> children = getChildHashes();
-					if (inputIndex == 0) {
-						amygdala.branching_event(getSourceRelativeIdentifier(), BranchingNodeAttribute.LOOP, children.get(0).getLeft(),
-												 (Boolean) inputValue, extractPredicate());
-					}
+				ArrayList<Pair<Integer, String>> children = getChildHashes();
+				if (inputIndex == 0) {
+					amygdala.branching_event(getSourceRelativeIdentifier(), BranchingNodeAttribute.LOOP, children.get(0).getLeft(),
+											 (Boolean) inputValue, extractPredicate());
 				}
 			}
 
@@ -912,18 +901,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			}
 
 			public void onReturnBehaviorConstant(VirtualFrame vFrame, Object result, ExpressionType type) {
-				if (this.isMainLoopInputNode) {
-					if (!amygdala.isFirstRun()) {
-						// An diesem Punkt ist das Programm eigentlich beendet, wird aber jetzt neu gestartet.
-						amygdala.terminate_event();
-						// Hier wird entschieden ob ein weiterer Fuzzing-Durchlauf stattfindet
-						throw this.event_context.createUnwind(amygdala.calculateNextPath());
-					}
-					amygdala.tracer.reset(LanguageSemantic.JAVASCRIPT, getThisObjectHash(vFrame));
-					//Initialize current function (again, because of reset)
-					onEnterBehaviorFunctionBodyNode(vFrame);
-					amygdala.tracer.addConstant(node_hash, LanguageSemantic.JAVASCRIPT, type, result);
-				} else if (this.isInputNode) {
+				if (this.isInputNode) {
 					Object next_input = amygdala.getNextInputValue(this.inputVariableIdentifier);
 					amygdala.tracer.addVariable(node_hash, LanguageSemantic.JAVASCRIPT, this.inputVariableIdentifier);
 					throw this.event_context.createUnwind(next_input);

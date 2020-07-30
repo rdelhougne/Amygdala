@@ -21,12 +21,10 @@ import static guru.nidi.graphviz.model.Factory.*;
 
 public class ASTVisualizer {
 	private final MutableGraph vis_graph = mutGraph("AST Visualization").setDirected(true);
-	private final int source_code_line_offset;
 
 	private final Logger logger;
 
-	public ASTVisualizer(Node root_node, Logger l, int source_code_line_offset) {
-		this.source_code_line_offset = source_code_line_offset;
+	public ASTVisualizer(Node root_node, Logger l) {
 		this.logger = l;
 		vis_graph.graphAttrs().add("splines", "ortho");
 		vis_graph.graphAttrs().add("nodesep", 0.5);
@@ -90,8 +88,8 @@ public class ASTVisualizer {
 				characters = characters.substring(0, 13) + "...";
 			}
 			String line_numbering;
-			int start_line = node_source.getStartLine() - this.source_code_line_offset;
-			int end_line = node_source.getEndLine() - this.source_code_line_offset;
+			int start_line = node_source.getStartLine();
+			int end_line = node_source.getEndLine();
 			if (start_line >= 0) {
 				if (start_line == end_line) {
 					line_numbering = "<b>" + start_line + ":</b>  ";
