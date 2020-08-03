@@ -9,9 +9,9 @@ import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.graalvm.collections.Pair;
 
 public class GreaterThan extends SymbolicNode {
-	public GreaterThan(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
+	public GreaterThan(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
 		this.languageSemantic = s;
-		addChildren(2, a, b);
+		addChildren(a, b);
 	}
 
 	@Override

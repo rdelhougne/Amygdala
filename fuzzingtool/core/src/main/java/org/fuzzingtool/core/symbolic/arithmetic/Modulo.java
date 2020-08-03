@@ -11,9 +11,9 @@ import org.graalvm.collections.Pair;
  * Class for abstract '%' operation.
  */
 public class Modulo extends SymbolicNode {
-	public Modulo(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
+	public Modulo(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
 		this.languageSemantic = s;
-		addChildren(2, a, b);
+		addChildren(a, b);
 	}
 
 	@Override

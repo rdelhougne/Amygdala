@@ -11,9 +11,9 @@ import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.graalvm.collections.Pair;
 
 public class StringCharAt extends SymbolicNode {
-	public StringCharAt(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
+	public StringCharAt(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
 		this.languageSemantic = s;
-		addChildren(2, a, b);
+		addChildren(a, b);
 	}
 
 	@Override

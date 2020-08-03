@@ -32,7 +32,7 @@ public class Amygdala {
 	private int max_iterations = 1024;
 
 	//Debugging
-	public HashMap<String, BitSet> node_type_instrumented = new HashMap<>();
+	public final HashMap<String, BitSet> node_type_instrumented = new HashMap<>();
 
 	public Amygdala(Logger lgr) {
 		this.tracer = new Tracer(lgr);

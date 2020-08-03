@@ -49,13 +49,9 @@ public abstract class SymbolicNode {
 	public abstract Pair<Expr, ExpressionType> toZ3ExprJS(Context ctx) throws SymbolicException.UndecidableExpression,
 			SymbolicException.NotImplemented;
 
-	public void addChildren(int expected, SymbolicNode... nodes) throws SymbolicException.WrongParameterSize {
-		if (nodes.length != expected) {
-			throw new SymbolicException.WrongParameterSize(nodes.length, 2, this.getClass().getSimpleName());
-		} else {
-			this.children = new SymbolicNode[expected];
-			System.arraycopy(nodes, 0, this.children, 0, nodes.length);
-		}
+	public void addChildren(SymbolicNode... nodes) {
+		this.children = new SymbolicNode[nodes.length];
+		System.arraycopy(nodes, 0, this.children, 0, nodes.length);
 	}
 
 	/**

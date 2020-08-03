@@ -13,9 +13,9 @@ import org.graalvm.collections.Pair;
  * Class for abstract '/' operation
  */
 public class Division extends SymbolicNode {
-	public Division(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
+	public Division(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
 		this.languageSemantic = s;
-		addChildren(2, a, b);
+		addChildren(a, b);
 	}
 
 	@Override

@@ -11,14 +11,14 @@ import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.graalvm.collections.Pair;
 
 public class StringSubstr extends SymbolicNode {
-	public StringSubstr(LanguageSemantic s, SymbolicNode a, SymbolicNode b, SymbolicNode c) throws SymbolicException.WrongParameterSize {
+	public StringSubstr(LanguageSemantic s, SymbolicNode a, SymbolicNode b, SymbolicNode c) {
 		this.languageSemantic = s;
-		addChildren(3, a, b, c);
+		addChildren(a, b, c);
 	}
 
-	public StringSubstr(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
+	public StringSubstr(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
 		this.languageSemantic = s;
-		addChildren(2, a, b);
+		addChildren(a, b);
 	}
 
 	@Override

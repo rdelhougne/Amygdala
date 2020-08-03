@@ -10,9 +10,9 @@ import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.graalvm.collections.Pair;
 
 public class Not extends SymbolicNode {
-	public Not(LanguageSemantic s, SymbolicNode a) throws SymbolicException.WrongParameterSize {
+	public Not(LanguageSemantic s, SymbolicNode a) {
 		this.languageSemantic = s;
-		addChildren(1, a);
+		addChildren(a);
 	}
 
 	@Override

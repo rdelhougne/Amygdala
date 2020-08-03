@@ -8,14 +8,14 @@ import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.graalvm.collections.Pair;
 
 public class StringIndexOf extends SymbolicNode {
-	public StringIndexOf(LanguageSemantic s, SymbolicNode a, SymbolicNode b, SymbolicNode c) throws SymbolicException.WrongParameterSize {
+	public StringIndexOf(LanguageSemantic s, SymbolicNode a, SymbolicNode b, SymbolicNode c) {
 		this.languageSemantic = s;
-		addChildren(3, a, b, c);
+		addChildren(a, b, c);
 	}
 
-	public StringIndexOf(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
+	public StringIndexOf(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
 		this.languageSemantic = s;
-		addChildren(2, a, b);
+		addChildren(a, b);
 	}
 
 	@Override

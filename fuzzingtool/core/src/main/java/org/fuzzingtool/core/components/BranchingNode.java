@@ -203,7 +203,7 @@ public class BranchingNode {
 		return branch_identifier;
 	}
 
-	public ArrayList<String> getSymbolicPathSMTExpression() {
+	public ArrayList<String> getSymbolicPathSMTExpression() throws SymbolicException.NotImplemented {
 		if (parentNode != null) {
 			return this.parentNode.getSymbolicPathSMTExpression(this.parentNodeTakenFlag);
 		} else {
@@ -211,26 +211,20 @@ public class BranchingNode {
 		}
 	}
 
-	public ArrayList<String> getSymbolicPathSMTExpression(Boolean taken_flag) {
-		try {
-			if (parentNode != null) {
-				ArrayList<String> all_from_parents =
-						this.parentNode.getSymbolicPathSMTExpression(this.parentNodeTakenFlag);
-				all_from_parents.add(getLocalSMTExpression(taken_flag));
-				return all_from_parents;
-			} else {
-				ArrayList<String> my_expr = new ArrayList<>();
-				my_expr.add(getLocalSMTExpression(taken_flag));
-				return my_expr;
-			}
-		} catch (SymbolicException.WrongParameterSize | SymbolicException.NotImplemented ex) {
-			ex.printStackTrace();
+	public ArrayList<String> getSymbolicPathSMTExpression(Boolean taken_flag) throws SymbolicException.NotImplemented {
+		if (parentNode != null) {
+			ArrayList<String> all_from_parents =
+					this.parentNode.getSymbolicPathSMTExpression(this.parentNodeTakenFlag);
+			all_from_parents.add(getLocalSMTExpression(taken_flag));
+			return all_from_parents;
+		} else {
+			ArrayList<String> my_expr = new ArrayList<>();
+			my_expr.add(getLocalSMTExpression(taken_flag));
+			return my_expr;
 		}
-		return null;
 	}
 
-	public ArrayList<String> getSymbolicPathHRExpression() throws SymbolicException.WrongParameterSize,
-			SymbolicException.NotImplemented {
+	public ArrayList<String> getSymbolicPathHRExpression() throws SymbolicException.NotImplemented {
 		if (parentNode != null) {
 			return this.parentNode.getSymbolicPathHRExpression(this.parentNodeTakenFlag);
 		} else {
@@ -238,8 +232,7 @@ public class BranchingNode {
 		}
 	}
 
-	public ArrayList<String> getSymbolicPathHRExpression(Boolean taken_flag) throws
-			SymbolicException.WrongParameterSize, SymbolicException.NotImplemented {
+	public ArrayList<String> getSymbolicPathHRExpression(Boolean taken_flag) throws SymbolicException.NotImplemented {
 		if (parentNode != null) {
 			ArrayList<String> all_from_parents = this.parentNode.getSymbolicPathHRExpression(this.parentNodeTakenFlag);
 			all_from_parents.add(getLocalHRExpression(taken_flag));
@@ -251,8 +244,8 @@ public class BranchingNode {
 		}
 	}
 
-	public BoolExpr getSymbolicPathZ3Expression(Context ctx) throws SymbolicException.WrongParameterSize,
-			SymbolicException.NotImplemented, SymbolicException.UndecidableExpression {
+	public BoolExpr getSymbolicPathZ3Expression(Context ctx) throws SymbolicException.NotImplemented,
+			SymbolicException.UndecidableExpression {
 		if (parentNode != null) {
 			return this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
 		} else {
@@ -261,7 +254,7 @@ public class BranchingNode {
 	}
 
 	public BoolExpr getSymbolicPathZ3Expression(Boolean taken_flag, Context ctx) throws
-			SymbolicException.WrongParameterSize, SymbolicException.UndecidableExpression,
+			SymbolicException.UndecidableExpression,
 			SymbolicException.NotImplemented {
 		if (parentNode != null) {
 			BoolExpr all_from_parents = this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
@@ -281,8 +274,7 @@ public class BranchingNode {
 		}
 	}
 
-	public String getLocalSMTExpression(Boolean taken) throws SymbolicException.WrongParameterSize,
-			SymbolicException.NotImplemented {
+	public String getLocalSMTExpression(Boolean taken) throws SymbolicException.NotImplemented {
 		if (this.symbolic_expression == null) {
 			return "!ERROR!";
 		}
@@ -294,8 +286,7 @@ public class BranchingNode {
 		}
 	}
 
-	public String getLocalHRExpression(Boolean taken) throws SymbolicException.WrongParameterSize,
-			SymbolicException.NotImplemented {
+	public String getLocalHRExpression(Boolean taken) throws SymbolicException.NotImplemented {
 		if (this.symbolic_expression == null) {
 			return "!ERROR!";
 		}
@@ -307,8 +298,8 @@ public class BranchingNode {
 		}
 	}
 
-	public BoolExpr getLocalZ3Expression(Boolean taken, Context ctx) throws SymbolicException.WrongParameterSize,
-			SymbolicException.NotImplemented, SymbolicException.UndecidableExpression {
+	public BoolExpr getLocalZ3Expression(Boolean taken, Context ctx) throws SymbolicException.NotImplemented,
+			SymbolicException.UndecidableExpression {
 		if (this.symbolic_expression == null) {
 			throw new SymbolicException.UndecidableExpression("Z3", "Local symbolic expression is null.");
 		}

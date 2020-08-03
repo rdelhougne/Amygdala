@@ -49,17 +49,14 @@ public class DepthSearchTactic extends FuzzingTactic {
 				} catch (SymbolicException.UndecidableExpression ue) {
 					logger.info(ue.getMessage());
 					continue;
-				} catch (SymbolicException.WrongParameterSize wrongParameterSize) {
-					wrongParameterSize.printStackTrace();
-					continue;
 				}
 				/*try {
 					for(String s: new_target.getSymbolicPathHRExpression()) {
 						logger.log(s);
 					}
-				} catch (SymbolicException.WrongParameterSize | SymbolicException.NotImplemented wrongParameterSize) {
-					wrongParameterSize.printStackTrace();
-					logger.log(wrongParameterSize.getMessage());
+				} catch (SymbolicException.NotImplemented nie) {
+					nie.printStackTrace();
+					logger.log(nie.getMessage());
 				}*/
 				logger.hypnotize(expr.getSExpr());
 				Solver s = ctx.mkSolver();

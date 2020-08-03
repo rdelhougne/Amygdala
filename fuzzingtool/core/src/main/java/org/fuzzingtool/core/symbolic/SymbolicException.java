@@ -16,13 +16,6 @@ public class SymbolicException {
 		}
 	}
 
-	public static class WrongParameterSize extends Exception {
-		public WrongParameterSize(int got, int expected, String op_name) {
-			super("Wrong parameter size in operation " + op_name + ": Expected " + expected + ", got " + got +
-						  " instead.");
-		}
-	}
-
 	public static class NotImplemented extends Exception {
 		public NotImplemented(String msg) {
 			super("Not fully implemented feature used: " + msg);

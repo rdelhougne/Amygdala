@@ -10,9 +10,9 @@ import org.fuzzingtool.core.symbolic.ExpressionType;
 import org.graalvm.collections.Pair;
 
 public class LessThan extends SymbolicNode {
-	public LessThan(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
+	public LessThan(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
 		this.languageSemantic = s;
-		addChildren(2, a, b);
+		addChildren(a, b);
 	}
 
 	@Override

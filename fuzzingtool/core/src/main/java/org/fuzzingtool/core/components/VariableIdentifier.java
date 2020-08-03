@@ -83,7 +83,7 @@ public final class VariableIdentifier {
 		if (splitted.length != 2) {
 			throw new IllegalArgumentException("String representation '" + representation + "' of VariableIdentifier is invalid.");
 		}
-		ExpressionType id_type = null;
+		ExpressionType id_type;
 		switch (splitted[0]) {
 			case "boolean":
 				id_type = ExpressionType.BOOLEAN;

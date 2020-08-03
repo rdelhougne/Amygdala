@@ -12,9 +12,9 @@ import org.graalvm.collections.Pair;
  * Class for abstract unary '+' operation.
  */
 public class UnaryPlus extends SymbolicNode {
-	public UnaryPlus(LanguageSemantic s, SymbolicNode a) throws SymbolicException.WrongParameterSize {
+	public UnaryPlus(LanguageSemantic s, SymbolicNode a) {
 		this.languageSemantic = s;
-		addChildren(1, a);
+		addChildren(a);
 	}
 
 	@Override

@@ -10,9 +10,9 @@ import org.fuzzingtool.core.symbolic.ExpressionType;
 import org.graalvm.collections.Pair;
 
 public class Subtraction extends SymbolicNode {
-	public Subtraction(LanguageSemantic s, SymbolicNode a, SymbolicNode b) throws SymbolicException.WrongParameterSize {
+	public Subtraction(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
 		this.languageSemantic = s;
-		addChildren(2, a, b);
+		addChildren(a, b);
 	}
 
 	@Override

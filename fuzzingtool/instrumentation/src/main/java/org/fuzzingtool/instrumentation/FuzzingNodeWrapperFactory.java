@@ -853,12 +853,8 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			public void onReturnBehaviorBinaryOperation(VirtualFrame vFrame, Object result, Operation op) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				assert children.size() == 2;
-				try {
-					amygdala.tracer.addOperation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft(),
+				amygdala.tracer.addOperation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft(),
 												 children.get(1).getLeft());
-				} catch (SymbolicException.WrongParameterSize wrongParameterSize) {
-					amygdala.logger.critical("onReturnBehaviorBinaryOperation(): WrongParameterSize: " + wrongParameterSize.getMessage() + ".");
-				}
 			}
 
 			// TODO
@@ -869,22 +865,20 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				String after = String.valueOf(my_sourcesection.getSource().getCharacters().charAt(my_sourcesection.getCharEndIndex()));
 				if (before.equals("+") || after.equals("+")) {
 					SymbolicNode pre_add = amygdala.tracer.getIntermediate(children.get(0).getLeft());
-					SymbolicNode add_result = null;
 					try {
-						add_result = new Addition(LanguageSemantic.JAVASCRIPT, pre_add, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
-					} catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize ex) {
-						ex.printStackTrace();
+						SymbolicNode add_result = new Addition(LanguageSemantic.JAVASCRIPT, pre_add, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
+						amygdala.tracer.setIntermediate(node_hash, add_result);
+					} catch (SymbolicException.IncompatibleType ite) {
+						amygdala.logger.critical("onReturnBehaviorJSAddSubNumericUnitNodeGen(): Cannot construct addition: " + ite.getMessage());
 					}
-					amygdala.tracer.setIntermediate(node_hash, add_result);
 				} else if (before.equals("-") || after.equals("-")) {
 					SymbolicNode pre_sub = amygdala.tracer.getIntermediate(children.get(0).getLeft());
-					SymbolicNode sub_result = null;
 					try {
-						sub_result = new Subtraction(LanguageSemantic.JAVASCRIPT, pre_sub, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
-					} catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize ex) {
-						ex.printStackTrace();
+						SymbolicNode sub_result = new Subtraction(LanguageSemantic.JAVASCRIPT, pre_sub, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
+						amygdala.tracer.setIntermediate(node_hash, sub_result);
+					} catch (SymbolicException.IncompatibleType ite) {
+						amygdala.logger.critical("onReturnBehaviorJSAddSubNumericUnitNodeGen(): Cannot construct subtraction: " + ite.getMessage());
 					}
-					amygdala.tracer.setIntermediate(node_hash, sub_result);
 				} else {
 					amygdala.logger.critical("onReturnBehaviorJSAddSubNumericUnitNodeGen(): Cannot determine operation from source code.");
 				}
@@ -893,11 +887,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			public void onReturnBehaviorUnaryOperation(VirtualFrame vFrame, Object result, Operation op) {
 				ArrayList<Pair<Integer, String>> children = getChildHashes();
 				assert children.size() == 1;
-				try {
-					amygdala.tracer.addOperation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft());
-				} catch (SymbolicException.WrongParameterSize wrongParameterSize) {
-					amygdala.logger.critical("onReturnBehaviorUnaryOperation(): WrongParameterSize: " + wrongParameterSize.getMessage() + ".");
-				}
+				amygdala.tracer.addOperation(node_hash, LanguageSemantic.JAVASCRIPT, op, children.get(0).getLeft());
 			}
 
 			public void onReturnBehaviorConstant(VirtualFrame vFrame, Object result, ExpressionType type) {
@@ -983,25 +973,21 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 				if (inc_matcher.matches()) {
 					assert children.size() == 1;
 					SymbolicNode pre = amygdala.tracer.getIntermediate(children.get(0).getLeft());
-					SymbolicNode revert_increment = null;
 					try {
-						revert_increment = new Subtraction(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
-					} catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize ex) {
-						ex.printStackTrace();
+						SymbolicNode revert_increment = new Subtraction(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
+						amygdala.tracer.setIntermediate(node_hash, revert_increment);
+					} catch (SymbolicException.IncompatibleType ite) {
+						amygdala.logger.critical("onReturnBehaviorDualNode(): Cannot construct subtraction: " + ite.getMessage());
 					}
-					amygdala.tracer.setIntermediate(node_hash, revert_increment);
 				} else if (dec_matcher.matches()) {
 					assert children.size() == 1;
 					SymbolicNode pre = amygdala.tracer.getIntermediate(children.get(0).getLeft());
-					SymbolicNode revert_decrement = null;
 					try {
-						revert_decrement = new Addition(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
-					} catch (SymbolicException.IncompatibleType | SymbolicException.WrongParameterSize ex) {
-						ex.printStackTrace();
+						SymbolicNode revert_decrement = new Addition(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
+						amygdala.tracer.setIntermediate(node_hash, revert_decrement);
+					} catch (SymbolicException.IncompatibleType ite) {
+						amygdala.logger.critical("onReturnBehaviorDualNode(): Cannot construct addition: " + ite.getMessage());
 					}
-					amygdala.tracer.setIntermediate(node_hash, revert_decrement);
-				} else {
-					// nothing to do for now
 				}
 			}
 
@@ -1017,7 +1003,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			public VariableContext arrayToSymbolic(DynamicObject dyn_obj) {
 				if (JSRuntime.isArray(dyn_obj)) {
 					VariableContext array_ctx = new VariableContext();
-					long size = 0;
+					long size;
 					try {
 						size = INTEROP.getArraySize(dyn_obj);
 					} catch (UnsupportedMessageException e) {

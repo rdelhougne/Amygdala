@@ -10,7 +10,7 @@ import org.graalvm.collections.Pair;
 
 public class SymbolicConstant extends SymbolicNode {
 	private final ExpressionType constantType;
-	private Object value;
+	private final Object value;
 
 	public SymbolicConstant(LanguageSemantic s, ExpressionType t, Object v) throws SymbolicException.IncompatibleType {
 		this.languageSemantic = s;

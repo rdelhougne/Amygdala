@@ -304,11 +304,9 @@ public class Tracer {
 	 * @param op            ExpressionType of Operation, see {@link Operation} for all available operation types
 	 * @param node_source_a Left-hand operator
 	 * @param node_source_b Right-hand operator
-	 * @throws SymbolicException.WrongParameterSize
 	 */
 	public void addOperation(Integer node_target, LanguageSemantic s, Operation op, Integer node_source_a,
-							 Integer node_source_b) throws
-			SymbolicException.WrongParameterSize {
+							 Integer node_source_b) {
 		// handle early discard
 		if (op == Operation.OR) {
 			if (!intermediate_results.containsKey(node_source_a) && !intermediate_results.containsKey(node_source_b)) {
@@ -402,10 +400,8 @@ public class Tracer {
 	 * @param node_target Node-hash of the new intermediate result
 	 * @param op          ExpressionType of Operation, see {@link Operation} for all available operation types
 	 * @param node_source child operator
-	 * @throws SymbolicException.WrongParameterSize
 	 */
-	public void addOperation(Integer node_target, LanguageSemantic s, Operation op, Integer node_source) throws
-			SymbolicException.WrongParameterSize {
+	public void addOperation(Integer node_target, LanguageSemantic s, Operation op, Integer node_source) {
 		if (intermediate_results.containsKey(node_source)) {
 			SymbolicNode k = intermediate_results.get(node_source);
 			switch (op) {
@@ -467,51 +463,47 @@ public class Tracer {
 								   ArrayList<SymbolicNode> arguments, Operation op) {
 		if (intermediate_results.containsKey(operand_intermediate_id)) {
 			SymbolicNode operand = intermediate_results.get(operand_intermediate_id);
-			try {
-				switch (op) {
-					case STR_CONCAT:
-						for (SymbolicNode arg: arguments) {
-							operand = new Addition(s, operand, arg);
-						}
-						intermediate_results.put(node_target, operand);
-						break;
-					case STR_CHAR_AT:
-						assert arguments.size() == 1;
-						intermediate_results.put(node_target, new StringCharAt(LanguageSemantic.JAVASCRIPT, operand,
-																			   arguments.get(0)));
-						break;
-					case STR_SUBSTR:
-						assert arguments.size() == 1 || arguments.size() == 2;
-						if (arguments.size() == 1) {
-							intermediate_results.put(node_target, new StringSubstr(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0)));
-						}
-						if (arguments.size() == 2) {
-							intermediate_results.put(node_target, new StringSubstr(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0), arguments.get(1)));
-						}
-						break;
-					case STR_INCLUDES:
-						assert arguments.size() == 1 || arguments.size() == 2;
-						if (arguments.size() == 1) {
-							intermediate_results.put(node_target, new StringIncludes(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0)));
-						}
-						if (arguments.size() == 2) {
-							intermediate_results.put(node_target, new StringIncludes(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0), arguments.get(1)));
-						}
-						break;
-					case STR_INDEXOF:
-						assert arguments.size() == 1 || arguments.size() == 2;
-						if (arguments.size() == 1) {
-							intermediate_results.put(node_target, new StringIndexOf(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0)));
-						}
-						if (arguments.size() == 2) {
-							intermediate_results.put(node_target, new StringIndexOf(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0), arguments.get(1)));
-						}
-						break;
-					default:
-						logger.critical("Tracer::addStringOperation(): Cannot process operation " + op.name() + ".");
-				}
-			} catch (SymbolicException.WrongParameterSize wrongParameterSize) {
-				logger.critical("Tracer::addStringOperation(): Error adding operation " + op.name() + ".");
+			switch (op) {
+				case STR_CONCAT:
+					for (SymbolicNode arg: arguments) {
+						operand = new Addition(s, operand, arg);
+					}
+					intermediate_results.put(node_target, operand);
+					break;
+				case STR_CHAR_AT:
+					assert arguments.size() == 1;
+					intermediate_results.put(node_target, new StringCharAt(LanguageSemantic.JAVASCRIPT, operand,
+																		   arguments.get(0)));
+					break;
+				case STR_SUBSTR:
+					assert arguments.size() == 1 || arguments.size() == 2;
+					if (arguments.size() == 1) {
+						intermediate_results.put(node_target, new StringSubstr(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0)));
+					}
+					if (arguments.size() == 2) {
+						intermediate_results.put(node_target, new StringSubstr(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0), arguments.get(1)));
+					}
+					break;
+				case STR_INCLUDES:
+					assert arguments.size() == 1 || arguments.size() == 2;
+					if (arguments.size() == 1) {
+						intermediate_results.put(node_target, new StringIncludes(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0)));
+					}
+					if (arguments.size() == 2) {
+						intermediate_results.put(node_target, new StringIncludes(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0), arguments.get(1)));
+					}
+					break;
+				case STR_INDEXOF:
+					assert arguments.size() == 1 || arguments.size() == 2;
+					if (arguments.size() == 1) {
+						intermediate_results.put(node_target, new StringIndexOf(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0)));
+					}
+					if (arguments.size() == 2) {
+						intermediate_results.put(node_target, new StringIndexOf(LanguageSemantic.JAVASCRIPT, operand, arguments.get(0), arguments.get(1)));
+					}
+					break;
+				default:
+					logger.critical("Tracer::addStringOperation(): Cannot process operation " + op.name() + ".");
 			}
 		} else {
 			logger.critical("Tracer::addStringOperation(): Trying to add operation " + op.name() + " but operand " +

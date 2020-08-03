@@ -10,9 +10,9 @@ import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.graalvm.collections.Pair;
 
 public class StringLength extends SymbolicNode {
-	public StringLength(LanguageSemantic s, SymbolicNode a) throws SymbolicException.WrongParameterSize {
+	public StringLength(LanguageSemantic s, SymbolicNode a) {
 		this.languageSemantic = s;
-		addChildren(1, a);
+		addChildren(a);
 	}
 
 	@Override
