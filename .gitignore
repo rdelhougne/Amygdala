@@ -158,3 +158,5 @@ fuzzingtool/core/target/
 fuzzingtool/wrapper/target/
 
 fuzzingtool/build/
+
+fuzzingtool/hs_err_pid*.log

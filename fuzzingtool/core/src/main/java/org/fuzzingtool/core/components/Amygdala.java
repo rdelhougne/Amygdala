@@ -30,6 +30,9 @@ public class Amygdala {
 	private FuzzingTactic tactic;
 	private int fuzzing_iterations = 0;
 	private int max_iterations = 1024;
+	private boolean function_visualization = false;
+	private boolean branching_visualization = false;
+	private boolean event_logging = true;
 
 	//Debugging
 	public final HashMap<String, BitSet> node_type_instrumented = new HashMap<>();
@@ -199,6 +202,12 @@ public class Amygdala {
 		} else {
 			logger.warning("No general configuration found.");
 		}
+
+		if (map.containsKey("visualization") && map.get("visualization") instanceof Map) {
+			loadVisualizationParameters((Map<String, Object>) map.get("visualization"));
+		} else {
+			logger.info("No visualization configuration found, visualization disabled.");
+		}
 	}
 
 	/**
@@ -296,6 +305,26 @@ public class Amygdala {
 	}
 
 	/**
+	 * Load visualization options from the YAML file.
+	 *
+	 * @param parameters YAML-Map of the options
+	 */
+	private void loadVisualizationParameters(Map<String, Object> parameters) {
+		this.function_visualization = (boolean) parameters.getOrDefault("function_visualization", this.function_visualization);
+		if (this.function_visualization) {
+			logger.info("Function visualization enabled.");
+		}
+		this.branching_visualization = (boolean) parameters.getOrDefault("branching_visualization", this.branching_visualization);
+		if (this.branching_visualization) {
+			logger.info("Branching visualization enabled.");
+		}
+		this.event_logging = (boolean) parameters.getOrDefault("event_logging", this.event_logging);
+		if (this.event_logging) {
+			logger.info("Event logging enabled.");
+		}
+	}
+
+	/**
 	 * Checks if the node at the given line is an input node (called at construction of the node).
 	 *
 	 * @param line_num Line number in the source code
@@ -307,6 +336,27 @@ public class Amygdala {
 		} else {
 			return Pair.create(false, null);
 		}
+	}
+
+	/**
+	 * @return true, if function visualization is enabled, false otherwise
+	 */
+	public boolean isFunctionVisEnabled() {
+		return this.function_visualization;
+	}
+
+	/**
+	 * @return true, if branching visualization is enabled, false otherwise
+	 */
+	public boolean isBranchingVisEnabled() {
+		return this.branching_visualization;
+	}
+
+	/**
+	 * @return true, if event logging is enabled, false otherwise
+	 */
+	public boolean isEventLoggingEnabled() {
+		return this.event_logging;
 	}
 
 	/**

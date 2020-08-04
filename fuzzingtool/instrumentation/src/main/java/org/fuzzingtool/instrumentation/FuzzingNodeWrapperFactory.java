@@ -43,8 +43,6 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 	private final TruffleInstrument.Env env;
 	private final Amygdala amygdala;
 
-	private static final boolean ENABLE_EVENT_LOGGING = true;
-
 	private static final InteropLibrary INTEROP = LibraryFactory.resolve(InteropLibrary.class).getUncached();
 
 	// Capture group 2 is variable name
@@ -60,7 +58,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 	}
 
 	public ExecutionEventNode create(final EventContext ec) {
-		if (ec.getInstrumentedNode().getClass().getSimpleName().equals("MaterializedFunctionBodyNode")) {
+		if (amygdala.isFunctionVisEnabled() && ec.getInstrumentedNode().getClass().getSimpleName().equals("MaterializedFunctionBodyNode")) {
 			StringBuilder save_path = new StringBuilder();
 			save_path.append(Paths.get(".").toAbsolutePath().normalize().toString()).append("/");
 			save_path.append("function_");
@@ -232,7 +230,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			@Override
 			protected void onEnter(VirtualFrame vFrame) {
-				if (ENABLE_EVENT_LOGGING) {
+				if (amygdala.isEventLoggingEnabled()) {
 					amygdala.logger.log(getSignatureString() + " \033[32m→\033[0m");
 				}
 
@@ -266,7 +264,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			@Override
 			protected void onInputValue(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
                                         Object inputValue) {
-				if (ENABLE_EVENT_LOGGING) {
+				if (amygdala.isEventLoggingEnabled()) {
 					amygdala.logger.log(getSignatureString() + " \033[34m•\033[0m");
 				}
 
@@ -315,7 +313,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 
 			@Override
 			public void onReturnValue(VirtualFrame vFrame, Object result) {
-				if (ENABLE_EVENT_LOGGING) {
+				if (amygdala.isEventLoggingEnabled()) {
 					amygdala.logger.log(getSignatureString() + " \033[31m↵\033[0m");
 				}
 				

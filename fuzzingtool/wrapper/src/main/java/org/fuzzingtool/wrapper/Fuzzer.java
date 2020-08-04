@@ -110,7 +110,9 @@ public class Fuzzer {
 	}
 
 	public void print_results() {
-		amygdala.visualizeProgramFlow(Paths.get(".").toAbsolutePath().normalize().toString() + "/program_flow");
+		if (amygdala.isBranchingVisEnabled()) {
+			amygdala.visualizeProgramFlow(Paths.get(".").toAbsolutePath().normalize().toString() + "/program_flow");
+		}
 		amygdala.printStatistics();
 		amygdala.printInstrumentation(false);
 		logger.printStatistics();
