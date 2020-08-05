@@ -38,13 +38,8 @@ public final class FuzzingTool extends TruffleInstrument {
 
 	private void init(final Env env) {
 		Instrumenter instrumenter = env.getInstrumenter();
-
-		// What source sections are we interested in?
-		SourceSectionFilter sourceSectionFilter = SourceSectionFilter.newBuilder().build();
-		// What generates input data to track?
-		SourceSectionFilter inputGeneratingLocations = SourceSectionFilter.newBuilder().build();
-		instrumenter.attachExecutionEventFactory(sourceSectionFilter, inputGeneratingLocations,
-												 new FuzzingNodeWrapperFactory(env, this.amygdala));
+		SourceSectionFilter filter = SourceSectionFilter.newBuilder().includeInternal(true).build();
+		instrumenter.attachExecutionEventFactory(filter, filter, new FuzzingNodeFactory(env, this.amygdala));
 	}
 
 	@Override
