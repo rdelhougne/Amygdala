@@ -59,6 +59,10 @@ public class FuzzingNode extends ExecutionEventNode {
 	private final Node instrumented_node;
 	private final String instrumented_node_type;
 	private final int instrumented_node_hash;
+	private final int source_relative_identifier;
+
+	// Coverage
+	private boolean covered = false;
 
 	// Input node config
 	private final boolean is_input_node;
@@ -81,6 +85,7 @@ public class FuzzingNode extends ExecutionEventNode {
 		this.instrumented_node = ec.getInstrumentedNode();
 		this.instrumented_node_type = instrumented_node.getClass().getSimpleName();
 		this.instrumented_node_hash = instrumented_node.hashCode();
+		this.source_relative_identifier = getSourceRelativeIdentifier();
 
 		if (amygdala.isFunctionVisEnabled() && instrumented_node_type.equals("MaterializedFunctionBodyNode")) {
 			StringBuilder save_path = new StringBuilder();
@@ -110,8 +115,15 @@ public class FuzzingNode extends ExecutionEventNode {
 			input_variable_identifier = null;
 		}
 
-		if (!amygdala.node_type_instrumented.containsKey(ec.getInstrumentedNode().getClass().getSimpleName())) {
-			amygdala.node_type_instrumented.put(ec.getInstrumentedNode().getClass().getSimpleName(), new BitSet(3));
+		if (source_relative_identifier != 0) {
+			amygdala.coverage.registerStatement(source_relative_identifier);
+			if (instrumented_node_type.equals("IfNode") || instrumented_node_type.equals("WhileNode")) {
+				amygdala.coverage.registerBranch(source_relative_identifier);
+			}
+		}
+
+		if (!amygdala.node_type_instrumented.containsKey(instrumented_node_type)) {
+			amygdala.node_type_instrumented.put(instrumented_node_type, new BitSet(3));
 		}
 	}
 
@@ -138,7 +150,8 @@ public class FuzzingNode extends ExecutionEventNode {
 		if (source_section != null && source_section.isAvailable()) {
 			String identifier = source_section.getSource().getURI().toString()
 					+ ":" + source_section.getCharIndex()
-					+ ":" + source_section.getCharEndIndex();
+					+ ":" + source_section.getCharEndIndex()
+					+ ":" + instrumented_node_type;
 			return identifier.hashCode();
 		} else {
 			return 0;
@@ -257,6 +270,14 @@ public class FuzzingNode extends ExecutionEventNode {
 				break;
 			default:
 				was_instrumented_on_enter = false;
+		}
+
+		if (!covered) {
+			if (source_relative_identifier != 0) {
+				amygdala.coverage.addSourceSectionCovered(source_section);
+				amygdala.coverage.addStatementCovered(source_relative_identifier);
+			}
+			covered = true;
 		}
 
 		if (was_instrumented_on_enter) {
@@ -574,9 +595,9 @@ public class FuzzingNode extends ExecutionEventNode {
 		assert children.size() == 2;
 		if (inputIndex == 0) {
 			Boolean taken = (Boolean) inputValue;
-			amygdala.branching_event(getSourceRelativeIdentifier(), BranchingNodeAttribute.BRANCH, children.get(0).getLeft(),
-									 taken,
-									 extractPredicate());
+			amygdala.branching_event(source_relative_identifier, BranchingNodeAttribute.BRANCH, children.get(0).getLeft(),
+									 taken, extractPredicate());
+			amygdala.coverage.addBranchTaken(source_relative_identifier, taken);
 		}
 	}
 
@@ -584,8 +605,10 @@ public class FuzzingNode extends ExecutionEventNode {
 											  Object inputValue) {
 		ArrayList<Pair<Integer, String>> children = getChildHashes();
 		if (inputIndex == 0) {
-			amygdala.branching_event(getSourceRelativeIdentifier(), BranchingNodeAttribute.LOOP, children.get(0).getLeft(),
-									 (Boolean) inputValue, extractPredicate());
+			Boolean taken = (Boolean) inputValue;
+			amygdala.branching_event(source_relative_identifier, BranchingNodeAttribute.LOOP, children.get(0).getLeft(),
+									 taken, extractPredicate());
+			amygdala.coverage.addBranchTaken(source_relative_identifier, taken);
 		}
 	}
 

@@ -2,6 +2,7 @@ package org.fuzzingtool.instrumentation;
 
 import com.oracle.truffle.api.Option;
 import com.oracle.truffle.api.instrumentation.Instrumenter;
+import com.oracle.truffle.api.instrumentation.SourceFilter;
 import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
 import com.oracle.truffle.api.instrumentation.TruffleInstrument;
 import com.oracle.truffle.api.instrumentation.TruffleInstrument.Registration;
@@ -37,9 +38,14 @@ public final class FuzzingTool extends TruffleInstrument {
 	}
 
 	private void init(final Env env) {
+		SourceSectionFilter execution_filter = SourceSectionFilter.newBuilder().includeInternal(true).build();
+		SourceSectionFilter section_coverage_filter = SourceSectionFilter.newBuilder().includeInternal(false).build();
+		SourceFilter source_filter = SourceFilter.newBuilder().includeInternal(false).build();
+
 		Instrumenter instrumenter = env.getInstrumenter();
-		SourceSectionFilter filter = SourceSectionFilter.newBuilder().includeInternal(true).build();
-		instrumenter.attachExecutionEventFactory(filter, filter, new FuzzingNodeFactory(env, this.amygdala));
+		instrumenter.attachExecutionEventFactory(execution_filter, execution_filter, new FuzzingNodeFactory(env, this.amygdala));
+		instrumenter.attachLoadSourceListener(source_filter, new FuzzingSourceListener(amygdala), false);
+		instrumenter.attachLoadSourceSectionListener(section_coverage_filter, new FuzzingSourceSectionListener(amygdala), false);
 	}
 
 	@Override

@@ -18,6 +18,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 public class Fuzzer {
+	private Engine engine;
 	private Context context;
 	private Source source = null;
 	private Amygdala amygdala = null;
@@ -35,10 +36,11 @@ public class Fuzzer {
 	}
 
 	private void init(String fuzzing_config) throws Exception {
-		if (!Engine.create().getLanguages().containsKey("js")) {
+		this.engine = Engine.newBuilder().allowExperimentalOptions(true).option("engine.Compilation", "false").option(FuzzingTool.ID, "true").build();
+		if (!this.engine.getLanguages().containsKey("js")) {
 			throw new Exception("JS Language context not available.");
 		}
-		this.context = Context.newBuilder("js").option(FuzzingTool.ID, "true").build();
+		this.context = Context.newBuilder("js").engine(this.engine).build();
 		FuzzingTool fuzzing_instrument = context.getEngine().getInstruments().get(FuzzingTool.ID).lookup(FuzzingTool.class);
 		if (fuzzing_instrument == null) {
 			throw new Exception("Cannot communicate with Truffle Instrument, perhaps classpath-isolation is enabled.");
@@ -105,6 +107,7 @@ public class Fuzzer {
 			} else {
 				amygdala.error_event();
 			}
+			amygdala.coverage.saveSnapshot();
 			one_more = amygdala.calculateNextPath();
 		}
 	}
@@ -115,6 +118,7 @@ public class Fuzzer {
 		}
 		amygdala.printStatistics();
 		amygdala.printInstrumentation(false);
+		amygdala.coverage.printCoverage();
 		logger.printStatistics();
 	}
 

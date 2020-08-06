@@ -18,6 +18,7 @@ import java.util.*;
  */
 public class Amygdala {
 	public final Tracer tracer;
+	public final Coverage coverage;
 	public final Logger logger;
 	public final BranchingNode branchingRootNode;
 	public final Context z3_ctx;
@@ -39,6 +40,7 @@ public class Amygdala {
 
 	public Amygdala(Logger lgr) {
 		this.tracer = new Tracer(lgr);
+		this.coverage = new Coverage(lgr);
 		this.logger = lgr;
 		this.variable_values = new HashMap<>();
 		this.variable_names = new HashMap<>();
