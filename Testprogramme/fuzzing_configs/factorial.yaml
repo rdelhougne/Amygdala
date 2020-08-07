@@ -14,5 +14,7 @@ fuzzing_parameters: # Globale Parameter und Parameter für Taktiken
 visualization:
   function_visualization: true
   branching_visualization: true
-  event_logging: true
+  event_logging: false
+custom_errors:
+  escalate_exceptions: true
 ...

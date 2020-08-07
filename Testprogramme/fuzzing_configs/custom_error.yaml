@@ -1,14 +1,10 @@
 ---
-program_path: "../javascript/ultimatetest.js"
+program_path: "../javascript/custom_error.js"
 variables:
-  - line_num: 5
-    name: integer named k
+  - line_num: 1
+    name: Nenner
     type: INTEGER
-    sample: 1
-  - line_num: 6
-    name: integer named u
-    type: INTEGER
-    sample: 34
+    sample: 2
 fuzzing_parameters:
   max_iterations: 10
   tactic: "DEPTH_SEARCH"
@@ -19,4 +15,6 @@ visualization:
   function_visualization: true
   branching_visualization: true
   event_logging: true
+custom_errors:
+  escalate_exceptions: true
 ...

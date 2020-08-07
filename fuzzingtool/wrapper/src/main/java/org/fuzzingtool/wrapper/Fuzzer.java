@@ -99,7 +99,12 @@ public class Fuzzer {
 			boolean run_successful = true;
 			try {
 				context.eval(source);
-			} catch (PolyglotException th) {
+			} catch (PolyglotException pe) {
+				String message = pe.getMessage();
+				if (message.startsWith("org.fuzzingtool.core.components.CustomError$EscalatedException:")) {
+					logger.alert(message.replace("org.fuzzingtool.core.components.CustomError$EscalatedException: ", ""));
+				}
+				// TODO save input variable values to file or print on screen...
 				run_successful = false;
 			}
 			if (run_successful) {
@@ -117,7 +122,7 @@ public class Fuzzer {
 			amygdala.visualizeProgramFlow(Paths.get(".").toAbsolutePath().normalize().toString() + "/program_flow");
 		}
 		amygdala.printStatistics();
-		amygdala.printInstrumentation(false);
+		amygdala.printInstrumentation();
 		amygdala.coverage.printCoverage();
 		logger.printStatistics();
 	}

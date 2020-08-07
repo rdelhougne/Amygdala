@@ -19,6 +19,7 @@ import java.util.*;
 public class Amygdala {
 	public final Tracer tracer;
 	public final Coverage coverage;
+	public final CustomError custom_error;
 	public final Logger logger;
 	public final BranchingNode branchingRootNode;
 	public final Context z3_ctx;
@@ -35,12 +36,13 @@ public class Amygdala {
 	private boolean branching_visualization = false;
 	private boolean event_logging = true;
 
-	//Debugging
+	// Debugging Bits: is node executed, onEnter (E), onInputValue (I), OnReturn (R), onReturnExceptional (X), onUnwind (U), onDispose (D)
 	public final HashMap<String, BitSet> node_type_instrumented = new HashMap<>();
 
 	public Amygdala(Logger lgr) {
 		this.tracer = new Tracer(lgr);
 		this.coverage = new Coverage(lgr);
+		this.custom_error = new CustomError(lgr);
 		this.logger = lgr;
 		this.variable_values = new HashMap<>();
 		this.variable_names = new HashMap<>();
@@ -210,6 +212,12 @@ public class Amygdala {
 		} else {
 			logger.info("No visualization configuration found, visualization disabled.");
 		}
+
+		if (map.containsKey("custom_errors") && map.get("custom_errors") instanceof Map) {
+			loadCustomErrorParameters((Map<String, Object>) map.get("custom_errors"));
+		} else {
+			logger.info("No custom error configuration found.");
+		}
 	}
 
 	/**
@@ -327,6 +335,19 @@ public class Amygdala {
 	}
 
 	/**
+	 * Load custom error options from the YAML file.
+	 *
+	 * @param parameters YAML-Map of the options
+	 */
+	private void loadCustomErrorParameters(Map<String, Object> parameters) {
+		for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+			String key = entry.getKey();
+			Object value = entry.getValue();
+			custom_error.setOption(key, value);
+		}
+	}
+
+	/**
 	 * Checks if the node at the given line is an input node (called at construction of the node).
 	 *
 	 * @param line_num Line number in the source code
@@ -388,8 +409,8 @@ public class Amygdala {
 	/**
 	 * Print instrumentation statistics
 	 */
-	public void printInstrumentation(boolean only_non_instrumented) {
-		logger.log(getInstrumentationString(only_non_instrumented));
+	public void printInstrumentation() {
+		logger.log(getInstrumentationString());
 	}
 
 	/**
@@ -397,14 +418,15 @@ public class Amygdala {
 	 *
 	 * @return A string-representation of the statistics
 	 */
-	public String getInstrumentationString(boolean only_non_instrumented) {
+	public String getInstrumentationString() {
 		int NAME_WIDTH = 36;
 		StringBuilder stat_str = new StringBuilder();
 		stat_str.append("===NODE INSTRUMENTATION INSIGHT===\n");
-		stat_str.append(String.format("%-" + NAME_WIDTH + "s", "NODE NAME")).append("E I R\n");
+		stat_str.append(String.format("%-" + NAME_WIDTH + "s", "NODE NAME")).append("E I R X U D\n");
 		for (String key : node_type_instrumented.keySet()) {
 			BitSet curr_set = node_type_instrumented.get(key);
-			boolean not_instrumented = curr_set.cardinality() == 0;
+			boolean executed = curr_set.get(0);
+			boolean instrumented = curr_set.get(1) || curr_set.get(2) || curr_set.get(3);
 
 			String node_name = key;
 			if (node_name.length() > NAME_WIDTH - 1) {
@@ -412,32 +434,47 @@ public class Amygdala {
 			}
 			node_name = String.format("%-" + NAME_WIDTH + "s", node_name);
 
-			if (not_instrumented) {
-				stat_str.append("\033[41m").append(node_name).append("\033[0m");
-			} else {
-				if (!only_non_instrumented) {
+			if (executed) {
+				if (instrumented) {
 					stat_str.append(node_name);
+				} else {
+					stat_str.append("\033[41m").append(node_name).append("\033[0m");
 				}
+			} else {
+				stat_str.append("\033[43m").append(node_name).append("\033[0m");
 			}
 
-			if (not_instrumented || !only_non_instrumented) {
-				if (curr_set.get(0)) {
-					stat_str.append("✔ ");
-				} else {
-					stat_str.append("✗ ");
-				}
-				if (curr_set.get(1)) {
-					stat_str.append("✔ ");
-				} else {
-					stat_str.append("✗ ");
-				}
-				if (curr_set.get(2)) {
-					stat_str.append("✔");
-				} else {
-					stat_str.append("✗");
-				}
-				stat_str.append("\n");
+			if (curr_set.get(1)) {
+				stat_str.append("✔ ");
+			} else {
+				stat_str.append("✗ ");
 			}
+			if (curr_set.get(2)) {
+				stat_str.append("✔ ");
+			} else {
+				stat_str.append("✗ ");
+			}
+			if (curr_set.get(3)) {
+				stat_str.append("✔ ");
+			} else {
+				stat_str.append("✗ ");
+			}
+			if (curr_set.get(4)) {
+				stat_str.append("✔ ");
+			} else {
+				stat_str.append("✗ ");
+			}
+			if (curr_set.get(5)) {
+				stat_str.append("✔ ");
+			} else {
+				stat_str.append("✗ ");
+			}
+			if (curr_set.get(6)) {
+				stat_str.append("✔");
+			} else {
+				stat_str.append("✗");
+			}
+			stat_str.append("\n");
 		}
 		return stat_str.toString();
 	}

@@ -22,10 +22,7 @@ import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.JSRuntime;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
-import org.fuzzingtool.core.components.Amygdala;
-import org.fuzzingtool.core.components.BranchingNodeAttribute;
-import org.fuzzingtool.core.components.VariableContext;
-import org.fuzzingtool.core.components.VariableIdentifier;
+import org.fuzzingtool.core.components.*;
 import org.fuzzingtool.core.symbolic.*;
 import org.fuzzingtool.core.symbolic.arithmetic.Addition;
 import org.fuzzingtool.core.symbolic.arithmetic.Subtraction;
@@ -123,7 +120,7 @@ public class FuzzingNode extends ExecutionEventNode {
 		}
 
 		if (!amygdala.node_type_instrumented.containsKey(instrumented_node_type)) {
-			amygdala.node_type_instrumented.put(instrumented_node_type, new BitSet(3));
+			amygdala.node_type_instrumented.put(instrumented_node_type, new BitSet(7));
 		}
 	}
 
@@ -268,6 +265,12 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "MaterializedFunctionBodyNode":
 				onEnterBehaviorFunctionBodyNode(vFrame);
 				break;
+			case "JSStringIndexOfNodeGen":
+			case "JSStringConcatNodeGen":
+			case "JSStringSubstrNodeGen":
+			case "DeclareProviderNode":
+				// Do nothing. These nodes should not have any behavior or are instrumented otherwise.
+				break;
 			default:
 				was_instrumented_on_enter = false;
 		}
@@ -280,8 +283,10 @@ public class FuzzingNode extends ExecutionEventNode {
 			covered = true;
 		}
 
+		// node was executed
+		amygdala.node_type_instrumented.get(instrumented_node_type).set(0);
 		if (was_instrumented_on_enter) {
-			amygdala.node_type_instrumented.get(instrumented_node_type).set(0);
+			amygdala.node_type_instrumented.get(instrumented_node_type).set(1);
 		}
 	}
 
@@ -331,7 +336,7 @@ public class FuzzingNode extends ExecutionEventNode {
 		}
 
 		if (was_instrumented_on_input_value) {
-			amygdala.node_type_instrumented.get(instrumented_node_type).set(1);
+			amygdala.node_type_instrumented.get(instrumented_node_type).set(2);
 		}
 	}
 
@@ -494,6 +499,9 @@ public class FuzzingNode extends ExecutionEventNode {
 				onReturnBehaviorUnaryOperation(vFrame, result, Operation.NOT);
 				break;
 
+			// ===== JavaScript Error Handling =====
+			// TODO
+
 			// ===== JavaScript Miscellaneous =====
 			case "DualNode":
 				onReturnBehaviorDualNode(vFrame, result);
@@ -504,27 +512,42 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "ExprBlockNode":
 				onReturnBehaviorExprBlockNode(vFrame, result);
 				break;
+			case "VoidBlockNode":
+				onReturnBehaviorVoidBlockNode(vFrame, result);
+				break;
 			case "JSInputGeneratingNodeWrapper":
 			case "JSTaggedExecutionNode":
 				onReturnBehaviorPassthrough(vFrame, result);
-				break;
-			case "JSStringIndexOfNodeGen":
-			case "JSStringConcatNodeGen":
-			case "JSStringSubstrNodeGen":
-				// Do nothing. These nodes should not have any behavior or are instrumented otherwise.
 				break;
 			default:
 				was_instrumented_on_return_value = false;
 		}
 
 		if (was_instrumented_on_return_value) {
-			amygdala.node_type_instrumented.get(instrumented_node_type).set(2);
+			amygdala.node_type_instrumented.get(instrumented_node_type).set(3);
 		}
 	}
 
 	@Override
+	protected void onReturnExceptional(VirtualFrame frame, Throwable exception) {
+		if (!(exception instanceof CustomError.EscalatedException)) {
+			if (amygdala.custom_error.escalateExceptions()) {
+				amygdala.logger.info("Escalating exception with message: '" + exception.getMessage() + "'.");
+				throw event_context.createError(CustomError.createException(exception.getMessage()));
+			}
+		}
+		amygdala.node_type_instrumented.get(instrumented_node_type).set(4);
+	}
+
+	@Override
 	public Object onUnwind(VirtualFrame frame, Object info) {
+		amygdala.node_type_instrumented.get(instrumented_node_type).set(5);
 		return info;
+	}
+
+	@Override
+	protected void onDispose(VirtualFrame frame) {
+		amygdala.node_type_instrumented.get(instrumented_node_type).set(6);
 	}
 
 	private ArrayList<Pair<Integer, String>> getChildHashes() {
@@ -1028,6 +1051,10 @@ public class FuzzingNode extends ExecutionEventNode {
 	private void onReturnBehaviorExprBlockNode(VirtualFrame vFrame, Object result) {
 		// TODO
 		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.NULL, null);
+	}
+
+	private void onReturnBehaviorVoidBlockNode(VirtualFrame vFrame, Object result) {
+		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
 	}
 
 	private VariableContext arrayToSymbolic(DynamicObject dyn_obj) {
