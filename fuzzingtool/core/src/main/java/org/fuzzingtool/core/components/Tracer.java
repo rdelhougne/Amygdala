@@ -62,6 +62,15 @@ public class Tracer {
 		symbolic_program.put(context_key, new_scope);
 	}
 
+	/**
+	 * Initialize a new variable context if it does not exist.
+	 *
+	 * @param context_key Key for new variable context
+	 */
+	public void initializeIfAbsent(Integer context_key) {
+		symbolic_program.putIfAbsent(context_key, new VariableContext());
+	}
+
 	public void resetFunctionReturnValue() {
 		try {
 			function_return_value = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);

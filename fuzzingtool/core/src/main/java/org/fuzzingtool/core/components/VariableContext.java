@@ -36,7 +36,7 @@ public class VariableContext {
 	}
 
 	private String convertProperty(Object key) {
-		if (key instanceof Integer) {
+		if (key instanceof Integer || key instanceof Long) {
 			return String.valueOf(key);
 		}
 		if (key instanceof String) {

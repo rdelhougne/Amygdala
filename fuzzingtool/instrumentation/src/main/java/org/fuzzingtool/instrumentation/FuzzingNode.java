@@ -515,6 +515,9 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "VoidBlockNode":
 				onReturnBehaviorVoidBlockNode(vFrame, result);
 				break;
+			case "DiscardResultNode":
+				onReturnBehaviorDiscardResultNode(vFrame, result);
+				break;
 			case "JSInputGeneratingNodeWrapper":
 			case "JSTaggedExecutionNode":
 				onReturnBehaviorPassthrough(vFrame, result);
@@ -618,6 +621,7 @@ public class FuzzingNode extends ExecutionEventNode {
 			} else {
 				amygdala.logger.critical("onEnterBehaviorFunctionBodyNode(): Cannot get root instance.");
 			}
+			amygdala.tracer.initializeIfAbsent(getThisObjectHash(vFrame));
 		} else {
 			amygdala.logger.critical("onEnterBehaviorFunctionBodyNode(): Cannot find any local scopes.");
 		}
@@ -869,25 +873,57 @@ public class FuzzingNode extends ExecutionEventNode {
 				String method_name = method_matcher.group(1);
 				switch (method_name) {
 					case "concat":
-						amygdala.tracer.addStringOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arguments_array, Operation.STR_CONCAT);
+						amygdala.tracer.addStringOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT,
+														   children.get(0).getLeft(), arguments_array, Operation.STR_CONCAT);
 						break;
 					case "charAt":
-						amygdala.tracer.addStringOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arguments_array, Operation.STR_CHAR_AT);
+						amygdala.tracer.addStringOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT,
+														   children.get(0).getLeft(), arguments_array, Operation.STR_CHAR_AT);
 						break;
 					case "substr":
-						amygdala.tracer.addStringOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arguments_array, Operation.STR_SUBSTR);
+						amygdala.tracer.addStringOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT,
+														   children.get(0).getLeft(), arguments_array, Operation.STR_SUBSTR);
 						break;
 					case "includes":
-						amygdala.tracer.addStringOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arguments_array, Operation.STR_INCLUDES);
+						amygdala.tracer.addStringOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT,
+														   children.get(0).getLeft(), arguments_array, Operation.STR_INCLUDES);
 						break;
 					case "indexOf":
-						amygdala.tracer.addStringOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arguments_array, Operation.STR_INDEXOF);
+						amygdala.tracer.addStringOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT,
+														   children.get(0).getLeft(), arguments_array, Operation.STR_INDEXOF);
 						break;
 					default:
-						amygdala.logger.critical("onReturnBehaviorInvokeNode(): String method '" + method_name + "' not implemented");
+						amygdala.logger.critical(
+								"onReturnBehaviorInvokeNode(): String method '" + method_name + "' not implemented");
 				}
 			} else {
-				amygdala.logger.critical("onReturnBehaviorInvokeNode(): Trying to compute string operation, but cannot extract name.");
+				amygdala.logger.critical(
+						"onReturnBehaviorInvokeNode(): Trying to compute string operation, but cannot extract name.");
+			}
+		} else if (JSRuntime.isArray(context_object)) {
+			ArrayList<Pair<Integer, String>> children = getChildHashes();
+			Matcher method_matcher = method_pattern.matcher(source_section.getCharacters().toString());
+			if (method_matcher.matches()) {
+				String method_name = method_matcher.group(1);
+				switch (method_name) {
+					case "push":
+						long size;
+						try {
+							size = INTEROP.getArraySize(context_object);
+						} catch (UnsupportedMessageException e) {
+							amygdala.logger.critical("onReturnBehaviorInvokeNode(): Object is an array, but we cannot get the size.");
+							return;
+						}
+						// size - 1: element is already added, and index...
+						amygdala.tracer.intermediateToProperty(System.identityHashCode(context_object), size - 1, children.get(2).getLeft());
+						break;
+					default:
+						amygdala.logger.critical(
+								"onReturnBehaviorInvokeNode(): Array method '" + method_name + "' not implemented");
+				}
+			} else {
+				amygdala.logger.critical(
+						"onReturnBehaviorInvokeNode(): Trying to compute array operation, but cannot extract name.");
 			}
 		} else {
 			amygdala.tracer.functionReturnValueToIntermediate(instrumented_node_hash);
@@ -1066,6 +1102,10 @@ public class FuzzingNode extends ExecutionEventNode {
 	}
 
 	private void onReturnBehaviorVoidBlockNode(VirtualFrame vFrame, Object result) {
+		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
+	}
+
+	private void onReturnBehaviorDiscardResultNode(VirtualFrame vFrame, Object result) {
 		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
 	}
 

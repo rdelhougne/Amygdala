@@ -11,4 +11,8 @@ fuzzing_parameters:
   tactic_depth_search:
     max_loop_unrolling: 16
     max_depth: 32
+visualization:
+  function_visualization: true
+  branching_visualization: false
+  event_logging: false
 ...
