@@ -6,6 +6,14 @@ public class Wrapper {
 			System.out.println("ERROR: Wrong number of options.");
 			return;
 		}
+
+		/*Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				System.out.println("Shutdown hook ran!");
+			}
+		});*/
+
 		Fuzzer fuzzer = new Fuzzer(args[0]);
 		if (fuzzer.usable()) {
 			fuzzer.fuzz();

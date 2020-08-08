@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import signal
 import argparse
 import subprocess
 import os
@@ -46,11 +47,21 @@ TRUFFLE_JS = [
 	"/opt/graalvm/jre/languages/js/trufflenode.jar"
 ]
 
+TERMINATE_FILE_NAME = "terminate-1bfa427b-a460-4088-b578-e388a6bce94d"
+
+fuzzing_process = None
+
+def signal_handler(sig, frame):
+	if fuzzing_process is not None:
+		open(TERMINATE_FILE_NAME, 'a')
+signal.signal(signal.SIGINT, signal_handler)
+
 def generate_test_program(path):
 	with open(path, "w") as new_file:
 		new_file.write(testgenerator.generate_program((2,4), (1,1), (1,2), (1,2)))
 
 def main():
+	global fuzzing_process
 	parser = argparse.ArgumentParser(description="Run fuzzing tool")
 	parser.add_argument("-v", "--verbose", action="store_true", help="increases verbosity.")
 	parser.add_argument("-g", "--generate", action="store_true", help="Generate the program.")
@@ -121,7 +132,8 @@ def main():
 	]
 
 	#print(args)
-	subprocess.run(args)
+	fuzzing_process = subprocess.Popen(args, preexec_fn=os.setpgrp)
+	fuzzing_process.wait()
 
 
 if __name__ == "__main__":

@@ -25,6 +25,8 @@ public class Fuzzer {
 	private Logger logger = null;
 	private boolean initialization_successful;
 
+	private static final String TERMINATE_FILE_NAME = "terminate-1bfa427b-a460-4088-b578-e388a6bce94d";
+
 	public Fuzzer(String fuzzing_config) {
 		try {
 			init(fuzzing_config);
@@ -113,6 +115,18 @@ public class Fuzzer {
 				amygdala.error_event();
 			}
 			amygdala.coverage.saveSnapshot();
+
+			// TODO hackyyy...
+			File f = new File(TERMINATE_FILE_NAME);
+			if(f.exists()) {
+				boolean delete_successful = f.delete();
+				amygdala.logger.info("User requested shutdown.");
+				if (!delete_successful) {
+					amygdala.logger.warning("Cannot delete termination indicator file, should be deleted manually.");
+				}
+				return;
+			}
+
 			one_more = amygdala.calculateNextPath();
 		}
 	}
