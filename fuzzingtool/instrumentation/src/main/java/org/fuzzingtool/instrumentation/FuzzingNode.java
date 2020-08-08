@@ -530,6 +530,10 @@ public class FuzzingNode extends ExecutionEventNode {
 
 	@Override
 	protected void onReturnExceptional(VirtualFrame frame, Throwable exception) {
+		if (amygdala.isEventLoggingEnabled()) {
+			amygdala.logger.log(getSignatureString() + " \033[33m↯\033[0m");
+		}
+
 		if (!(exception instanceof CustomError.EscalatedException)) {
 			if (amygdala.custom_error.escalateExceptions()) {
 				amygdala.logger.info("Escalating exception with message: '" + exception.getMessage() + "'.");
@@ -541,12 +545,20 @@ public class FuzzingNode extends ExecutionEventNode {
 
 	@Override
 	public Object onUnwind(VirtualFrame frame, Object info) {
+		if (amygdala.isEventLoggingEnabled()) {
+			amygdala.logger.log(getSignatureString() + " \033[35m↺\033[0m");
+		}
+
 		amygdala.node_type_instrumented.get(instrumented_node_type).set(5);
 		return info;
 	}
 
 	@Override
 	protected void onDispose(VirtualFrame frame) {
+		if (amygdala.isEventLoggingEnabled()) {
+			amygdala.logger.log(getSignatureString() + " \033[36m×\033[0m");
+		}
+
 		amygdala.node_type_instrumented.get(instrumented_node_type).set(6);
 	}
 
