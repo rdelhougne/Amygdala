@@ -8,6 +8,7 @@ import org.fuzzingtool.core.components.VariableIdentifier;
 import org.fuzzingtool.core.symbolic.SymbolicException;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class DepthSearchTactic extends FuzzingTactic {
 	private final BranchingNode root_node;
@@ -29,7 +30,8 @@ public class DepthSearchTactic extends FuzzingTactic {
 
 	@Override
 	public boolean calculate() {
-		this.next_values.clear();
+		this.next_values = new HashMap<>();
+		Map<VariableIdentifier, Object> new_values = new HashMap<>();
 		this.has_next_path = false;
 		this.next_path.clear();
 		this.loop_unrolls.clear();
@@ -74,14 +76,14 @@ public class DepthSearchTactic extends FuzzingTactic {
 						switch (identifier.getVariableType()) {
 							case BOOLEAN:
 								if (result.isBool()) {
-									next_values.put(identifier, result.isTrue());
+									new_values.put(identifier, result.isTrue());
 								} else {
 									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Bool.");
 								}
 								break;
 							case STRING:
 								if (result.isString()) {
-									next_values.put(identifier, result.getString());
+									new_values.put(identifier, result.getString());
 								} else {
 									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to String.");
 								}
@@ -91,7 +93,7 @@ public class DepthSearchTactic extends FuzzingTactic {
 								if (result.isIntNum()) {
 									try {
 										IntNum cast_result = (IntNum) result;
-										next_values.put(identifier, cast_result.getInt());
+										new_values.put(identifier, cast_result.getInt());
 									} catch (ClassCastException cce) {
 										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer.");
 									}
@@ -103,7 +105,7 @@ public class DepthSearchTactic extends FuzzingTactic {
 								if (result.isRatNum()) {
 									try {
 										RatNum cast_result = (RatNum) result;
-										next_values.put(identifier, Double.parseDouble(cast_result.toDecimalString(128)));
+										new_values.put(identifier, Double.parseDouble(cast_result.toDecimalString(128)));
 									} catch (ClassCastException cce) {
 										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double.");
 									}
@@ -125,6 +127,7 @@ public class DepthSearchTactic extends FuzzingTactic {
 						continue;
 					}
 
+					this.next_values = new_values;
 					this.has_next_path = true;
 					return true;
 				} else if (status == Status.UNSATISFIABLE){

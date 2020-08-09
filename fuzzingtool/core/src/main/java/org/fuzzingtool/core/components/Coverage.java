@@ -158,4 +158,25 @@ public class Coverage {
 		cov_str.append("-------------|---------|---------|----------|\n");
 		return cov_str.toString();
 	}
+
+
+	/**
+	 * Returns an object representing a coverage snapshot.
+	 *
+	 * @param index Number of the iteration
+	 * @return A map representing coverage
+	 */
+	public Map<String, Object> getCoverageObject(int index) {
+		Map<String, Object> coverage_map = new HashMap<>();
+		if (index < line_coverage.size()) {
+			coverage_map.put("line", line_coverage.get(index));
+		}
+		if (index < statement_coverage.size()) {
+			coverage_map.put("statement", statement_coverage.get(index));
+		}
+		if (index < branch_coverage.size()) {
+			coverage_map.put("branch", branch_coverage.get(index));
+		}
+		return coverage_map;
+	}
 }

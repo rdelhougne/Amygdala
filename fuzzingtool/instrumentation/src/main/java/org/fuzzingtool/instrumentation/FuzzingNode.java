@@ -10,6 +10,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -327,10 +328,6 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "JSNewNodeGen":
 				onInputValueBehaviorJSNewNodeGen(vFrame, inputContext, inputIndex, inputValue);
 				break;
-			case "FrameReturnNode":
-				// FrameReturnNode has no onReturnValue event, f*cking whyyyy
-				behaviorFrameReturnTerminalPositionReturnNode();
-				break;
 			default:
 				was_instrumented_on_input_value = false;
 		}
@@ -537,13 +534,28 @@ public class FuzzingNode extends ExecutionEventNode {
 			amygdala.logger.log(getSignatureString() + " \033[33m↯\033[0m");
 		}
 
-		if (!(exception instanceof CustomError.EscalatedException)) {
+		// Exception should only be escalated if it is not already an escalated exception
+		// and is not a ControlFlowException, these exceptions can occur in normal program executions
+		if (!(exception instanceof CustomError.EscalatedException) && !(exception instanceof ControlFlowException)) {
 			if (amygdala.custom_error.escalateExceptions()) {
 				amygdala.logger.info("Escalating exception with message: '" + exception.getMessage() + "'.");
 				throw event_context.createError(CustomError.createException(exception.getMessage()));
 			}
 		}
-		amygdala.node_type_instrumented.get(instrumented_node_type).set(4);
+
+		boolean was_instrumented_on_return_exceptional = true;
+		switch (instrumented_node_type) {
+			case "FrameReturnNode":
+				// FrameReturnNode has no onReturnValue event, instead it throws a ControlFlowException
+				behaviorFrameReturnTerminalPositionReturnNode();
+				break;
+			default:
+				was_instrumented_on_return_exceptional = false;
+		}
+
+		if (was_instrumented_on_return_exceptional) {
+			amygdala.node_type_instrumented.get(instrumented_node_type).set(4);
+		}
 	}
 
 	@Override

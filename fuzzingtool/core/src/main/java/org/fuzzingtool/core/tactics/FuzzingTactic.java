@@ -5,12 +5,13 @@ import org.graalvm.collections.Pair;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 
 public abstract class FuzzingTactic {
 	// Results
 	protected boolean has_next_path = false;
-	protected final HashMap<VariableIdentifier, Object> next_values = new HashMap<>();
+	protected Map<VariableIdentifier, Object> next_values = new HashMap<>();
 	protected Queue<Pair<Integer, Boolean>> next_path = new LinkedList<>();
 
 
@@ -53,7 +54,7 @@ public abstract class FuzzingTactic {
 	 *
 	 * @return values for the variables, empty if {@link #hasNextPath()} returns false
 	 */
-	public HashMap<VariableIdentifier, Object> getNextValues() {
+	public Map<VariableIdentifier, Object> getNextValues() {
 		return next_values;
 	}
 

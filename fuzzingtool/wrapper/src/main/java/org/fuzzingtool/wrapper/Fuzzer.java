@@ -7,13 +7,11 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
-import org.snakeyaml.engine.v2.api.Load;
-import org.snakeyaml.engine.v2.api.LoadSettings;
+import org.snakeyaml.engine.v2.api.*;
+import org.snakeyaml.engine.v2.common.FlowStyle;
+import org.snakeyaml.engine.v2.common.ScalarStyle;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Paths;
 import java.util.Map;
 
@@ -99,20 +97,29 @@ public class Fuzzer {
 		boolean one_more = true;
 		while (one_more) {
 			boolean run_successful = true;
+			long eval_start_time = 0;
+			long eval_finish_time = 0;
+			String error_reason = "UNKNOWN";
 			try {
+				eval_start_time = System.nanoTime();
 				context.eval(source);
+				eval_finish_time = System.nanoTime();
 			} catch (PolyglotException pe) {
+				eval_finish_time = System.nanoTime();
 				String message = pe.getMessage();
 				if (message.startsWith("org.fuzzingtool.core.components.CustomError$EscalatedException:")) {
-					logger.alert(message.replace("org.fuzzingtool.core.components.CustomError$EscalatedException: ", ""));
+					error_reason = message.replace("org.fuzzingtool.core.components.CustomError$EscalatedException: ", "");
+				} else {
+					error_reason = message;
 				}
-				// TODO save input variable values to file or print on screen...
 				run_successful = false;
 			}
+			long runtime = eval_finish_time - eval_start_time;
+
 			if (run_successful) {
-				amygdala.terminate_event();
+				amygdala.terminate_event(runtime);
 			} else {
-				amygdala.error_event();
+				amygdala.error_event(error_reason, runtime);
 			}
 			amygdala.coverage.saveSnapshot();
 
@@ -132,9 +139,7 @@ public class Fuzzer {
 	}
 
 	public void print_results() {
-		if (amygdala.isBranchingVisEnabled()) {
-			amygdala.visualizeProgramFlow(Paths.get(".").toAbsolutePath().normalize().toString() + "/program_flow");
-		}
+		logger.info("Printing results\n");
 		amygdala.printStatistics();
 		amygdala.printInstrumentation();
 		amygdala.coverage.printCoverage();
@@ -143,5 +148,25 @@ public class Fuzzer {
 
 	public boolean usable() {
 		return this.initialization_successful;
+	}
+
+	public void saveResults(String path) {
+		if (amygdala.isBranchingVisEnabled()) {
+			amygdala.visualizeProgramFlow(Paths.get(".").toAbsolutePath().normalize().toString() + "/program_flow");
+		}
+
+		Map<String, Object> map = amygdala.getResults();
+		DumpSettings settings =
+				DumpSettings.builder().setDefaultFlowStyle(FlowStyle.BLOCK).setDefaultScalarStyle(ScalarStyle.PLAIN)
+						.setExplicitStart(true).setExplicitEnd(true).build();
+		Dump dump = new Dump(settings);
+		try {
+			FileWriter file_writer = new FileWriter(path);
+			file_writer.write(dump.dumpToString(map));
+			file_writer.close();
+			logger.info("Results written to " + path);
+		} catch (IOException ioe) {
+			logger.critical("Cannot write results to " + path + ". Reason: " + ioe.getMessage());
+		}
 	}
 }

@@ -2,6 +2,8 @@ package org.fuzzingtool.core.components;
 
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Version;
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.symbolic.ExpressionType;
 import org.fuzzingtool.core.tactics.DepthSearchTactic;
@@ -17,19 +19,21 @@ import java.util.*;
  * like {@link #branching_event(Integer, BranchingNodeAttribute, Integer, Boolean, String)} modify said machine.
  */
 public class Amygdala {
+	public final Logger logger;
 	public final Tracer tracer;
 	public final Coverage coverage;
 	public final CustomError custom_error;
-	public final Logger logger;
-	public final BranchingNode branchingRootNode;
-	public final Context z3_ctx;
-	public Queue<Pair<Integer, Boolean>> next_program_path = new LinkedList<>();
-	public HashMap<VariableIdentifier, Object> variable_values;
-	public final HashMap<Integer, VariableIdentifier> variable_line_to_identifier;
-	public final HashMap<VariableIdentifier, String> variable_names;
-	public boolean fuzzing_finished = false;
-	private BranchingNode currentBranch;
 	private FuzzingTactic tactic;
+	private final BranchingNode branchingRootNode;
+	private BranchingNode currentBranch;
+	private final Context z3_ctx;
+	private Queue<Pair<Integer, Boolean>> next_program_path = new LinkedList<>();
+	private final List<Map<VariableIdentifier, Object>> variable_values;
+	private final List<Pair<Boolean, String>> iteration_information;
+	private final List<Long> runtime_nanos;
+	private final BidiMap<VariableIdentifier, Integer> variable_lines;
+	private final Map<VariableIdentifier, String> variable_names;
+	private Boolean fuzzing_finished = false;
 	private int fuzzing_iterations = 0;
 	private int max_iterations = 1024;
 	private boolean function_visualization = false;
@@ -44,9 +48,11 @@ public class Amygdala {
 		this.coverage = new Coverage(lgr);
 		this.custom_error = new CustomError(lgr);
 		this.logger = lgr;
-		this.variable_values = new HashMap<>();
+		this.variable_values = new ArrayList<>();
 		this.variable_names = new HashMap<>();
-		this.variable_line_to_identifier = new HashMap<>();
+		this.variable_lines = new DualHashBidiMap<>();
+		this.runtime_nanos = new ArrayList<>();
+		this.iteration_information = new ArrayList<>();
 
 		com.microsoft.z3.Global.ToggleWarningMessages(true);
 		com.microsoft.z3.Global.setParameter("smt.string_solver", "z3str3");
@@ -95,19 +101,23 @@ public class Amygdala {
 	 * A call to this method indicates that the fuzzed
 	 * program has been terminated under normal circumstances.
 	 */
-	public void terminate_event() {
+	public void terminate_event(Long runtime) {
 		currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.TERMINATE);
 		currentBranch = branchingRootNode;
-		this.fuzzing_iterations += 1;
+		iteration_information.add(Pair.create(true, ""));
+		runtime_nanos.add(runtime);
+		fuzzing_iterations += 1;
 	}
 
 	/**
 	 * A call to this method indicates an error while executing the program.
 	 * The function suppresses the next terminate-event.
 	 */
-	public void error_event() {
+	public void error_event(String reason, Long runtime) {
 		currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.ERROR);
 		currentBranch = branchingRootNode;
+		iteration_information.add(Pair.create(false, reason));
+		runtime_nanos.add(runtime);
 		this.fuzzing_iterations += 1;
 	}
 
@@ -130,7 +140,7 @@ public class Amygdala {
 		if (fuzzing_iterations < max_iterations) {
 			boolean res = this.tactic.calculate();
 			if (res) {
-				variable_values = this.tactic.getNextValues();
+				variable_values.add(this.tactic.getNextValues());
 				next_program_path = this.tactic.getNextPath();
 				return true;
 			} else {
@@ -150,16 +160,16 @@ public class Amygdala {
 	 * @return An object which contains the next input value
 	 */
 	public Object getNextInputValue(VariableIdentifier var_id) {
-		if (variable_values.containsKey(var_id)) {
-			Object next_input = variable_values.get(var_id);
+		if (variable_values.get(variable_values.size() - 1).containsKey(var_id)) {
+			Object next_input = variable_values.get(variable_values.size() - 1).get(var_id);
 			if (var_id.getVariableType() == ExpressionType.STRING) {
-				logger.info("Next input value for variable " + variable_names.get(var_id) + ": \"" + next_input + "\" [STRING]");
+				logger.info("Next input value for variable \"" + variable_names.get(var_id) + "\": \"" + next_input + "\" [STRING]");
 			} else {
-				logger.info("Next input value for variable " + variable_names.get(var_id) + ": " + next_input + " [" + var_id.getVariableType().name() + "]");
+				logger.info("Next input value for variable \"" + variable_names.get(var_id) + "\": " + next_input + " [" + var_id.getVariableType().name() + "]");
 			}
 			return next_input;
 		} else {
-			logger.info("No new value for variable: " + variable_names.get(var_id));
+			logger.info("No new value for variable: \"" + variable_names.get(var_id) + "\"");
 			switch (var_id.getVariableType()) {
 				case BOOLEAN:
 					return true;
@@ -171,7 +181,7 @@ public class Amygdala {
 				case NUMBER_REAL:
 					return 1.5;
 				default:
-					logger.critical("Variable " + variable_names.get(var_id) + " has not allowed type '" +
+					logger.critical("Variable \"" + variable_names.get(var_id) + "\" has not allowed type '" +
 											var_id.getVariableType().toString() + "'.");
 					return null;
 			}
@@ -226,6 +236,7 @@ public class Amygdala {
 	 * @param variable_list YAML-Map of te variables
 	 */
 	private void loadVariables(List<Map<String, Object>> variable_list) {
+		Map<VariableIdentifier, Object> initial_values = new HashMap<>();
 		for (Map<String, Object> var_declaration: variable_list) {
 			Integer line_num = (Integer) var_declaration.get("line_num");
 			String var_type = (String) var_declaration.get("type");
@@ -252,34 +263,30 @@ public class Amygdala {
 
 			String var_gid = tracer.getNewGID();
 			VariableIdentifier new_identifier = new VariableIdentifier(var_type_enum, var_gid);
-			variable_line_to_identifier.put(line_num, new_identifier);
-			StringBuilder builder = new StringBuilder();
-			builder.append("\"");
+			variable_lines.put(new_identifier, line_num);
 			if (var_declaration.containsKey("name")) {
-				builder.append(var_declaration.get("name").toString());
+				variable_names.put(new_identifier, var_declaration.get("name").toString());
 			} else {
-				builder.append(var_gid);
+				variable_names.put(new_identifier, var_gid);
 			}
-			builder.append("\" (line ").append(line_num).append(")");
-			variable_names.put(new_identifier, builder.toString());
-
 
 			switch (var_type_enum) {
 				case BOOLEAN:
-					variable_values.put(new_identifier, (Boolean) var_declaration.get("sample"));
+					initial_values.put(new_identifier, (Boolean) var_declaration.get("sample"));
 					break;
 				case STRING:
-					variable_values.put(new_identifier, (String) var_declaration.get("sample"));
+					initial_values.put(new_identifier, (String) var_declaration.get("sample"));
 					break;
 				case BIGINT:
 				case NUMBER_INTEGER:
-					variable_values.put(new_identifier, (Integer) var_declaration.get("sample"));
+					initial_values.put(new_identifier, (Integer) var_declaration.get("sample"));
 					break;
 				case NUMBER_REAL:
-					variable_values.put(new_identifier, (Double) var_declaration.get("sample"));
+					initial_values.put(new_identifier, (Double) var_declaration.get("sample"));
 					break;
 			}
 		}
+		variable_values.add(initial_values);
 	}
 
 	/**
@@ -354,11 +361,8 @@ public class Amygdala {
 	 * @return A pair, true if it is input node, false if not. If true, the Variable identifier is also returned
 	 */
 	public Pair<Boolean, VariableIdentifier> getInputNodeConfiguration(Integer line_num) {
-		if (variable_line_to_identifier.containsKey(line_num)) {
-			return Pair.create(true, variable_line_to_identifier.get(line_num));
-		} else {
-			return Pair.create(false, null);
-		}
+		VariableIdentifier id = variable_lines.getKey(line_num);
+		return Pair.create(id != null, id);
 	}
 
 	/**
@@ -422,11 +426,11 @@ public class Amygdala {
 		int NAME_WIDTH = 36;
 		StringBuilder stat_str = new StringBuilder();
 		stat_str.append("===NODE INSTRUMENTATION INSIGHT===\n");
-		stat_str.append(String.format("%-" + NAME_WIDTH + "s", "NODE NAME")).append("E I R X U D\n");
+		stat_str.append(String.format("%-" + NAME_WIDTH + "s", "NODE NAME")).append("E I R X  U D\n");
 		for (String key : node_type_instrumented.keySet()) {
 			BitSet curr_set = node_type_instrumented.get(key);
 			boolean executed = curr_set.get(0);
-			boolean instrumented = curr_set.get(1) || curr_set.get(2) || curr_set.get(3);
+			boolean instrumented = curr_set.get(1) || curr_set.get(2) || curr_set.get(3) || curr_set.get(4);
 
 			String node_name = key;
 			if (node_name.length() > NAME_WIDTH - 1) {
@@ -460,9 +464,9 @@ public class Amygdala {
 				stat_str.append("✗ ");
 			}
 			if (curr_set.get(4)) {
-				stat_str.append("✔ ");
+				stat_str.append("✔  ");
 			} else {
-				stat_str.append("✗ ");
+				stat_str.append("✗  ");
 			}
 			if (curr_set.get(5)) {
 				stat_str.append("✔ ");
@@ -477,5 +481,40 @@ public class Amygdala {
 			stat_str.append("\n");
 		}
 		return stat_str.toString();
+	}
+
+	public Map<String, Object> getResults() {
+		Map<String, Object> result_map = new HashMap<>();
+		result_map.put("fuzzing_finished", fuzzing_finished);
+		result_map.put("num_iterations", fuzzing_iterations);
+		List<Map<String, Object>> iterations = new ArrayList<>();
+		for (int i = 0; i < fuzzing_iterations; i++) {
+			Map<String, Object> iteration = new HashMap<>();
+
+			iteration.put("successful", iteration_information.get(i).getLeft());
+			if (!iteration_information.get(i).getLeft()) {
+				iteration.put("error_message", iteration_information.get(i).getRight());
+			}
+			iteration.put("runtime", runtime_nanos.get(i) / 1000000);
+
+			List<Map<String, Object>> variables = new ArrayList<>();
+			for (Map.Entry<VariableIdentifier, Object> entry: variable_values.get(i).entrySet()) {
+				VariableIdentifier key = entry.getKey();
+				Object value = entry.getValue();
+				Map<String, Object> variable = new HashMap<>();
+				variable.put("name", variable_names.get(key));
+				variable.put("line", variable_lines.get(key));
+				variable.put("value", value);
+				variables.add(variable);
+			}
+			iteration.put("assignments", variables);
+
+			iteration.put("coverage", coverage.getCoverageObject(i));
+
+			iterations.add(iteration);
+		}
+		result_map.put("iterations", iterations);
+
+		return result_map;
 	}
 }
