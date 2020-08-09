@@ -2,6 +2,7 @@ package org.fuzzingtool.core.symbolic.basic;
 
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
+import com.oracle.truffle.js.nodes.JSGuards;
 import org.fuzzingtool.core.symbolic.ExpressionType;
 import org.fuzzingtool.core.symbolic.LanguageSemantic;
 import org.fuzzingtool.core.symbolic.SymbolicException;
@@ -18,26 +19,26 @@ public class SymbolicConstant extends SymbolicNode {
 
 		switch (t) {
 			case BOOLEAN:
-				if (!(v instanceof Boolean)) {
+				if (!JSGuards.isBoolean(v)) {
 					throw new SymbolicException.IncompatibleType(t);
 				}
 				this.value = v;
 				break;
 			case STRING:
-				if (!(v instanceof String)) {
+				if (!JSGuards.isString(v)) {
 					throw new SymbolicException.IncompatibleType(t);
 				}
 				this.value = v;
 				break;
 			case BIGINT:
 			case NUMBER_INTEGER:
-				if (!(v instanceof Integer)) {
+				if (!JSGuards.isNumberInteger(v)) {
 					throw new SymbolicException.IncompatibleType(t);
 				}
 				this.value = v;
 				break;
 			case NUMBER_REAL:
-				if (!(v instanceof Double)) {
+				if (!JSGuards.isNumberDouble(v)) {
 					throw new SymbolicException.IncompatibleType(t);
 				}
 				this.value = v;
@@ -73,6 +74,8 @@ public class SymbolicConstant extends SymbolicNode {
 				return "JS.Object";
 			case SYMBOL:
 				return "JS.Symbol";
+			case INTERNAL_ERROR:
+				return "(INTERNAL_ERROR)";
 			default:
 				return "(NOT SUPPORTED)";
 		}
@@ -83,7 +86,8 @@ public class SymbolicConstant extends SymbolicNode {
 		return toHRStringJS(); //TODO
 	}
 
-	public Pair<Expr, ExpressionType> toZ3ExprJS(Context ctx) throws SymbolicException.NotImplemented {
+	public Pair<Expr, ExpressionType> toZ3ExprJS(Context ctx) throws SymbolicException.NotImplemented,
+			SymbolicException.UndecidableExpression {
 		switch (this.constantType) {
 			case BOOLEAN:
 				return Pair.create(ctx.mkBool((Boolean) this.value), ExpressionType.BOOLEAN);
@@ -110,6 +114,8 @@ public class SymbolicConstant extends SymbolicNode {
 				return Pair.create(null, ExpressionType.OBJECT);
 			case SYMBOL:
 				return Pair.create(null, ExpressionType.SYMBOL);
+			case INTERNAL_ERROR:
+				throw new SymbolicException.UndecidableExpression("Z3", "Internal error detected.");
 			default:
 				throw new SymbolicException.NotImplemented("Unknown constant expression type.");
 		}

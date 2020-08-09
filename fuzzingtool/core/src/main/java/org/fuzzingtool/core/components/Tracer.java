@@ -168,15 +168,16 @@ public class Tracer {
 	 * @param frame_stack A list of function scope identifiers, ranging from the innermost [0] to outermost [n] scopes.
 	 * @param key The name of the variable
 	 * @param node_id_intermediate The ID of the new intermediate result
+	 * @return A boolean, indicating if the read was successful
 	 */
-	public void frameSlotToIntermediate(ArrayList<Integer> frame_stack, Object key, Integer node_id_intermediate) {
+	public boolean frameSlotToIntermediate(ArrayList<Integer> frame_stack, Object key, Integer node_id_intermediate) {
 		for (Integer function_scope: frame_stack) {
 			if (symbolic_program.containsKey(function_scope)) {
 				VariableContext var_ctx = symbolic_program.get(function_scope);
 				try {
 					if (var_ctx.hasProperty(key)) {
 						intermediate_results.put(node_id_intermediate, var_ctx.get(key));
-						return;
+						return true;
 					}
 				} catch (IllegalArgumentException iae) {
 					logger.critical(iae.getMessage());
@@ -186,6 +187,7 @@ public class Tracer {
 			}
 		}
 		logger.critical("Tracer::frameSlotToIntermediate(): No function scope with variable '" + key + "' found.");
+		return false;
 	}
 
 	/**
@@ -258,7 +260,12 @@ public class Tracer {
 			return intermediate_results.get(node_id);
 		} else {
 			logger.critical("Tracer::get_intermediate(): Cannot get intermediate results for hash " + node_id);
-			return null;
+			try {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
+			} catch (SymbolicException.IncompatibleType ite) {
+				ite.printStackTrace();
+				return null;
+			}
 		}
 	}
 
@@ -517,6 +524,58 @@ public class Tracer {
 		} else {
 			logger.critical("Tracer::addStringOperation(): Trying to add operation " + op.name() + " but operand " +
 									operand_intermediate_id + " does not exist.");
+		}
+	}
+
+	/**
+	 * Add a new operation for Arrays
+	 *
+	 * @param node_target The node-hash of the intermediate result
+	 * @param s           Semantic of the language
+	 */
+	public void addArrayOperation(Integer node_target, LanguageSemantic s, Integer array_context,
+								   ArrayList<SymbolicNode> arguments, Operation op, long arr_length) {
+		VariableContext symbolic_array = getSymbolicContext(array_context);
+		switch (op) {
+			case ARR_PUSH:
+				assert arguments.size() == 1;
+				// size - 1: element is already added, and index...
+				symbolic_array.set(arr_length - 1, arguments.get(0));
+				break;
+			case ARR_JOIN:
+				assert arguments.size() == 0 || arguments.size() == 1;
+
+				SymbolicNode spacer = null;
+				if (arguments.size() == 0) {
+					try {
+						spacer = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.STRING, ",");
+					} catch (SymbolicException.IncompatibleType incompatibleType) {
+						incompatibleType.printStackTrace();
+					}
+				}
+				if (arguments.size() == 1) {
+					spacer = arguments.get(0);
+				}
+
+				// forces string concatenation
+				SymbolicNode join_expression = null;
+				try {
+					join_expression = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.STRING, "");
+				} catch (SymbolicException.IncompatibleType incompatibleType) {
+					incompatibleType.printStackTrace();
+				}
+				for (long i = 0; i < arr_length; i++) {
+					if (i == arr_length - 1) {
+						join_expression = new Addition(LanguageSemantic.JAVASCRIPT, join_expression,
+													   symbolic_array.get(i));
+					} else {
+						SymbolicNode first_part = new Addition(LanguageSemantic.JAVASCRIPT, join_expression, symbolic_array.get(i));
+						join_expression = new Addition(LanguageSemantic.JAVASCRIPT, first_part, spacer);
+					}
+				}
+				break;
+			default:
+				logger.critical("Tracer::addArrayOperation(): Cannot process operation " + op.name() + ".");
 		}
 	}
 

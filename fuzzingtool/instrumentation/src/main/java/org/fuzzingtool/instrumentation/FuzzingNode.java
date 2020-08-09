@@ -16,10 +16,12 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.js.builtins.ForInIteratorPrototypeBuiltinsFactory;
 import com.oracle.truffle.js.nodes.JSGuards;
 import com.oracle.truffle.js.nodes.JSNodeUtil;
 import com.oracle.truffle.js.nodes.access.*;
 import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
+import com.oracle.truffle.js.nodes.instrumentation.JSMaterializedInvokeTargetableNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.JSRuntime;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
@@ -270,6 +272,11 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "JSStringConcatNodeGen":
 			case "JSStringSubstrNodeGen":
 			case "DeclareProviderNode":
+			case "BreakNode":
+			case "JSArrayJoinNodeGen":
+			case "EchoTargetValueNode": //TODO verify...
+			case "MaterializedTargetablePropertyNode": //TODO verify...
+			case "ForInIteratorPrototypeNextNodeGen":
 				// Do nothing. These nodes should not have any behavior or are instrumented otherwise.
 				break;
 			default:
@@ -313,6 +320,7 @@ public class FuzzingNode extends ExecutionEventNode {
 				break;
 			case "ReadElementNode":
 			case "WriteElementNode":
+			case "CompoundWriteElementNode":
 				onInputValueBehaviorReadWriteElementNode(vFrame, inputContext, inputIndex, inputValue);
 				break;
 			case "Call0Node":
@@ -459,13 +467,16 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "ConstantArrayLiteralNode":
 				onReturnBehaviorConstantArrayLiteralNode(vFrame, result);
 				break;
+			case "ConstructArrayNodeGen":
+				onReturnBehaviorConstructArrayNodeGen(vFrame, result);
+				break;
 			case "ReadElementNode":
 				onReturnBehaviorReadElementNode(vFrame, result);
 				break;
 			case "WriteElementNode":
+			case "CompoundWriteElementNode":
 				onReturnBehaviorWriteElementNode(vFrame, result);
 				break;
-
 
 			// ===== JavaScript Logic Nodes =====
 			case "JSLessThanNodeGen":
@@ -517,6 +528,7 @@ public class FuzzingNode extends ExecutionEventNode {
 				break;
 			case "JSInputGeneratingNodeWrapper":
 			case "JSTaggedExecutionNode":
+			case "LocalVarPostfixIncMaterializedNode": // "Dec" node does not exist
 				onReturnBehaviorPassthrough(vFrame, result);
 				break;
 			default:
@@ -645,7 +657,7 @@ public class FuzzingNode extends ExecutionEventNode {
 		ArrayList<Pair<Integer, String>> children = getChildHashes();
 		assert children.size() == 2;
 		if (inputIndex == 0) {
-			Boolean taken = (Boolean) inputValue;
+			Boolean taken = JSRuntime.toBoolean(inputValue);
 			amygdala.branching_event(source_relative_identifier, BranchingNodeAttribute.BRANCH, children.get(0).getLeft(),
 									 taken, extractPredicate());
 			amygdala.coverage.addBranchTaken(source_relative_identifier, taken);
@@ -655,8 +667,9 @@ public class FuzzingNode extends ExecutionEventNode {
 	private void onInputValueBehaviorWhileNode(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
 											  Object inputValue) {
 		ArrayList<Pair<Integer, String>> children = getChildHashes();
-		if (inputIndex == 0) {
-			Boolean taken = (Boolean) inputValue;
+		// for-in-loop has only one child
+		if (inputIndex == 0 && children.size() == 2) {
+			Boolean taken = JSRuntime.toBoolean(inputValue);
 			amygdala.branching_event(source_relative_identifier, BranchingNodeAttribute.LOOP, children.get(0).getLeft(),
 									 taken, extractPredicate());
 			amygdala.coverage.addBranchTaken(source_relative_identifier, taken);
@@ -797,8 +810,12 @@ public class FuzzingNode extends ExecutionEventNode {
 			if (root_instance != null) {
 				ArrayList<Integer> scope_hashes = new ArrayList<>();
 				scope_hashes.add(System.identityHashCode(root_instance));
-				amygdala.tracer.frameSlotToIntermediate(scope_hashes, JSFrameUtil.getPublicName(jsrfsn.getFrameSlot()),
+				boolean read_successful = amygdala.tracer.frameSlotToIntermediate(scope_hashes, JSFrameUtil.getPublicName(jsrfsn.getFrameSlot()),
 														instrumented_node_hash);
+				if (!read_successful && amygdala.experimental_frameslot_fill_in_nonexistent) {
+					amygdala.tracer.setIntermediate(instrumented_node_hash, jsObjectToSymbolic(result));
+					amygdala.logger.warning("onReturnBehaviorJSReadCurrentFrameSlotNodeGen(): Experimental option frameslot_fill_in_nonexistent is enabled, filling in value '" + result.toString() + "'.");
+				}
 			} else {
 				amygdala.logger.critical("onReturnBehaviorJSReadCurrentFrameSlotNodeGen(): Cannot get root instance.");
 			}
@@ -841,8 +858,12 @@ public class FuzzingNode extends ExecutionEventNode {
 					amygdala.logger.critical("onReturnBehaviorJSScopeFrameSlotNodeGen(): Cannot get root instance.");
 				}
 			}
-			amygdala.tracer.frameSlotToIntermediate(scope_hashes, JSFrameUtil.getPublicName(jsrfsn.getFrameSlot()),
+			boolean read_successful = amygdala.tracer.frameSlotToIntermediate(scope_hashes, JSFrameUtil.getPublicName(jsrfsn.getFrameSlot()),
 													instrumented_node_hash);
+			if (!read_successful && amygdala.experimental_frameslot_fill_in_nonexistent) {
+				amygdala.tracer.setIntermediate(instrumented_node_hash, jsObjectToSymbolic(result));
+				amygdala.logger.warning("onReturnBehaviorJSReadCurrentFrameSlotNodeGen(): Experimental option frameslot_fill_in_nonexistent is enabled, filling in value '" + result.toString() + "'.");
+			}
 		} else {
 			amygdala.logger.critical("onReturnBehaviorJSReadScopeFrameSlotNodeGen(): Cannot find any local scopes.");
 		}
@@ -919,15 +940,14 @@ public class FuzzingNode extends ExecutionEventNode {
 				String method_name = method_matcher.group(1);
 				switch (method_name) {
 					case "push":
-						long size;
-						try {
-							size = INTEROP.getArraySize(context_object);
-						} catch (UnsupportedMessageException e) {
-							amygdala.logger.critical("onReturnBehaviorInvokeNode(): Object is an array, but we cannot get the size.");
-							return;
-						}
-						// size - 1: element is already added, and index...
-						amygdala.tracer.intermediateToProperty(System.identityHashCode(context_object), size - 1, children.get(2).getLeft());
+						amygdala.tracer.addArrayOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT,
+														  System.identityHashCode(context_object), arguments_array, Operation.ARR_PUSH,
+														  getJSArraySize((DynamicObject) context_object));
+						break;
+					case "join":
+						amygdala.tracer.addArrayOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT,
+														  System.identityHashCode(context_object), arguments_array, Operation.ARR_JOIN,
+														  getJSArraySize((DynamicObject) context_object));
 						break;
 					default:
 						amygdala.logger.critical(
@@ -940,6 +960,20 @@ public class FuzzingNode extends ExecutionEventNode {
 		} else {
 			amygdala.tracer.functionReturnValueToIntermediate(instrumented_node_hash);
 			amygdala.tracer.resetFunctionReturnValue();
+		}
+	}
+
+	private long getJSArraySize(DynamicObject arr_obj) {
+		if (JSRuntime.isArray(arr_obj)) {
+			try {
+				return INTEROP.getArraySize(arr_obj);
+			} catch (UnsupportedMessageException e) {
+				amygdala.logger.critical("getJSArraySize(): Object is an array, but we cannot get the size.");
+				return 0;
+			}
+		} else {
+			amygdala.logger.critical("getJSArraySize(): Object is not an array.");
+			return 0;
 		}
 	}
 
@@ -1006,6 +1040,7 @@ public class FuzzingNode extends ExecutionEventNode {
 		if (this.is_input_node) {
 			Object next_input = amygdala.getNextInputValue(this.input_variable_identifier);
 			amygdala.tracer.addVariable(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, this.input_variable_identifier);
+			amygdala.node_type_instrumented.get(instrumented_node_type).set(3);
 			throw this.event_context.createUnwind(next_input);
 		} else {
 			amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, type, result);
@@ -1058,6 +1093,11 @@ public class FuzzingNode extends ExecutionEventNode {
 			amygdala.tracer.setSymbolicContext(System.identityHashCode(result), array_ctx);
 		}
 		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
+	}
+
+	private void onReturnBehaviorConstructArrayNodeGen(VirtualFrame vFrame, Object result) {
+		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
+		amygdala.tracer.initializeIfAbsent(System.identityHashCode(result));
 	}
 
 	private void onReturnBehaviorReadElementNode(VirtualFrame vFrame, Object result) {
@@ -1124,13 +1164,7 @@ public class FuzzingNode extends ExecutionEventNode {
 	private VariableContext arrayToSymbolic(DynamicObject dyn_obj) {
 		if (JSRuntime.isArray(dyn_obj)) {
 			VariableContext array_ctx = new VariableContext();
-			long size;
-			try {
-				size = INTEROP.getArraySize(dyn_obj);
-			} catch (UnsupportedMessageException e) {
-				amygdala.logger.critical("arrayToSymbolic(): Object is an array, but we cannot get the size.");
-				return null;
-			}
+			long size = getJSArraySize(dyn_obj);
 			for (int i = 0; i < size; i++) {
 				Object array_elem;
 				try {
@@ -1139,50 +1173,46 @@ public class FuzzingNode extends ExecutionEventNode {
 					amygdala.logger.critical("arrayToSymbolic(): Object is an array, but we cannot read the element with index" + i + ".");
 					return null;
 				}
-				//amygdala.logger.alert(array_elem.toString());
-				try {
-					if (JSGuards.isBoolean(array_elem)) {
-						//amygdala.logger.log("is Boolean");
-						array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, array_elem));
-					} else if (JSGuards.isString(array_elem)) {
-						//amygdala.logger.log("is String");
-						array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.STRING, array_elem));
-					} else if (JSGuards.isBigInt(array_elem)) {
-						//amygdala.logger.log("is BigInt");
-						array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BIGINT, array_elem));
-					} else if (JSGuards.isNumberInteger(array_elem)) {
-						//amygdala.logger.log("is Integer");
-						array_ctx.set(i,
-									  new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER,
-														   array_elem));
-					} else if (JSGuards.isNumberDouble(array_elem) && JSRuntime.isNaN(array_elem)) {
-						//amygdala.logger.log("is NaN");
-						array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null));
-					} else if (JSGuards.isNumberDouble(array_elem) && JSRuntime.isPositiveInfinity((double) array_elem)) {
-						//amygdala.logger.log("is +Infinity");
-						array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null));
-					} else if (JSGuards.isNumberDouble(array_elem)) {
-						//amygdala.logger.log("is Double");
-						array_ctx.set(i,
-									  new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_REAL, array_elem));
-					} else if (JSGuards.isUndefined(array_elem)) {
-						//amygdala.logger.log("is Undefined");
-						array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null));
-					} else if (JSGuards.isJSNull(array_elem)) {
-						//amygdala.logger.log("is Null");
-						array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NULL, null));
-					} else {
-						//amygdala.logger.log("is Other");
-						array_ctx.set(i, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null));
-					}
-				} catch (SymbolicException.IncompatibleType ite) {
-					amygdala.logger.warning("arrayToSymbolic(): Cannot create symbolic representation of " + array_elem.toString() + ".");
-				}
+				array_ctx.set(i, jsObjectToSymbolic(array_elem));
 			}
 			return array_ctx;
 		} else {
 			amygdala.logger.critical("arrayToSymbolic(): Object \"" + dyn_obj.toString() + "\" is not a JavaScript array.");
 			return null;
+		}
+	}
+
+	private SymbolicNode jsObjectToSymbolic(Object js_obj) {
+		try {
+			if (JSGuards.isBoolean(js_obj)) {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, js_obj);
+			} else if (JSGuards.isString(js_obj)) {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.STRING, js_obj);
+			} else if (JSGuards.isBigInt(js_obj)) {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BIGINT, js_obj);
+			} else if (JSGuards.isNumberInteger(js_obj)) {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, js_obj);
+			} else if (JSGuards.isNumberDouble(js_obj) && JSRuntime.isNaN(js_obj)) {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null);
+			} else if (JSGuards.isNumberDouble(js_obj) && JSRuntime.isPositiveInfinity((double) js_obj)) {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null);
+			} else if (JSGuards.isNumberDouble(js_obj)) {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_REAL, js_obj);
+			} else if (JSGuards.isUndefined(js_obj)) {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
+			} else if (JSGuards.isJSNull(js_obj)) {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NULL, null);
+			} else {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
+			}
+		} catch (SymbolicException.IncompatibleType ite) {
+			amygdala.logger.warning("arrayToSymbolic(): Cannot create symbolic representation of " + js_obj.toString() + ".");
+			try {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
+			} catch (SymbolicException.IncompatibleType incompatibleType) {
+				incompatibleType.printStackTrace();
+				return null;
+			}
 		}
 	}
 }

@@ -18,5 +18,7 @@ public enum ExpressionType {
 	NUMBER_POS_INFINITY, // Double positive Infinity value, Real cannot represent this
 	NUMBER_NEG_INFINITY, // Double negative Infinity value, Real cannot represent this
 	OBJECT, // https://tc39.es/ecma262/2020/#sec-object-type
-	SYMBOL // https://tc39.es/ecma262/2020/#sec-ecmascript-language-types-symbol-type
+	SYMBOL, // https://tc39.es/ecma262/2020/#sec-ecmascript-language-types-symbol-type
+
+	INTERNAL_ERROR // used to flag errors in the fuzzing program
 }

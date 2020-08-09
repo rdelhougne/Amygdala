@@ -304,13 +304,11 @@ public class BranchingNode {
 			throw new SymbolicException.UndecidableExpression("Z3", "Local symbolic expression is null.");
 		}
 		if (taken) {
-			Pair<Expr, ExpressionType> expr = this.symbolic_expression.toZ3Expr(ctx);
-			assert expr.getRight() == ExpressionType.BOOLEAN;
+			Pair<Expr, ExpressionType> expr = SymbolicNode.toBooleanZ3JS(ctx, this.symbolic_expression.toZ3Expr(ctx));
 			return (BoolExpr) expr.getLeft();
 		} else {
 			SymbolicNode not = new Not(nodeLanguageSemantic, this.symbolic_expression);
 			Pair<Expr, ExpressionType> expr = not.toZ3Expr(ctx);
-			assert expr.getRight() == ExpressionType.BOOLEAN;
 			return (BoolExpr) expr.getLeft();
 		}
 	}

@@ -40,6 +40,10 @@ public class Amygdala {
 	private boolean branching_visualization = false;
 	private boolean event_logging = true;
 
+	// Experimental
+	// This option advises JSReadCurrent/ScopeFrameSlotNodeGen to fill in values if they are not found.
+	public boolean experimental_frameslot_fill_in_nonexistent = false;
+
 	// Debugging Bits: is node executed, onEnter (E), onInputValue (I), OnReturn (R), onReturnExceptional (X), onUnwind (U), onDispose (D)
 	public final HashMap<String, BitSet> node_type_instrumented = new HashMap<>();
 

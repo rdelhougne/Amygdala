@@ -1,10 +1,10 @@
 ---
-program_path: "../benchmarksgame/fasta.js"
+program_path: "../javascript/property_iterator.js"
 variables:
-  - line_num: 96
-    name: length
+  - line_num: 1
+    name: absolutely useless
     type: INTEGER
-    sample: 7
+    sample: 13
 fuzzing_parameters:
   max_iterations: 10
   tactic: "DEPTH_SEARCH"
