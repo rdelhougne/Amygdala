@@ -581,6 +581,7 @@ public class Tracer {
 						join_expression = new Addition(s, first_part, spacer);
 					}
 				}
+				setIntermediate(node_target, join_expression);
 				break;
 			default:
 				logger.critical("Tracer::addArrayOperation(): Cannot process operation " + op.name() + ".");
