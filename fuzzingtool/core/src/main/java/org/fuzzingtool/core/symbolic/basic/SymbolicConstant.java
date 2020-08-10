@@ -32,7 +32,7 @@ public class SymbolicConstant extends SymbolicNode {
 				break;
 			case BIGINT:
 			case NUMBER_INTEGER:
-				if (!JSGuards.isNumberInteger(v)) {
+				if (!JSGuards.isNumberInteger(v) && !JSGuards.isNumberLong(v)) {
 					throw new SymbolicException.IncompatibleType(t);
 				}
 				this.value = v;
@@ -94,9 +94,17 @@ public class SymbolicConstant extends SymbolicNode {
 			case STRING:
 				return Pair.create(ctx.mkString((String) value), ExpressionType.STRING);
 			case BIGINT:
-				return Pair.create(ctx.mkInt((Integer) this.value), ExpressionType.BIGINT);
+				if (this.value instanceof Integer) {
+					return Pair.create(ctx.mkInt((Integer) this.value), ExpressionType.BIGINT);
+				} else {
+					return Pair.create(ctx.mkInt(((Long) this.value).intValue()), ExpressionType.BIGINT);
+				}
 			case NUMBER_INTEGER:
-				return Pair.create(ctx.mkInt((Integer) this.value), ExpressionType.NUMBER_INTEGER);
+				if (this.value instanceof Integer) {
+					return Pair.create(ctx.mkInt((Integer) this.value), ExpressionType.NUMBER_INTEGER);
+				} else {
+					return Pair.create(ctx.mkInt(((Long) this.value).intValue()), ExpressionType.NUMBER_INTEGER);
+				}
 			case NUMBER_REAL:
 				// https://stackoverflow.com/questions/11249894/precision-for-double-parsedouble-and-string-valueof
 				return Pair.create(ctx.mkReal(String.valueOf((Double) this.value)), ExpressionType.NUMBER_REAL);

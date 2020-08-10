@@ -537,6 +537,14 @@ public class Tracer {
 								   ArrayList<SymbolicNode> arguments, Operation op, long arr_length) {
 		VariableContext symbolic_array = getSymbolicContext(array_context);
 		switch (op) {
+			case ARR_LENGTH:
+				assert arguments.size() == 1;
+				try {
+					setIntermediate(node_target, new SymbolicConstant(s, ExpressionType.NUMBER_INTEGER, arr_length));
+				} catch (SymbolicException.IncompatibleType ite) {
+					ite.printStackTrace();
+				}
+				break;
 			case ARR_PUSH:
 				assert arguments.size() == 1;
 				// size - 1: element is already added, and index...
@@ -548,7 +556,7 @@ public class Tracer {
 				SymbolicNode spacer = null;
 				if (arguments.size() == 0) {
 					try {
-						spacer = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.STRING, ",");
+						spacer = new SymbolicConstant(s, ExpressionType.STRING, ",");
 					} catch (SymbolicException.IncompatibleType incompatibleType) {
 						incompatibleType.printStackTrace();
 					}
@@ -560,17 +568,17 @@ public class Tracer {
 				// forces string concatenation
 				SymbolicNode join_expression = null;
 				try {
-					join_expression = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.STRING, "");
+					join_expression = new SymbolicConstant(s, ExpressionType.STRING, "");
 				} catch (SymbolicException.IncompatibleType incompatibleType) {
 					incompatibleType.printStackTrace();
 				}
 				for (long i = 0; i < arr_length; i++) {
 					if (i == arr_length - 1) {
-						join_expression = new Addition(LanguageSemantic.JAVASCRIPT, join_expression,
+						join_expression = new Addition(s, join_expression,
 													   symbolic_array.get(i));
 					} else {
-						SymbolicNode first_part = new Addition(LanguageSemantic.JAVASCRIPT, join_expression, symbolic_array.get(i));
-						join_expression = new Addition(LanguageSemantic.JAVASCRIPT, first_part, spacer);
+						SymbolicNode first_part = new Addition(s, join_expression, symbolic_array.get(i));
+						join_expression = new Addition(s, first_part, spacer);
 					}
 				}
 				break;

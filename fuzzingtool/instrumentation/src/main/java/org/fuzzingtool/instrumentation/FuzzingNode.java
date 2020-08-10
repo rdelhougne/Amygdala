@@ -787,6 +787,10 @@ public class FuzzingNode extends ExecutionEventNode {
 		String property_name = pnode.getPropertyKey().toString();
 		if (JSGuards.isString(context_object) && property_name.equals("length")) {
 			onReturnBehaviorUnaryOperation(vFrame, result, Operation.STR_LENGTH);
+		} else if (JSRuntime.isArray(context_object) && property_name.equals("length")) {
+			amygdala.tracer.addArrayOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT,
+											  System.identityHashCode(context_object), new ArrayList<>(),
+											  Operation.ARR_LENGTH, getJSArraySize((DynamicObject) context_object));
 		} else {
 			amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), property_name,
 												   instrumented_node_hash);
