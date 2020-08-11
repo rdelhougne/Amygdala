@@ -16,12 +16,10 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
-import com.oracle.truffle.js.builtins.ForInIteratorPrototypeBuiltinsFactory;
 import com.oracle.truffle.js.nodes.JSGuards;
 import com.oracle.truffle.js.nodes.JSNodeUtil;
 import com.oracle.truffle.js.nodes.access.*;
 import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
-import com.oracle.truffle.js.nodes.instrumentation.JSMaterializedInvokeTargetableNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.JSRuntime;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
@@ -427,6 +425,9 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "JSAddSubNumericUnitNodeGen":
 				onReturnBehaviorJSAddSubNumericUnitNodeGen(vFrame, result);
 				break;
+			case "SqrtNodeGen":
+				onReturnBehaviorInternalInvokedFunction(vFrame, result, Operation.SQRT);
+				break;
 
 
 			// ===== JavaScript Constant Nodes =====
@@ -529,6 +530,7 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "JSInputGeneratingNodeWrapper":
 			case "JSTaggedExecutionNode":
 			case "LocalVarPostfixIncMaterializedNode": // "Dec" node does not exist
+			case "LocalVarPrefixIncMaterializedNode": // TODO wie DualNode?
 				onReturnBehaviorPassthrough(vFrame, result);
 				break;
 			default:
@@ -1006,6 +1008,11 @@ public class FuzzingNode extends ExecutionEventNode {
 									 children.get(1).getLeft());
 	}
 
+	private void onReturnBehaviorInternalInvokedFunction(VirtualFrame vFrame, Object result, Operation op) {
+		// These nodes behave like methods
+		amygdala.tracer.performSingularMethodInvocation(LanguageSemantic.JAVASCRIPT, op);
+	}
+
 	// TODO
 	private void onReturnBehaviorJSAddSubNumericUnitNodeGen(VirtualFrame vFrame, Object result) {
 		ArrayList<Pair<Integer, String>> children = getChildHashes();
@@ -1015,20 +1022,12 @@ public class FuzzingNode extends ExecutionEventNode {
 		String after = String.valueOf(source_section.getSource().getCharacters().charAt(source_section.getCharEndIndex()));
 		if (before.equals("+") || after.equals("+")) {
 			SymbolicNode pre_add = amygdala.tracer.getIntermediate(children.get(0).getLeft());
-			try {
-				SymbolicNode add_result = new Addition(LanguageSemantic.JAVASCRIPT, pre_add, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
-				amygdala.tracer.setIntermediate(instrumented_node_hash, add_result);
-			} catch (SymbolicException.IncompatibleType ite) {
-				amygdala.logger.critical("onReturnBehaviorJSAddSubNumericUnitNodeGen(): Cannot construct addition: " + ite.getMessage());
-			}
+			SymbolicNode add_result = new Addition(LanguageSemantic.JAVASCRIPT, pre_add, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
+			amygdala.tracer.setIntermediate(instrumented_node_hash, add_result);
 		} else if (before.equals("-") || after.equals("-")) {
 			SymbolicNode pre_sub = amygdala.tracer.getIntermediate(children.get(0).getLeft());
-			try {
-				SymbolicNode sub_result = new Subtraction(LanguageSemantic.JAVASCRIPT, pre_sub, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
-				amygdala.tracer.setIntermediate(instrumented_node_hash, sub_result);
-			} catch (SymbolicException.IncompatibleType ite) {
-				amygdala.logger.critical("onReturnBehaviorJSAddSubNumericUnitNodeGen(): Cannot construct subtraction: " + ite.getMessage());
-			}
+			SymbolicNode sub_result = new Subtraction(LanguageSemantic.JAVASCRIPT, pre_sub, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
+			amygdala.tracer.setIntermediate(instrumented_node_hash, sub_result);
 		} else {
 			amygdala.logger.critical("onReturnBehaviorJSAddSubNumericUnitNodeGen(): Cannot determine operation from source code.");
 		}
@@ -1130,21 +1129,13 @@ public class FuzzingNode extends ExecutionEventNode {
 		if (inc_matcher.matches()) {
 			assert children.size() == 1;
 			SymbolicNode pre = amygdala.tracer.getIntermediate(children.get(0).getLeft());
-			try {
-				SymbolicNode revert_increment = new Subtraction(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
-				amygdala.tracer.setIntermediate(instrumented_node_hash, revert_increment);
-			} catch (SymbolicException.IncompatibleType ite) {
-				amygdala.logger.critical("onReturnBehaviorDualNode(): Cannot construct subtraction: " + ite.getMessage());
-			}
+			SymbolicNode revert_increment = new Subtraction(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
+			amygdala.tracer.setIntermediate(instrumented_node_hash, revert_increment);
 		} else if (dec_matcher.matches()) {
 			assert children.size() == 1;
 			SymbolicNode pre = amygdala.tracer.getIntermediate(children.get(0).getLeft());
-			try {
-				SymbolicNode revert_decrement = new Addition(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
-				amygdala.tracer.setIntermediate(instrumented_node_hash, revert_decrement);
-			} catch (SymbolicException.IncompatibleType ite) {
-				amygdala.logger.critical("onReturnBehaviorDualNode(): Cannot construct addition: " + ite.getMessage());
-			}
+			SymbolicNode revert_decrement = new Addition(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
+			amygdala.tracer.setIntermediate(instrumented_node_hash, revert_decrement);
 		}
 	}
 
@@ -1187,36 +1178,26 @@ public class FuzzingNode extends ExecutionEventNode {
 	}
 
 	private SymbolicNode jsObjectToSymbolic(Object js_obj) {
-		try {
-			if (JSGuards.isBoolean(js_obj)) {
-				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, js_obj);
-			} else if (JSGuards.isString(js_obj)) {
-				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.STRING, js_obj);
-			} else if (JSGuards.isBigInt(js_obj)) {
-				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BIGINT, js_obj);
-			} else if (JSGuards.isNumberInteger(js_obj)) {
-				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, js_obj);
-			} else if (JSGuards.isNumberDouble(js_obj) && JSRuntime.isNaN(js_obj)) {
-				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null);
-			} else if (JSGuards.isNumberDouble(js_obj) && JSRuntime.isPositiveInfinity((double) js_obj)) {
-				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null);
-			} else if (JSGuards.isNumberDouble(js_obj)) {
-				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_REAL, js_obj);
-			} else if (JSGuards.isUndefined(js_obj)) {
-				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
-			} else if (JSGuards.isJSNull(js_obj)) {
-				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NULL, null);
-			} else {
-				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
-			}
-		} catch (SymbolicException.IncompatibleType ite) {
-			amygdala.logger.warning("arrayToSymbolic(): Cannot create symbolic representation of " + js_obj.toString() + ".");
-			try {
-				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
-			} catch (SymbolicException.IncompatibleType incompatibleType) {
-				incompatibleType.printStackTrace();
-				return null;
-			}
+		if (JSGuards.isBoolean(js_obj)) {
+			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, js_obj);
+		} else if (JSGuards.isString(js_obj)) {
+			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.STRING, js_obj);
+		} else if (JSGuards.isBigInt(js_obj)) {
+			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BIGINT, js_obj);
+		} else if (JSGuards.isNumberInteger(js_obj)) {
+			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, js_obj);
+		} else if (JSGuards.isNumberDouble(js_obj) && JSRuntime.isNaN(js_obj)) {
+			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null);
+		} else if (JSGuards.isNumberDouble(js_obj) && JSRuntime.isPositiveInfinity((double) js_obj)) {
+			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null);
+		} else if (JSGuards.isNumberDouble(js_obj)) {
+			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_REAL, js_obj);
+		} else if (JSGuards.isUndefined(js_obj)) {
+			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
+		} else if (JSGuards.isJSNull(js_obj)) {
+			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NULL, null);
+		} else {
+			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
 		}
 	}
 }

@@ -14,13 +14,7 @@ public class VariableContext {
 	public VariableContext() {}
 
 	public SymbolicNode get(Object key) {
-		try {
-			return properties.getOrDefault(convertProperty(key), new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null));
-		} catch (SymbolicException.IncompatibleType incompatibleType) {
-			incompatibleType.printStackTrace();
-		}
-		// Should never happen
-		return null;
+		return properties.getOrDefault(convertProperty(key), new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null));
 	}
 
 	public void set(Object key, SymbolicNode value) {

@@ -13,40 +13,54 @@ public class SymbolicConstant extends SymbolicNode {
 	private final ExpressionType constantType;
 	private final Object value;
 
-	public SymbolicConstant(LanguageSemantic s, ExpressionType t, Object v) throws SymbolicException.IncompatibleType {
+	public SymbolicConstant(LanguageSemantic s, ExpressionType t, Object v) {
+		Object new_value;
+		ExpressionType new_type;
 		this.languageSemantic = s;
-		this.constantType = t;
 
-		switch (t) {
-			case BOOLEAN:
-				if (!JSGuards.isBoolean(v)) {
-					throw new SymbolicException.IncompatibleType(t);
-				}
-				this.value = v;
-				break;
-			case STRING:
-				if (!JSGuards.isString(v)) {
-					throw new SymbolicException.IncompatibleType(t);
-				}
-				this.value = v;
-				break;
-			case BIGINT:
-			case NUMBER_INTEGER:
-				if (!JSGuards.isNumberInteger(v) && !JSGuards.isNumberLong(v)) {
-					throw new SymbolicException.IncompatibleType(t);
-				}
-				this.value = v;
-				break;
-			case NUMBER_REAL:
-				if (!JSGuards.isNumberDouble(v)) {
-					throw new SymbolicException.IncompatibleType(t);
-				}
-				this.value = v;
-				break;
-			default:
-				this.value = null;
-				break;
+		try {
+			switch (t) {
+				case BOOLEAN:
+					if (!JSGuards.isBoolean(v)) {
+						throw new SymbolicException.IncompatibleType(t);
+					}
+					new_type = t;
+					new_value = v;
+					break;
+				case STRING:
+					if (!JSGuards.isString(v)) {
+						throw new SymbolicException.IncompatibleType(t);
+					}
+					new_type = t;
+					new_value = v;
+					break;
+				case BIGINT:
+				case NUMBER_INTEGER:
+					if (!JSGuards.isNumberInteger(v) && !JSGuards.isNumberLong(v)) {
+						throw new SymbolicException.IncompatibleType(t);
+					}
+					new_type = t;
+					new_value = v;
+					break;
+				case NUMBER_REAL:
+					if (!JSGuards.isNumberDouble(v)) {
+						throw new SymbolicException.IncompatibleType(t);
+					}
+					new_type = t;
+					new_value = v;
+					break;
+				default:
+					new_type = t;
+					new_value = null;
+					break;
+			}
+		} catch ( SymbolicException.IncompatibleType it) {
+			new_type = ExpressionType.INTERNAL_ERROR;
+			new_value = null;
+			System.out.println("[CRITICAL] IncompatibleType exception occured: " + it.getMessage());
 		}
+		this.constantType = new_type;
+		this.value = new_value;
 	}
 
 	@Override

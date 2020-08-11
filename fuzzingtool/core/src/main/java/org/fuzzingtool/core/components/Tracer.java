@@ -53,12 +53,8 @@ public class Tracer {
 	// TODO handle "arguments" array
 	public void initializeFunctionScope(Integer context_key) {
 		VariableContext new_scope = new VariableContext();
-		try {
-			new_scope.set("this", new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null));
-			new_scope.set("arguments", new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null));
-		} catch (SymbolicException.IncompatibleType incompatibleType) {
-			incompatibleType.printStackTrace();
-		}
+		new_scope.set("this", new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null));
+		new_scope.set("arguments", new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null));
 		symbolic_program.put(context_key, new_scope);
 	}
 
@@ -72,18 +68,14 @@ public class Tracer {
 	}
 
 	public void resetFunctionReturnValue() {
-		try {
-			function_return_value = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
-		} catch (SymbolicException.IncompatibleType incompatibleType) {
-			incompatibleType.printStackTrace();
-		}
+		function_return_value = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
 	}
 
 	public void intermediateToFunctionReturnValue(Integer intermediate_key) {
 		if (intermediate_results.containsKey(intermediate_key)) {
 			this.function_return_value = intermediate_results.get(intermediate_key);
 		} else {
-			logger.critical("Tracer.setFunctionReturnValueFromIntermediate(): Trying to set return value to result from " + intermediate_key + " but it does not exist.");
+			logger.critical("Tracer::setFunctionReturnValueFromIntermediate(): Trying to set return value to result from " + intermediate_key + " but it does not exist.");
 		}
 	}
 
@@ -260,12 +252,7 @@ public class Tracer {
 			return intermediate_results.get(node_id);
 		} else {
 			logger.critical("Tracer::get_intermediate(): Cannot get intermediate results for hash " + node_id);
-			try {
-				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
-			} catch (SymbolicException.IncompatibleType ite) {
-				ite.printStackTrace();
-				return null;
-			}
+			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
 		}
 	}
 
@@ -331,13 +318,9 @@ public class Tracer {
 										" does not exist");
 				return;
 			}
-			try {
-				SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, false));
-				SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, false));
-				intermediate_results.put(node_target, new Or(s, a, b));
-			} catch (SymbolicException.IncompatibleType incompatibleType) {
-				incompatibleType.printStackTrace();
-			}
+			SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, false));
+			SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, false));
+			intermediate_results.put(node_target, new Or(s, a, b));
 		} else if (op == Operation.AND) {
 			if (!intermediate_results.containsKey(node_source_a) && !intermediate_results.containsKey(node_source_b)) {
 				logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
@@ -345,13 +328,9 @@ public class Tracer {
 										" does not exist");
 				return;
 			}
-			try {
-				SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, true));
-				SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, true));
-				intermediate_results.put(node_target, new And(s, a, b));
-			} catch (SymbolicException.IncompatibleType incompatibleType) {
-				incompatibleType.printStackTrace();
-			}
+			SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, true));
+			SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, true));
+			intermediate_results.put(node_target, new And(s, a, b));
 		} else {
 			if (intermediate_results.containsKey(node_source_a) && intermediate_results.containsKey(node_source_b)) {
 				SymbolicNode a = intermediate_results.get(node_source_a);
@@ -451,11 +430,7 @@ public class Tracer {
 	 * @param v           Value of the constant, the value is automatically casted
 	 */
 	public void addConstant(Integer node_target, LanguageSemantic s, ExpressionType t, Object v) {
-		try {
-			intermediate_results.put(node_target, new SymbolicConstant(s, t, v));
-		} catch (SymbolicException.IncompatibleType incompatibleType) {
-			logger.critical(incompatibleType.getMessage());
-		}
+		intermediate_results.put(node_target, new SymbolicConstant(s, t, v));
 	}
 
 	/**
@@ -539,11 +514,7 @@ public class Tracer {
 		switch (op) {
 			case ARR_LENGTH:
 				assert arguments.size() == 1;
-				try {
-					setIntermediate(node_target, new SymbolicConstant(s, ExpressionType.NUMBER_INTEGER, arr_length));
-				} catch (SymbolicException.IncompatibleType ite) {
-					ite.printStackTrace();
-				}
+				setIntermediate(node_target, new SymbolicConstant(s, ExpressionType.NUMBER_INTEGER, arr_length));
 				break;
 			case ARR_PUSH:
 				assert arguments.size() == 1;
@@ -555,11 +526,7 @@ public class Tracer {
 
 				SymbolicNode spacer = null;
 				if (arguments.size() == 0) {
-					try {
-						spacer = new SymbolicConstant(s, ExpressionType.STRING, ",");
-					} catch (SymbolicException.IncompatibleType incompatibleType) {
-						incompatibleType.printStackTrace();
-					}
+					spacer = new SymbolicConstant(s, ExpressionType.STRING, ",");
 				}
 				if (arguments.size() == 1) {
 					spacer = arguments.get(0);
@@ -567,11 +534,7 @@ public class Tracer {
 
 				// forces string concatenation
 				SymbolicNode join_expression = null;
-				try {
-					join_expression = new SymbolicConstant(s, ExpressionType.STRING, "");
-				} catch (SymbolicException.IncompatibleType incompatibleType) {
-					incompatibleType.printStackTrace();
-				}
+				join_expression = new SymbolicConstant(s, ExpressionType.STRING, "");
 				for (long i = 0; i < arr_length; i++) {
 					if (i == arr_length - 1) {
 						join_expression = new Addition(s, join_expression,
@@ -589,6 +552,29 @@ public class Tracer {
 	}
 
 	/**
+	 * This function provides functionality for operands that are called internally and
+	 * behave like functions e.g. Math.sqrt(x). It reads all input from {@link #arguments_array}
+	 * and writes the result to {@link #function_return_value}.
+	 *
+	 * @param s Semantic of the language
+	 * @param s Operation
+	 */
+	public void performSingularMethodInvocation(LanguageSemantic s, Operation op) {
+		switch (op) {
+			case SQRT:
+				if (arguments_array.size() == 1) {
+					function_return_value = new SquareRoot(s, arguments_array.get(0));
+				} else {
+					logger.critical("Arguments for Operation SQRT have the wrong size.");
+					function_return_value = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
+				}
+				break;
+			default:
+				logger.critical("Operation '" + op.name() + "' is not an internal method call.");
+		}
+	}
+
+	/**
 	 * Initializes all objects and functions that are provided by the VM by default.
 	 *
 	 * @param sem The language semantic
@@ -598,89 +584,85 @@ public class Tracer {
 		if (sem == LanguageSemantic.JAVASCRIPT) {
 			// Initialize JavaScript global objects
 			VariableContext global_object_context = new VariableContext();
-			try {
-				// TODO biggest todo ever
-				// output from jsglobalsearch.js
-				global_object_context.set("Object", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Function", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("String", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Date", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Number", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Boolean", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("RegExp", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Math", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("JSON", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("NaN", new SymbolicConstant(sem, ExpressionType.NUMBER_NAN, null));
-				global_object_context.set("Infinity", new SymbolicConstant(sem, ExpressionType.NUMBER_POS_INFINITY, null));
-				global_object_context.set("undefined", new SymbolicConstant(sem, ExpressionType.UNDEFINED, null));
-				global_object_context.set("isNaN", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("isFinite", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("parseFloat", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("parseInt", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("encodeURI", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("encodeURIComponent", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("decodeURI", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("decodeURIComponent", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("eval", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("escape", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("unescape", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Error", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("EvalError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("RangeError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("ReferenceError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("SyntaxError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("TypeError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("URIError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("ArrayBuffer", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Int8Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Uint8Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Uint8ClampedArray", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Int16Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Uint16Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Int32Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Uint32Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Float32Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Float64Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("BigInt64Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("BigUint64Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("DataView", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("BigInt", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Polyglot", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Map", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Set", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("WeakMap", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("WeakSet", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Symbol", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Reflect", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Proxy", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Promise", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("SharedArrayBuffer", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Atomics", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("globalThis", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Graal", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("quit", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("readline", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("read", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("readbuffer", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("load", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("loadWithNewGlobal", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("console", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("print", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("printErr", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("performance", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Java", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("Packages", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("java", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("javafx", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("javax", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("com", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("org", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("edu", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-				global_object_context.set("arguments", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
-			} catch (SymbolicException.IncompatibleType incompatibleType) {
-				logger.critical("Tracer::initializeProgramContext(): Cannot initialize JavaScript program context");
-			}
+			// TODO biggest todo ever
+			// output from jsglobalsearch.js
+			global_object_context.set("Object", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Function", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("String", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Date", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Number", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Boolean", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("RegExp", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Math", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("JSON", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("NaN", new SymbolicConstant(sem, ExpressionType.NUMBER_NAN, null));
+			global_object_context.set("Infinity", new SymbolicConstant(sem, ExpressionType.NUMBER_POS_INFINITY, null));
+			global_object_context.set("undefined", new SymbolicConstant(sem, ExpressionType.UNDEFINED, null));
+			global_object_context.set("isNaN", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("isFinite", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("parseFloat", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("parseInt", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("encodeURI", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("encodeURIComponent", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("decodeURI", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("decodeURIComponent", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("eval", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("escape", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("unescape", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Error", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("EvalError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("RangeError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("ReferenceError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("SyntaxError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("TypeError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("URIError", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("ArrayBuffer", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Int8Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Uint8Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Uint8ClampedArray", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Int16Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Uint16Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Int32Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Uint32Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Float32Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Float64Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("BigInt64Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("BigUint64Array", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("DataView", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("BigInt", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Polyglot", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Map", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Set", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("WeakMap", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("WeakSet", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Symbol", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Reflect", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Proxy", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Promise", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("SharedArrayBuffer", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Atomics", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("globalThis", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Graal", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("quit", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("readline", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("read", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("readbuffer", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("load", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("loadWithNewGlobal", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("console", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("print", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("printErr", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("performance", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Java", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("Packages", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("java", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("javafx", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("javax", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("com", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("org", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("edu", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
+			global_object_context.set("arguments", new SymbolicConstant(sem, ExpressionType.OBJECT, null));
 			symbolic_program.put(global_object_id, global_object_context);
 		} else {
 			logger.warning("Tracer::initializeProgramContext(): Cannot initialize context with semantic '" +
