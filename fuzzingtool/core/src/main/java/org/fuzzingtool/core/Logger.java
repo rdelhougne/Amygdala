@@ -1,13 +1,18 @@
 package org.fuzzingtool.core;
 
+import org.apache.commons.collections4.queue.CircularFifoQueue;
+
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.Queue;
 
 public class Logger {
 	final PrintStream outStream;
+	Queue<String> aggregate_queue = new CircularFifoQueue<String>(8);
 
 	// logging statistics
 	private static final boolean SHOW_DEBUGGING_STATS = true;
+	private static final boolean AGGREGATE_LOGS = true;
 	private int num_log = 0;
 	private int num_debug = 0;
 	private int num_info = 0;
@@ -26,8 +31,12 @@ public class Logger {
 	}
 
 	public void log(String msg) {
-		outStream.println(msg);
-		num_log++;
+		if (AGGREGATE_LOGS) {
+			aggregate_queue.offer(msg);
+		} else {
+			outStream.println(msg);
+			num_log++;
+		}
 	}
 
 	public void debug(String msg) {
@@ -46,6 +55,11 @@ public class Logger {
 	}
 
 	public void critical(String msg) {
+		if (AGGREGATE_LOGS) {
+			for (String message: aggregate_queue) {
+				outStream.println(message);
+			}
+		}
 		outStream.println("\033[31m[CRITICAL]\033[0m " + msg);
 		num_critical++;
 	}

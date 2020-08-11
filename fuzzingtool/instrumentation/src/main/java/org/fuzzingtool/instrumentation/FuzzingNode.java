@@ -1118,6 +1118,7 @@ public class FuzzingNode extends ExecutionEventNode {
 	private void onReturnBehaviorWriteElementNode(VirtualFrame vFrame, Object result) {
 		ArrayList<Pair<Integer, String>> children = getChildHashes();
 		amygdala.tracer.intermediateToProperty(System.identityHashCode(context_object), element_access, children.get(2).getLeft());
+		amygdala.tracer.passThroughIntermediate(instrumented_node_hash, children.get(2).getLeft());
 	}
 
 	//TODO extremely hacky
