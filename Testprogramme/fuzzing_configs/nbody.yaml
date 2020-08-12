@@ -1,10 +1,10 @@
 ---
-program_path: "../javascript/example.js"
+program_path: "../benchmarksgame/nbody.js"
 variables:
-  - line_num: 42
-    name: last expected prime
+  - line_num: 155
+    name: iterations
     type: INTEGER
-    sample: 7
+    sample: 1
 fuzzing_parameters:
   max_iterations: 10
   tactic: "DEPTH_SEARCH"

@@ -25,6 +25,8 @@ public class Tracer {
 	private ArrayList<SymbolicNode> arguments_array = new ArrayList<>();
 	private SymbolicNode function_return_value;
 
+	private Integer js_global_object_id = 0;
+
 	private final HashSet<String> used_gids = new HashSet<>();
 	private final RandomStringGenerator gid_generator;
 
@@ -574,6 +576,10 @@ public class Tracer {
 		}
 	}
 
+	public Integer getJSGlobalObjectId() {
+		return this.js_global_object_id;
+	}
+
 	/**
 	 * Initializes all objects and functions that are provided by the VM by default.
 	 *
@@ -583,6 +589,7 @@ public class Tracer {
 	public void initializeProgramContext(LanguageSemantic sem, Integer global_object_id) {
 		if (sem == LanguageSemantic.JAVASCRIPT) {
 			// Initialize JavaScript global objects
+			this.js_global_object_id = global_object_id;
 			VariableContext global_object_context = new VariableContext();
 			// TODO biggest todo ever
 			// output from jsglobalsearch.js

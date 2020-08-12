@@ -1,10 +1,7 @@
 package org.fuzzingtool.instrumentation;
 
 import com.oracle.truffle.api.Option;
-import com.oracle.truffle.api.instrumentation.Instrumenter;
-import com.oracle.truffle.api.instrumentation.SourceFilter;
-import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
-import com.oracle.truffle.api.instrumentation.TruffleInstrument;
+import com.oracle.truffle.api.instrumentation.*;
 import com.oracle.truffle.api.instrumentation.TruffleInstrument.Registration;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.components.Amygdala;
@@ -38,14 +35,23 @@ public final class FuzzingTool extends TruffleInstrument {
 	}
 
 	private void init(final Env env) {
-		SourceSectionFilter execution_filter = SourceSectionFilter.newBuilder().includeInternal(true).build();
-		SourceSectionFilter section_coverage_filter = SourceSectionFilter.newBuilder().includeInternal(false).build();
-		SourceFilter source_filter = SourceFilter.newBuilder().includeInternal(false).build();
+		final Instrumenter instrumenter = env.getInstrumenter();
 
-		Instrumenter instrumenter = env.getInstrumenter();
+		// Variable execution tracing
+		final SourceSectionFilter execution_filter = SourceSectionFilter.newBuilder().includeInternal(true).build();
 		instrumenter.attachExecutionEventFactory(execution_filter, execution_filter, new FuzzingNodeFactory(env, this.amygdala));
+
+		// Coverage information
+		SourceSectionFilter branch_coverage_filter = SourceSectionFilter.newBuilder().includeInternal(false).build(); // Apparently WhileNode is not a statement...
+		SourceSectionFilter statement_coverage_filter = SourceSectionFilter.newBuilder().tagIs(StandardTags.StatementTag.class).includeInternal(false).build();
+		SourceSectionFilter root_coverage_filter = SourceSectionFilter.newBuilder().tagIs(StandardTags.RootTag.class).includeInternal(false).build();
+		instrumenter.attachLoadSourceSectionListener(branch_coverage_filter, new BranchSourceSectionListener(amygdala), false);
+		instrumenter.attachLoadSourceSectionListener(statement_coverage_filter, new StatementSourceSectionListener(amygdala), false);
+		instrumenter.attachLoadSourceSectionListener(root_coverage_filter, new RootSourceSectionListener(amygdala), false);
+
+		// Load source listener
+		SourceFilter source_filter = SourceFilter.newBuilder().build();
 		instrumenter.attachLoadSourceListener(source_filter, new FuzzingSourceListener(amygdala), false);
-		instrumenter.attachLoadSourceSectionListener(section_coverage_filter, new FuzzingSourceSectionListener(amygdala), false);
 	}
 
 	@Override

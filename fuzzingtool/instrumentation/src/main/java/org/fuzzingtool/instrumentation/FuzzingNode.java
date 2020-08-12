@@ -1,11 +1,9 @@
 package org.fuzzingtool.instrumentation;
 
 import com.oracle.truffle.api.Scope;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.instrumentation.EventContext;
-import com.oracle.truffle.api.instrumentation.ExecutionEventNode;
-import com.oracle.truffle.api.instrumentation.InstrumentableNode;
-import com.oracle.truffle.api.instrumentation.TruffleInstrument;
+import com.oracle.truffle.api.instrumentation.*;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -20,8 +18,7 @@ import com.oracle.truffle.js.nodes.JSGuards;
 import com.oracle.truffle.js.nodes.JSNodeUtil;
 import com.oracle.truffle.js.nodes.access.*;
 import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
-import com.oracle.truffle.js.runtime.JSFrameUtil;
-import com.oracle.truffle.js.runtime.JSRuntime;
+import com.oracle.truffle.js.runtime.*;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
 import org.fuzzingtool.core.components.*;
 import org.fuzzingtool.core.symbolic.*;
@@ -30,6 +27,7 @@ import org.fuzzingtool.core.symbolic.arithmetic.Subtraction;
 import org.fuzzingtool.core.symbolic.basic.SymbolicConstant;
 import org.fuzzingtool.core.visualization.ASTVisualizer;
 import org.graalvm.collections.Pair;
+import org.graalvm.polyglot.Context;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -60,6 +58,8 @@ public class FuzzingNode extends ExecutionEventNode {
 	private final int source_relative_identifier;
 
 	// Coverage
+	private final boolean is_root_tag;
+	private final boolean is_statement_tag;
 	private boolean covered = false;
 
 	// Input node config
@@ -83,7 +83,7 @@ public class FuzzingNode extends ExecutionEventNode {
 		this.instrumented_node = ec.getInstrumentedNode();
 		this.instrumented_node_type = instrumented_node.getClass().getSimpleName();
 		this.instrumented_node_hash = instrumented_node.hashCode();
-		this.source_relative_identifier = getSourceRelativeIdentifier();
+		this.source_relative_identifier = getSourceRelativeIdentifier(source_section, instrumented_node);
 
 		if (amygdala.isFunctionVisEnabled() && instrumented_node_type.equals("MaterializedFunctionBodyNode")) {
 			StringBuilder save_path = new StringBuilder();
@@ -113,12 +113,8 @@ public class FuzzingNode extends ExecutionEventNode {
 			input_variable_identifier = null;
 		}
 
-		if (source_relative_identifier != 0) {
-			amygdala.coverage.registerStatement(source_relative_identifier);
-			if (instrumented_node_type.equals("IfNode") || instrumented_node_type.equals("WhileNode")) {
-				amygdala.coverage.registerBranch(source_relative_identifier);
-			}
-		}
+		this.is_root_tag = ec.hasTag(StandardTags.RootTag.class);
+		this.is_statement_tag = ec.hasTag(StandardTags.StatementTag.class);
 
 		if (!amygdala.node_type_instrumented.containsKey(instrumented_node_type)) {
 			amygdala.node_type_instrumented.put(instrumented_node_type, new BitSet(7));
@@ -144,12 +140,12 @@ public class FuzzingNode extends ExecutionEventNode {
 		}
 	}
 
-	private Integer getSourceRelativeIdentifier() {
-		if (source_section != null && source_section.isAvailable()) {
+	public static Integer getSourceRelativeIdentifier(SourceSection source_section, Node node) {
+		if (node != null && source_section != null && source_section.isAvailable()) {
 			String identifier = source_section.getSource().getURI().toString()
 					+ ":" + source_section.getCharIndex()
 					+ ":" + source_section.getCharEndIndex()
-					+ ":" + instrumented_node_type;
+					+ ":" + node.getClass().getSimpleName();
 			return identifier.hashCode();
 		} else {
 			return 0;
@@ -245,7 +241,7 @@ public class FuzzingNode extends ExecutionEventNode {
 	@Override
 	public void onEnter(VirtualFrame vFrame) {
 		if (amygdala.isEventLoggingEnabled()) {
-			amygdala.logger.log(getSignatureString() + " \033[32m→\033[0m");
+			amygdala.logger.event(getSignatureString() + " \033[32m→\033[0m");
 		}
 
 		boolean was_instrumented_on_enter = true;
@@ -282,9 +278,11 @@ public class FuzzingNode extends ExecutionEventNode {
 		}
 
 		if (!covered) {
-			if (source_relative_identifier != 0) {
-				amygdala.coverage.addSourceSectionCovered(source_section);
+			if (is_statement_tag) {
 				amygdala.coverage.addStatementCovered(source_relative_identifier);
+			}
+			if (is_root_tag) {
+				amygdala.coverage.addRootCovered(source_relative_identifier);
 			}
 			covered = true;
 		}
@@ -300,7 +298,7 @@ public class FuzzingNode extends ExecutionEventNode {
 	public void onInputValue(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
 								Object inputValue) {
 		if (amygdala.isEventLoggingEnabled()) {
-			amygdala.logger.log(getSignatureString() + " \033[34m•\033[0m");
+			amygdala.logger.event(getSignatureString() + " \033[34m•\033[0m");
 		}
 
 		boolean was_instrumented_on_input_value = true;
@@ -346,7 +344,7 @@ public class FuzzingNode extends ExecutionEventNode {
 	@Override
 	public void onReturnValue(VirtualFrame vFrame, Object result) {
 		if (amygdala.isEventLoggingEnabled()) {
-			amygdala.logger.log(getSignatureString() + " \033[31m↵\033[0m");
+			amygdala.logger.event(getSignatureString() + " \033[31m↵\033[0m");
 		}
 
 		boolean was_instrumented_on_return_value = true;
@@ -545,7 +543,7 @@ public class FuzzingNode extends ExecutionEventNode {
 	@Override
 	protected void onReturnExceptional(VirtualFrame frame, Throwable exception) {
 		if (amygdala.isEventLoggingEnabled()) {
-			amygdala.logger.log(getSignatureString() + " \033[33m↯\033[0m");
+			amygdala.logger.event(getSignatureString() + " \033[33m↯\033[0m");
 		}
 
 		// Exception should only be escalated if it is not already an escalated exception
@@ -575,7 +573,7 @@ public class FuzzingNode extends ExecutionEventNode {
 	@Override
 	public Object onUnwind(VirtualFrame frame, Object info) {
 		if (amygdala.isEventLoggingEnabled()) {
-			amygdala.logger.log(getSignatureString() + " \033[35m↺\033[0m");
+			amygdala.logger.event(getSignatureString() + " \033[35m↺\033[0m");
 		}
 
 		amygdala.node_type_instrumented.get(instrumented_node_type).set(5);
@@ -585,7 +583,7 @@ public class FuzzingNode extends ExecutionEventNode {
 	@Override
 	protected void onDispose(VirtualFrame frame) {
 		if (amygdala.isEventLoggingEnabled()) {
-			amygdala.logger.log(getSignatureString() + " \033[36m×\033[0m");
+			amygdala.logger.event(getSignatureString() + " \033[36m×\033[0m");
 		}
 
 		amygdala.node_type_instrumented.get(instrumented_node_type).set(6);
@@ -775,8 +773,13 @@ public class FuzzingNode extends ExecutionEventNode {
 
 	private void onReturnBehaviorGlobalPropertyNode(VirtualFrame vFrame, Object result) {
 		GlobalPropertyNode gpnode = (GlobalPropertyNode) instrumented_node;
-		amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), gpnode.getPropertyKey(),
-											   instrumented_node_hash);
+		if (context_object != null) {
+			amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), gpnode.getPropertyKey(),
+												   instrumented_node_hash);
+		} else {
+			amygdala.tracer.propertyToIntermediate(amygdala.tracer.getJSGlobalObjectId(), gpnode.getPropertyKey(),
+												   instrumented_node_hash);
+		}
 	}
 
 	private void onReturnBehaviorGlobalObjectNode(VirtualFrame vFrame, Object result) {
@@ -793,6 +796,8 @@ public class FuzzingNode extends ExecutionEventNode {
 			amygdala.tracer.addArrayOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT,
 											  System.identityHashCode(context_object), new ArrayList<>(),
 											  Operation.ARR_LENGTH, getJSArraySize((DynamicObject) context_object));
+		} else if (source_section.getCharacters().toString().equals("Math.PI")) {
+			amygdala.tracer.setIntermediate(instrumented_node_hash, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_REAL, Math.PI));
 		} else {
 			amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), property_name,
 												   instrumented_node_hash);

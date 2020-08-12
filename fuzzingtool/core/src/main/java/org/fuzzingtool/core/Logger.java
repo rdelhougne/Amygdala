@@ -12,8 +12,9 @@ public class Logger {
 
 	// logging statistics
 	private static final boolean SHOW_DEBUGGING_STATS = true;
-	private static final boolean AGGREGATE_LOGS = true;
+	private static final boolean AGGREGATE_EVENTS = false;
 	private int num_log = 0;
+	private int num_event = 0;
 	private int num_debug = 0;
 	private int num_info = 0;
 	private int num_warning = 0;
@@ -31,12 +32,17 @@ public class Logger {
 	}
 
 	public void log(String msg) {
-		if (AGGREGATE_LOGS) {
+		outStream.println(msg);
+		num_log++;
+	}
+
+	public void event(String msg) {
+		if (AGGREGATE_EVENTS) {
 			aggregate_queue.offer(msg);
 		} else {
 			outStream.println(msg);
-			num_log++;
 		}
+		num_event++;
 	}
 
 	public void debug(String msg) {
@@ -55,7 +61,7 @@ public class Logger {
 	}
 
 	public void critical(String msg) {
-		if (AGGREGATE_LOGS) {
+		if (AGGREGATE_EVENTS) {
 			for (String message: aggregate_queue) {
 				outStream.println(message);
 			}
@@ -99,6 +105,7 @@ public class Logger {
 	public void printStatistics() {
 		outStream.println("===MESSAGE STATISTICS===");
 		outStream.println("LOG: " + num_log);
+		outStream.println("EVENT: " + num_event);
 		outStream.println("DEBUG: " + num_debug);
 		outStream.println("INFO: " + num_info);
 		outStream.println("WARNING: " + num_warning);

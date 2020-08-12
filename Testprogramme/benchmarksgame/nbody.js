@@ -3,9 +3,9 @@
    contributed by Isaac Gouy
    modified by Andrey Filatkin */
 
-const PI = Math.PI;
-const SOLAR_MASS = 4 * PI * PI;
-const DAYS_PER_YEAR = 365.24;
+var PI = Math.PI;
+var SOLAR_MASS = 4 * PI * PI;
+var DAYS_PER_YEAR = 365.24;
 
 function Body(x, y, z, vx, vy, vz, mass) {
     this.x = x;
@@ -69,50 +69,50 @@ function Sun() {
     return new Body(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, SOLAR_MASS);
 }
 
-const bodies = Array(Sun(), Jupiter(), Saturn(), Uranus(), Neptune());
+var bodies = [Sun(), Jupiter(), Saturn(), Uranus(), Neptune()];
 
 function offsetMomentum() {
-    let px = 0;
-    let py = 0;
-    let pz = 0;
-    const size = bodies.length;
-    for (let i = 0; i < size; i++) {
-        const body = bodies[i];
-        const mass = body.mass;
+    var px = 0;
+    var py = 0;
+    var pz = 0;
+    var size = bodies.length;
+    for (var i = 0; i < size; i++) {
+        var body = bodies[i];
+        var mass = body.mass;
         px += body.vx * mass;
         py += body.vy * mass;
         pz += body.vz * mass;
     }
 
-    const body = bodies[0];
+    var body = bodies[0];
     body.vx = -px / SOLAR_MASS;
     body.vy = -py / SOLAR_MASS;
     body.vz = -pz / SOLAR_MASS;
 }
 
 function advance(dt) {
-    const size = bodies.length;
+    var size = bodies.length;
 
-    for (let i = 0; i < size; i++) {
-        const bodyi = bodies[i];
-        let vxi = bodyi.vx;
-        let vyi = bodyi.vy;
-        let vzi = bodyi.vz;
-        for (let j = i + 1; j < size; j++) {
-            const bodyj = bodies[j];
-            const dx = bodyi.x - bodyj.x;
-            const dy = bodyi.y - bodyj.y;
-            const dz = bodyi.z - bodyj.z;
+    for (var i = 0; i < size; i++) {
+        var bodyi = bodies[i];
+        var vxi = bodyi.vx;
+        var vyi = bodyi.vy;
+        var vzi = bodyi.vz;
+        for (var j = i + 1; j < size; j++) {
+            var bodyj = bodies[j];
+            var dx = bodyi.x - bodyj.x;
+            var dy = bodyi.y - bodyj.y;
+            var dz = bodyi.z - bodyj.z;
 
-            const d2 = dx * dx + dy * dy + dz * dz;
-            const mag = dt / (d2 * Math.sqrt(d2));
+            var d2 = dx * dx + dy * dy + dz * dz;
+            var mag = dt / (d2 * Math.sqrt(d2));
 
-            const massj = bodyj.mass;
+            var massj = bodyj.mass;
             vxi -= dx * massj * mag;
             vyi -= dy * massj * mag;
             vzi -= dz * massj * mag;
 
-            const massi = bodyi.mass;
+            var massi = bodyi.mass;
             bodyj.vx += dx * massi * mag;
             bodyj.vy += dy * massi * mag;
             bodyj.vz += dz * massi * mag;
@@ -122,8 +122,8 @@ function advance(dt) {
         bodyi.vz = vzi;
     }
 
-    for (let i = 0; i < size; i++) {
-        const body = bodies[i];
+    for (var i = 0; i < size; i++) {
+        var body = bodies[i];
         body.x += dt * body.vx;
         body.y += dt * body.vy;
         body.z += dt * body.vz;
@@ -131,33 +131,33 @@ function advance(dt) {
 }
 
 function energy() {
-    let e = 0;
-    const size = bodies.length;
+    var e = 0;
+    var size = bodies.length;
 
-    for (let i = 0; i < size; i++) {
-        const bodyi = bodies[i];
+    for (var i = 0; i < size; i++) {
+        var bodyi = bodies[i];
 
         e += 0.5 * bodyi.mass * ( bodyi.vx * bodyi.vx + bodyi.vy * bodyi.vy + bodyi.vz * bodyi.vz );
 
-        for (let j = i + 1; j < size; j++) {
-            const bodyj = bodies[j];
-            const dx = bodyi.x - bodyj.x;
-            const dy = bodyi.y - bodyj.y;
-            const dz = bodyi.z - bodyj.z;
+        for (var j = i + 1; j < size; j++) {
+            var bodyj = bodies[j];
+            var dx = bodyi.x - bodyj.x;
+            var dy = bodyi.y - bodyj.y;
+            var dz = bodyi.z - bodyj.z;
 
-            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            var distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
             e -= (bodyi.mass * bodyj.mass) / distance;
         }
     }
     return e;
 }
 
-const n = +process.argv[2];
+var n = 1000000;
 
 offsetMomentum();
 
-console.log(energy().toFixed(9));
-for (let i = 0; i < n; i++) {
+print(energy());
+for (var i = 0; i < n; i++) {
     advance(0.01);
 }
-console.log(energy().toFixed(9));
+print(energy());

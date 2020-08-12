@@ -11,14 +11,13 @@ import java.util.*;
 
 public class Coverage {
 	public final Logger logger;
-	private final MultiValuedMap<Source, SourceSection> loaded_sections = new HashSetValuedHashMap<>();
-	private final MultiValuedMap<Source, SourceSection> covered_sections = new HashSetValuedHashMap<>();
 	private final Map<Integer, Boolean> covered_statements = new HashMap<>();
+	private final Map<Integer, Boolean> covered_roots = new HashMap<>();
 	// BitSet[0] -> branch taken, BitSet[1] -> branch not taken
 	private final Map<Integer, BitSet> covered_branches = new HashMap<>();
 
 	// Snaphots
-	private final List<Double> line_coverage = new ArrayList<>();
+	private final List<Double> root_coverage = new ArrayList<>();
 	private final List<Double> statement_coverage = new ArrayList<>();
 	private final List<Double> branch_coverage = new ArrayList<>();
 
@@ -50,26 +49,30 @@ public class Coverage {
 		}
 	}
 
-	public void registerSourceSection(SourceSection src_sec) {
-		loaded_sections.put(src_sec.getSource(), src_sec);
+	public void registerRoot(Integer id) {
+		covered_roots.putIfAbsent(id, false);
 	}
 
-	public void addSourceSectionCovered(SourceSection src_sec) {
-		covered_sections.put(src_sec.getSource(), src_sec);
+	public void addRootCovered(Integer id) {
+		covered_roots.put(id, true);
 	}
 
 	public void saveSnapshot() {
-		// Line Coverage
-		MultiSet<Source> sources = loaded_sections.keys();
+		// Cleanup
+		covered_roots.remove(0);
+		covered_statements.remove(0);
+		covered_branches.remove(0);
+
+		// Root Coverage
 		int covered = 0;
 		int loaded = 0;
-		for (Source source: sources) {
-			Set<Integer> covered_line_numbers = coveredLineNumbers(source);
-			Set<Integer> loaded_line_numbers = loadedLineNumbers(source);
-			covered += covered_line_numbers.size();
-			loaded += loaded_line_numbers.size();
+		for (Map.Entry<Integer, Boolean> entry: covered_roots.entrySet()) {
+			loaded++;
+			if (entry.getValue()) {
+				covered++;
+			}
 		}
-		line_coverage.add(100.0 * ((double) covered / (double) loaded));
+		root_coverage.add(100.0 * ((double) covered / (double) loaded));
 
 		// Statement Coverage
 		covered = 0;
@@ -92,41 +95,6 @@ public class Coverage {
 		branch_coverage.add(100.0 * ((double) covered / (double) loaded));
 	}
 
-	private Set<SourceSection> nonCoveredSections(Source source) {
-		final Set<SourceSection> non_covered = new HashSet<>();
-		non_covered.addAll(loaded_sections.get(source));
-		non_covered.removeAll(covered_sections.get(source));
-		return non_covered;
-	}
-
-	private Set<Integer> nonCoveredLineNumbers(Source source) {
-		final Set<Integer> lines_not_covered = new HashSet<>();
-		for (SourceSection ss : nonCoveredSections(source)) {
-			for (int i = ss.getStartLine(); i <= ss.getEndLine(); i++) {
-				lines_not_covered.add(i);
-			}
-		}
-		return lines_not_covered;
-	}
-
-	private Set<Integer> coveredLineNumbers(Source source) {
-		return getLines(covered_sections.get(source));
-	}
-
-	private Set<Integer> loadedLineNumbers(Source source) {
-		return getLines(loaded_sections.get(source));
-	}
-
-	private Set<Integer> getLines(Collection<SourceSection> sections) {
-		final Set<Integer> lines = new HashSet<>();
-		for (SourceSection ss : sections) {
-			for (int i = ss.getStartLine(); i <= ss.getEndLine(); i++) {
-				lines.add(i);
-			}
-		}
-		return lines;
-	}
-
 	/**
 	 * Print coverage information.
 	 */
@@ -143,15 +111,15 @@ public class Coverage {
 		StringBuilder cov_str = new StringBuilder();
 		cov_str.append("===COVERAGE INFORMATION===\n");
 		cov_str.append("-------------|---------|---------|----------|\n");
-		cov_str.append(" # Iteration | % Lines | % Stmts | % Branch |\n");
+		cov_str.append(" # Iteration | % Roots | % Stmts | % Branch |\n");
 		cov_str.append("-------------|---------|---------|----------|\n");
-		for (int i = 0; i < line_coverage.size(); i++) {
+		for (int i = 0; i < statement_coverage.size(); i++) {
 			String iter_str = String.format("%11d", i + 1);
-			String line_str = String.format("%7.1f", line_coverage.get(i));
+			String root_str = String.format("%7.1f", root_coverage.get(i));
 			String stmt_str = String.format("%7.1f", statement_coverage.get(i));
 			String branch_str = String.format("%8.1f", branch_coverage.get(i));
 			cov_str.append(" ").append(iter_str).append(" |");
-			cov_str.append(" ").append(line_str).append(" |");
+			cov_str.append(" ").append(root_str).append(" |");
 			cov_str.append(" ").append(stmt_str).append(" |");
 			cov_str.append(" ").append(branch_str).append(" |\n");
 		}
@@ -168,8 +136,8 @@ public class Coverage {
 	 */
 	public Map<String, Object> getCoverageObject(int index) {
 		Map<String, Object> coverage_map = new HashMap<>();
-		if (index < line_coverage.size()) {
-			coverage_map.put("line", line_coverage.get(index));
+		if (index < root_coverage.size()) {
+			coverage_map.put("root", root_coverage.get(index));
 		}
 		if (index < statement_coverage.size()) {
 			coverage_map.put("statement", statement_coverage.get(index));
