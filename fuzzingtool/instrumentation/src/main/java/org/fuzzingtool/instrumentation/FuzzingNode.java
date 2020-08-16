@@ -1,7 +1,6 @@
 package org.fuzzingtool.instrumentation;
 
 import com.oracle.truffle.api.Scope;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.*;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -18,16 +17,19 @@ import com.oracle.truffle.js.nodes.JSGuards;
 import com.oracle.truffle.js.nodes.JSNodeUtil;
 import com.oracle.truffle.js.nodes.access.*;
 import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
-import com.oracle.truffle.js.runtime.*;
+import com.oracle.truffle.js.runtime.JSFrameUtil;
+import com.oracle.truffle.js.runtime.JSRuntime;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
 import org.fuzzingtool.core.components.*;
-import org.fuzzingtool.core.symbolic.*;
+import org.fuzzingtool.core.symbolic.ExpressionType;
+import org.fuzzingtool.core.symbolic.LanguageSemantic;
+import org.fuzzingtool.core.symbolic.Operation;
+import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.fuzzingtool.core.symbolic.arithmetic.Addition;
 import org.fuzzingtool.core.symbolic.arithmetic.Subtraction;
 import org.fuzzingtool.core.symbolic.basic.SymbolicConstant;
 import org.fuzzingtool.core.visualization.ASTVisualizer;
 import org.graalvm.collections.Pair;
-import org.graalvm.polyglot.Context;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -73,6 +75,10 @@ public class FuzzingNode extends ExecutionEventNode {
 	private Object element_access = null;
 	// used by Call1..NNodes to construct the arguments array
 	private final ArrayList<SymbolicNode> arguments_array = new ArrayList<>();
+	// used by JSEqualNodeGen to compare the types if the custom error class "equal_is_strict_equal" is enabled
+	private String type_of_first_equal_input = "";
+	// used by all nodes to cache a custom error exception because it cannot be thrown at onInputValue
+	private CustomError.EscalatedException cached_exception = null;
 
 	public FuzzingNode(TruffleInstrument.Env env, Amygdala amy, EventContext ec) {
 		this.environment = env;
@@ -292,6 +298,8 @@ public class FuzzingNode extends ExecutionEventNode {
 		if (was_instrumented_on_enter) {
 			amygdala.node_type_instrumented.get(instrumented_node_type).set(1);
 		}
+
+		this.cached_exception = null;
 	}
 
 	@Override
@@ -332,12 +340,24 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "JSNewNodeGen":
 				onInputValueBehaviorJSNewNodeGen(vFrame, inputContext, inputIndex, inputValue);
 				break;
+			case "JSEqualNodeGen":
+				onInputValueBehaviorJSEqualNodeGen(vFrame, inputContext, inputIndex, inputValue);
+				break;
 			default:
 				was_instrumented_on_input_value = false;
 		}
 
 		if (was_instrumented_on_input_value) {
 			amygdala.node_type_instrumented.get(instrumented_node_type).set(2);
+		}
+
+		if (amygdala.custom_error.someEnabled() && source_section != null) {
+			try {
+				amygdala.custom_error.inspectInputValue(instrumented_node_type, inputValue, inputIndex, source_section.getStartLine());
+			} catch (CustomError.EscalatedException ee) {
+				//throw event_context.createError(ee); // does not work...
+				this.cached_exception = ee;
+			}
 		}
 	}
 
@@ -538,6 +558,17 @@ public class FuzzingNode extends ExecutionEventNode {
 		if (was_instrumented_on_return_value) {
 			amygdala.node_type_instrumented.get(instrumented_node_type).set(3);
 		}
+
+		if (amygdala.custom_error.someEnabled() && source_section != null) {
+			if (this.cached_exception != null) {
+				throw event_context.createError(this.cached_exception);
+			}
+			try {
+				amygdala.custom_error.inspectReturnValue(instrumented_node_type, result, source_section.getStartLine());
+			} catch (CustomError.EscalatedException ee) {
+				throw event_context.createError(ee);
+			}
+		}
 	}
 
 	@Override
@@ -549,8 +580,8 @@ public class FuzzingNode extends ExecutionEventNode {
 		// Exception should only be escalated if it is not already an escalated exception
 		// and is not a ControlFlowException, these exceptions can occur in normal program executions
 		if (!(exception instanceof CustomError.EscalatedException) && !(exception instanceof ControlFlowException)) {
-			if (amygdala.custom_error.escalateExceptions()) {
-				amygdala.logger.info("Escalating exception with message: '" + exception.getMessage() + "'.");
+			if (amygdala.custom_error.escalateExceptionsEnabled()) {
+				amygdala.logger.info("Escalating exception with message: '" + exception.getMessage() + "' (escalate_exceptions).");
 				throw event_context.createError(CustomError.createException(exception.getMessage()));
 			}
 		}
@@ -740,6 +771,21 @@ public class FuzzingNode extends ExecutionEventNode {
 		// inside a call node could
 		// be the last input before the function gets called
 		amygdala.tracer.setArgumentsArray(this.arguments_array);
+	}
+
+	private void onInputValueBehaviorJSEqualNodeGen(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
+												  Object inputValue) {
+		if (amygdala.custom_error.equalIsStrictEqualEnabled()) {
+			if (inputIndex == 0) {
+				this.type_of_first_equal_input = JSRuntime.typeof(inputValue);
+			}
+			if (inputIndex == 1) {
+				String type_of_second_equal_input = JSRuntime.typeof(inputValue);
+				if (!type_of_first_equal_input.equals(type_of_second_equal_input)) {
+					this.cached_exception = CustomError.createException("Detected different types '" + type_of_first_equal_input + "' and '" + type_of_second_equal_input + "' for equality operation (equal_is_strict_equal). [" + instrumented_node_type + ", line " + source_section.getStartLine() + "]");
+				}
+			}
+		}
 	}
 
 	private String extractPredicate() {
@@ -1195,7 +1241,9 @@ public class FuzzingNode extends ExecutionEventNode {
 		} else if (JSGuards.isNumberDouble(js_obj) && JSRuntime.isNaN(js_obj)) {
 			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null);
 		} else if (JSGuards.isNumberDouble(js_obj) && JSRuntime.isPositiveInfinity((double) js_obj)) {
-			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NAN, null);
+			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_POS_INFINITY, null);
+		} else if (JSGuards.isNumberDouble(js_obj) && JSRuntime.isPositiveInfinity(-(double) js_obj)) {
+				return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_NEG_INFINITY, null);
 		} else if (JSGuards.isNumberDouble(js_obj)) {
 			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_REAL, js_obj);
 		} else if (JSGuards.isUndefined(js_obj)) {

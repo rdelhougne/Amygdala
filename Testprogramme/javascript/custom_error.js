@@ -7,16 +7,22 @@ function DivisionException(message) {
 
 function divide(n, m) {
 	var l = 5;
-	if (m == 0) {
-		throw new DivisionException("Teilen durch Null nicht möglich");
+	try {
+		if (m == 0) {
+			throw new DivisionException("Teilen durch Null nicht möglich");
+		}
+	} catch (e) {
+		print("Catched!");
 	}
 
 	return n / m;
 }
 
-try {
-	var ausgabe = divide(5, nenner);
-	print(ausgabe);
-} catch (e) {
-	print(e.name + ": " + e.message);
-}
+print(divide(5, nenner)); // fails with escalate_exceptions
+print(23 == "23"); // fails with equal_is_strict_equal
+print(40 || true); // fails with boolean_op_only_boolean_operands
+print(98 * undefined); // fails with arith_op_no_undefined
+print(null + 93); // fails with arith_op_no_null
+print(45.7 - NaN); // fails with arith_op_no_nan
+print(546456456 / Infinity); // fails with arith_op_no_infinity
+print(34 / 0); // fails with division_op_no_zero

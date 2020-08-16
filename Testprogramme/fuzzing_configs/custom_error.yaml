@@ -17,4 +17,11 @@ visualization:
   event_logging: true
 custom_errors:
   escalate_exceptions: true
+  equal_is_strict_equal: false
+  boolean_op_only_boolean_operands: false
+  arith_op_no_undefined: false
+  arith_op_no_null: false
+  arith_op_no_nan: false
+  arith_op_no_infinity: false
+  division_op_no_zero: false
 ...
