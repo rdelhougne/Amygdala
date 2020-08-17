@@ -16,6 +16,7 @@ public class CustomError {
 	// Options
 	private boolean escalate_exceptions = false;
 	private boolean equal_is_strict_equal = false;
+	private boolean enforce_existing_properties = false;
 	private boolean boolean_op_only_boolean_operands = false;
 	private boolean arith_op_no_undefined = false;
 	private boolean arith_op_no_null = false;
@@ -43,6 +44,10 @@ public class CustomError {
 				case "equal_is_strict_equal":
 					equal_is_strict_equal = (boolean) value;
 					logSetOption(name, equal_is_strict_equal);
+					break;
+				case "enforce_existing_properties":
+					enforce_existing_properties = (boolean) value;
+					logSetOption(name, enforce_existing_properties);
 					break;
 				case "boolean_op_only_boolean_operands":
 					boolean_op_only_boolean_operands = (boolean) value;
@@ -97,6 +102,8 @@ public class CustomError {
 				return this.escalate_exceptions;
 			case "equal_is_strict_equal":
 				return this.equal_is_strict_equal;
+			case "enforce_existing_properties":
+				return this.enforce_existing_properties;
 			case "boolean_op_only_boolean_operands":
 				return this.boolean_op_only_boolean_operands;
 			case "arith_op_no_undefined":
@@ -130,6 +137,7 @@ public class CustomError {
 	private void recalculateSomeEnabled() {
 		this.some_enabled = this.escalate_exceptions ||
 							this.equal_is_strict_equal ||
+							this.enforce_existing_properties ||
 							this.boolean_op_only_boolean_operands ||
 							this.arith_op_no_undefined ||
 							this.arith_op_no_null ||
@@ -306,6 +314,13 @@ public class CustomError {
 	 */
 	public boolean equalIsStrictEqualEnabled() {
 		return equal_is_strict_equal;
+	}
+
+	/**
+	 * @return Value of option "enforce_existing_properties"
+	 */
+	public boolean enforceExistingPropertiesEnabled() {
+		return enforce_existing_properties;
 	}
 
 	/**

@@ -18,6 +18,7 @@ visualization:
 custom_errors:
   escalate_exceptions: true
   equal_is_strict_equal: false
+  enforce_existing_properties: false
   boolean_op_only_boolean_operands: false
   arith_op_no_undefined: false
   arith_op_no_null: false

@@ -826,6 +826,7 @@ public class FuzzingNode extends ExecutionEventNode {
 			amygdala.tracer.propertyToIntermediate(amygdala.tracer.getJSGlobalObjectId(), gpnode.getPropertyKey(),
 												   instrumented_node_hash);
 		}
+		enforceExistingProperties(context_object, gpnode.getPropertyKey());
 	}
 
 	private void onReturnBehaviorGlobalObjectNode(VirtualFrame vFrame, Object result) {
@@ -847,6 +848,21 @@ public class FuzzingNode extends ExecutionEventNode {
 		} else {
 			amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), property_name,
 												   instrumented_node_hash);
+		}
+		enforceExistingProperties(context_object, pnode.getPropertyKey());
+	}
+
+	private void enforceExistingProperties(Object js_object, Object key) {
+		if (amygdala.custom_error.enforceExistingPropertiesEnabled() && JSRuntime.isObject(js_object)) {
+			DynamicObject js_dynamic_object = (DynamicObject) js_object;
+			if (!js_dynamic_object.containsKey(key)) {
+				amygdala.logger.info("Detected non-existing property '" + key.toString() + "' (enforce_existing_properties).");
+				int line_num = -1;
+				if (source_section != null && source_section.isAvailable()) {
+					line_num = source_section.getStartLine();
+				}
+				throw event_context.createError(CustomError.createException("Detected non-existing property '" + key.toString() + "' (enforce_existing_properties). [" + instrumented_node_type + ", line " + line_num + "]"));
+			}
 		}
 	}
 
@@ -1164,6 +1180,7 @@ public class FuzzingNode extends ExecutionEventNode {
 			amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), element_access,
 												   instrumented_node_hash);
 		}
+		enforceExistingProperties(context_object, element_access);
 	}
 
 	private void onReturnBehaviorWriteElementNode(VirtualFrame vFrame, Object result) {

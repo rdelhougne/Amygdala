@@ -18,8 +18,12 @@ function divide(n, m) {
 	return n / m;
 }
 
+wrong_object = {};
+
 print(divide(5, nenner)); // fails with escalate_exceptions
 print(23 == "23"); // fails with equal_is_strict_equal
+print(wrong_object.wrongproperty); // fails with enforce_existing_properties
+print(wrong_object["morewrong"]); // fails with enforce_existing_properties
 print(40 || true); // fails with boolean_op_only_boolean_operands
 print(98 * undefined); // fails with arith_op_no_undefined
 print(null + 93); // fails with arith_op_no_null
