@@ -6,6 +6,7 @@ import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.symbolic.ExpressionType;
+import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.fuzzingtool.core.tactics.DepthSearchTactic;
 import org.fuzzingtool.core.tactics.FuzzingTactic;
 import org.fuzzingtool.core.visualization.BranchingVisualizer;
@@ -302,6 +303,11 @@ public class Amygdala {
 	private void loadFuzzingParameters(Map<String, Object> parameters) {
 		this.max_iterations = (int) parameters.getOrDefault("max_iterations", this.max_iterations);
 		logger.info("Option max_iterations set to " + this.max_iterations);
+
+		SymbolicNode.PARTIAL_EVALUATION_ON_CAST = (boolean) parameters.getOrDefault("partial_evaluation_on_cast", false);
+		if (SymbolicNode.PARTIAL_EVALUATION_ON_CAST) {
+			logger.info("Option partial_evaluation_on_cast enabled");
+		}
 
 		String tactic_string = (String) parameters.getOrDefault("tactic", "DEPTH_SEARCH");
 		switch (tactic_string) {

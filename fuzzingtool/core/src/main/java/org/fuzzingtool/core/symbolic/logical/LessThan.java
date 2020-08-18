@@ -66,7 +66,7 @@ public class LessThan extends SymbolicNode {
 			throw new SymbolicException.UndecidableExpression("Z3", "Cannot compare strings with <");
 		} else {
 			if (x.getRight() == ExpressionType.BIGINT && y.getRight() == ExpressionType.STRING) {
-				Pair<Expr, ExpressionType> y_bigint = tryCastZ3JS(ctx, y, ExpressionType.BIGINT);
+				Pair<Expr, ExpressionType> y_bigint = toNumericZ3JS(ctx, y);
 				if (y_bigint.getRight() == ExpressionType.NUMBER_NAN) {
 					return Pair.create(null, ExpressionType.UNDEFINED);
 				}
@@ -74,7 +74,7 @@ public class LessThan extends SymbolicNode {
 								   ExpressionType.BOOLEAN);
 			}
 			if (x.getRight() == ExpressionType.STRING && y.getRight() == ExpressionType.BIGINT) {
-				Pair<Expr, ExpressionType> x_bigint = tryCastZ3JS(ctx, x, ExpressionType.BIGINT);
+				Pair<Expr, ExpressionType> x_bigint = toNumericZ3JS(ctx, x);
 				if (x_bigint.getRight() == ExpressionType.NUMBER_NAN) {
 					return Pair.create(null, ExpressionType.UNDEFINED);
 				}

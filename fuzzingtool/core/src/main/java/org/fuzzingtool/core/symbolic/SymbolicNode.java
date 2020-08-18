@@ -1,13 +1,17 @@
 package org.fuzzingtool.core.symbolic;
 
 import com.microsoft.z3.*;
+import com.microsoft.z3.enumerations.Z3_decl_kind;
 import org.graalvm.collections.Pair;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public abstract class SymbolicNode {
 	protected SymbolicNode[] children;
 	protected LanguageSemantic languageSemantic;
 
-	public static final boolean ENHANCED_CASTING = false;
+	public static boolean PARTIAL_EVALUATION_ON_CAST = false;
 
 	public final String toHRString() throws SymbolicException.NotImplemented {
 		if (this.languageSemantic == LanguageSemantic.JAVASCRIPT) {
@@ -55,41 +59,6 @@ public abstract class SymbolicNode {
 	}
 
 	/**
-	 * This method performs a typecast with JavaScript semantic and the abilities of the Z3-Solver.
-	 * The condition return.getRight() == goal is always satisfied, or an UndecidableExpression exception is thrown.
-	 * This is likely to happen A LOT at this point.
-	 * To further reduce the likelihood of UndecidableExpression to be thrown, the casting function
-	 * tries to solve constant expressions and then manually convert them.
-	 *
-	 * @param ctx        The Z3-Context
-	 * @param expression The expression to be casted.
-	 * @param goal       The type of expression 'expression' is casted into
-	 * @return The casted expression, or the same expression if the ExpressionTypes are already equal.
-	 * @throws SymbolicException.UndecidableExpression Is thrown whenever the symbolic casting fails.
-	 */
-	/* deprecated */
-	public static Pair<Expr, ExpressionType> tryCastZ3JS(Context ctx, Pair<Expr, ExpressionType> expression,
-                                                         ExpressionType goal) throws
-			SymbolicException.UndecidableExpression { //TODO
-		if (expression.getRight() == goal) {
-			return expression;
-		}
-
-		if (expression.getRight() == ExpressionType.STRING) {
-			//TODO evtl const überprüfen und NaN zurückgeben
-			if (goal == ExpressionType.NUMBER_INTEGER) {
-				return Pair.create(ctx.stringToInt(expression.getLeft()), ExpressionType.NUMBER_INTEGER);
-			}
-			if (goal == ExpressionType.BIGINT) {
-				return Pair.create(ctx.stringToInt(expression.getLeft()), ExpressionType.BIGINT);
-			}
-		}
-
-		throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-				expression.getRight().toString() + "' to '" + goal.toString() + "'.");
-	}
-
-	/**
 	 * This method tries to convert an expression to a number format as in https://tc39.es/ecma262/2020/#sec-tonumber
 	 *
 	 * @param ctx        The Z3-Context
@@ -101,22 +70,22 @@ public abstract class SymbolicNode {
 			SymbolicException.UndecidableExpression {
 		switch (expression.getRight()) {
 			case BOOLEAN:
-				if (ENHANCED_CASTING) {
-					//TODO wenn möglich einen konstanten Ausdruck auflösen
-					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-							expression.getRight().toString() + "' to a Number type.");
+				if (PARTIAL_EVALUATION_ON_CAST) {
+					return tryPartialEvaluationCastNumeric(ctx, expression);
 				} else {
 					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
 							expression.getRight().toString() + "' to a Number type.");
 				}
 			case STRING:
-				if (ENHANCED_CASTING) {
-					//TODO wenn möglich einen konstanten Ausdruck auflösen
-					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
+				if (!containsVars(expression.getLeft())) {
+					if (PARTIAL_EVALUATION_ON_CAST) {
+						return tryPartialEvaluationCastNumeric(ctx, expression);
+					} else {
+						throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
 							expression.getRight().toString() + "' to a Number type.");
+					}
 				} else {
-					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-							expression.getRight().toString() + "' to a Number type.");
+					return Pair.create(ctx.stringToInt(expression.getLeft()), ExpressionType.NUMBER_INTEGER);
 				}
 			case BIGINT:
 			case NUMBER_INTEGER:
@@ -148,10 +117,8 @@ public abstract class SymbolicNode {
 
 		switch (expression.getRight()) {
 			case BOOLEAN:
-				if (ENHANCED_CASTING) {
-					//TODO wenn möglich einen konstanten Ausdruck auflösen
-					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-							expression.getRight().toString() + "' to a String type.");
+				if (PARTIAL_EVALUATION_ON_CAST) {
+					return tryPartialEvaluationCast(ctx, expression, ExpressionType.STRING);
 				} else {
 					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
 							expression.getRight().toString() + "' to a String type.");
@@ -267,6 +234,150 @@ public abstract class SymbolicNode {
 				throw new SymbolicException.UndecidableExpression("Z3", "Cannot negate expression with type '" +
 						expression.getRight().toString() + "'.");
 		}
+	}
+
+	/**
+	 * This method tries to cast an expression to another type by evaluating
+	 * the expression and converting the result. This only works if the expression
+	 * is a constant expression. If the expression cannot be casted, an exception is thrown.
+	 *
+	 * @param ctx The Z3-Context
+	 * @param expression The expression to be casted
+	 * @param goal Type goal
+	 * @return Casted expression
+	 * @throws SymbolicException.UndecidableExpression Is thrown whenever the symbolic casting fails.
+	 */
+	public static Pair<Expr, ExpressionType> tryPartialEvaluationCast(Context ctx, Pair<Expr, ExpressionType> expression, ExpressionType goal) throws
+			SymbolicException.UndecidableExpression {
+		Expr old_expr = expression.getLeft();
+		ExpressionType old_expr_type = expression.getRight();
+		if (!containsVars(old_expr)) {
+			Expr simplified_expr = old_expr.simplify();
+			if (simplified_expr.isConst()) {
+				switch (goal) {
+					case STRING:
+						if (simplified_expr.isBool()) {
+							if (simplified_expr.isTrue()) {
+								return Pair.create(ctx.mkString("true"), ExpressionType.STRING);
+							}
+							if (simplified_expr.isFalse()) {
+								return Pair.create(ctx.mkString("false"), ExpressionType.STRING);
+							}
+						}
+						break;
+				}
+				throw new SymbolicException.UndecidableExpression("Z3", "Casting from expression '" +
+						simplified_expr.toString() + "' to '" + goal.name() + "' with partial evaluation not implemented.");
+			} else {
+				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression with type '" +
+						old_expr_type.name() + "' to '" + goal.name() + "' with partial evaluation because it can not be simplified to a constant.");
+			}
+		} else {
+			throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression with type '" +
+					old_expr_type.name() + "' to '" + goal.name() + "' with partial evaluation because it contains variables.");
+		}
+	}
+
+	/**
+	 * This method tries to cast an expression to numeric type by evaluating
+	 * the expression and converting the result. This only works if the expression
+	 * is a constant expression. If the expression cannot be casted, an exception is thrown.
+	 * https://tc39.es/ecma262/2020/#sec-tonumber
+	 *
+	 * @param ctx The Z3-Context
+	 * @param expression The expression to be casted
+	 * @return Casted expression
+	 * @throws SymbolicException.UndecidableExpression Is thrown whenever the symbolic casting fails.
+	 */
+	public static Pair<Expr, ExpressionType> tryPartialEvaluationCastNumeric(Context ctx, Pair<Expr, ExpressionType> expression) throws
+			SymbolicException.UndecidableExpression {
+		Expr old_expr = expression.getLeft();
+		ExpressionType old_expr_type = expression.getRight();
+		if (!containsVars(old_expr)) {
+			Expr simplified_expr = old_expr.simplify();
+			if (simplified_expr.isConst()) {
+				if (simplified_expr.isBool()) {
+					if (simplified_expr.isTrue()) {
+						return Pair.create(ctx.mkInt(1), ExpressionType.NUMBER_INTEGER);
+					}
+					if (simplified_expr.isFalse()) {
+						return Pair.create(ctx.mkInt(0), ExpressionType.NUMBER_INTEGER);
+					}
+				} else if (simplified_expr.isString()) {
+					// kind of https://tc39.es/ecma262/2020/#sec-tonumber-applied-to-the-string-type...
+					String result = simplified_expr.getString().trim();
+					if (result.equals("Infinity") || result.equals("+Infinity")) {
+						return Pair.create(null, ExpressionType.NUMBER_POS_INFINITY);
+					} else if (result.equals("-Infinity")) {
+						return Pair.create(null, ExpressionType.NUMBER_NEG_INFINITY);
+					} else {
+						try {
+							Integer int_rep = Integer.valueOf(result);
+							return Pair.create(ctx.mkInt(int_rep), ExpressionType.NUMBER_INTEGER);
+						} catch (NumberFormatException nfe) {
+							// do nothing
+						}
+						try {
+							Double double_rep = Double.valueOf(result);
+							return Pair.create(ctx.mkReal(String.valueOf(double_rep)), ExpressionType.NUMBER_REAL);
+						} catch (NumberFormatException nfe) {
+							// do nothing
+						}
+					}
+					return Pair.create(null, ExpressionType.NUMBER_NAN);
+				} else {
+					throw new SymbolicException.UndecidableExpression("Z3", "Casting from expression '" +
+							simplified_expr.toString() + "' to a numeric value with partial evaluation not implemented.");
+				}
+			} else {
+				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression with type '" +
+						old_expr_type.name() + "' to a numeric value with partial evaluation because it can not be simplified to a constant.");
+			}
+		} else {
+			throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression with type '" +
+					old_expr_type.name() + "' to a numeric value with partial evaluation because it contains variables.");
+		}
+		return Pair.create(null, ExpressionType.INTERNAL_ERROR);
+	}
+
+	/**
+	 * Get a set of the variables in the expression.
+	 * https://stackoverflow.com/questions/14080398/z3py-how-to-get-the-list-of-variables-from-a-formula
+	 *
+	 * @param expr Z3 expression
+	 * @return A set of the variables
+	 */
+	public static Set<String> getVars(Expr expr) {
+		Set<String> var_set = new HashSet<>();
+		if (expr.isConst()) {
+			if (expr.getFuncDecl().getDeclKind() == Z3_decl_kind.Z3_OP_UNINTERPRETED) {
+				var_set.add(expr.toString());
+			}
+		} else {
+			for (Expr arg_expr: expr.getArgs()) {
+				var_set.addAll(getVars(arg_expr));
+			}
+		}
+		return var_set;
+	}
+
+	/**
+	 * Check if the provided expression contains any variables
+	 *
+	 * @param expr Z3 expression
+	 * @return true if the expression contains any variables, false otherwise
+	 */
+	public static boolean containsVars(Expr expr) {
+		if (expr.isConst()) {
+			return expr.getFuncDecl().getDeclKind() == Z3_decl_kind.Z3_OP_UNINTERPRETED;
+		} else {
+			for (Expr arg_expr: expr.getArgs()) {
+				if (containsVars(arg_expr)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	@SafeVarargs
