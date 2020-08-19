@@ -62,7 +62,25 @@ public class Equal extends SymbolicNode {
 			Pair<Expr, ExpressionType> x_numeric = toNumericZ3JS(ctx, x);
 			return Pair.create(ctx.mkEq(x_numeric.getLeft(), y.getLeft()), ExpressionType.BOOLEAN);
 		}
-		//TODO rest of types
-		throw new SymbolicException.NotImplemented("Advanced equality not implemented.");
+		// BigInt is handled above
+		if (checkTypeAll(ExpressionType.BOOLEAN, x)) {
+			return abstractEqualityComparisonZ3JS(ctx, toNumericZ3JS(ctx, x), y);
+		}
+		if (checkTypeAll(ExpressionType.BOOLEAN, y)) {
+			return abstractEqualityComparisonZ3JS(ctx, x, toNumericZ3JS(ctx, y));
+		}
+		if (checkTypeAll(ExpressionType.OBJECT, x) || checkTypeAll(ExpressionType.OBJECT, y)) {
+			throw new SymbolicException.UndecidableExpression("Z3", "Cannot perform equality with OBJECT type.");
+		}
+		if ((checkTypeAll(ExpressionType.BIGINT, x) && checkTypeIsNumeric(y)) ||
+				checkTypeAll(ExpressionType.BIGINT, y) && checkTypeIsNumeric(x)) {
+			if (checkTypeContains(ExpressionType.NUMBER_NAN, x, y) ||
+					checkTypeContains(ExpressionType.NUMBER_POS_INFINITY, x, y) ||
+					checkTypeContains(ExpressionType.NUMBER_NEG_INFINITY, x, y)) {
+				return Pair.create(ctx.mkFalse(), ExpressionType.BOOLEAN);
+			}
+			return Pair.create(ctx.mkEq(x.getLeft(), y.getLeft()), ExpressionType.BOOLEAN);
+		}
+		throw new SymbolicException.NotImplemented("Equality not implemented for types " + x.getRight().name() + " and " + y.getRight().name() + ".");
 	}
 }

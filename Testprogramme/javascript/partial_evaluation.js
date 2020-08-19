@@ -6,9 +6,9 @@ var const_string_random = "funnyfrisch";
 var var_integer = 42;
 var var_string = "house";
 
-/*if (const_bool && true == var_integer) {
+if (const_bool && true == var_integer) {
 	print("Found me 1!");
-}*/
+}
 
 if ("32" + const_string_num == var_integer) {
 	print("Found me 2!");
