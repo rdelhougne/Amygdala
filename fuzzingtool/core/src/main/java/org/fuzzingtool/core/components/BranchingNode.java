@@ -82,14 +82,14 @@ public class BranchingNode {
 	private Boolean parentNodeTakenFlag;
 
 	/**
+	 * An Integer, representing the depth of the node in the tree.
+	 */
+	private final Integer depth;
+
+	/**
 	 * Language semantic of the node
 	 */
 	private static final LanguageSemantic nodeLanguageSemantic = LanguageSemantic.JAVASCRIPT; //TODO
-
-	public BranchingNode(SymbolicNode exp, Integer node_hash, BranchingNodeAttribute bt) {
-		setProperties(exp, node_hash, bt);
-		initializeChildren();
-	}
 
 	public BranchingNode() {
 		this.branch_identifier = 0;
@@ -97,6 +97,7 @@ public class BranchingNode {
 		this.branchingNodeAttribute = BranchingNodeAttribute.UNKNOWN;
 		this.parentNode = null;
 		this.parentNodeTakenFlag = false;
+		this.depth = 0;
 	}
 
 	private BranchingNode(BranchingNode parent, Boolean taken_flag) {
@@ -105,6 +106,7 @@ public class BranchingNode {
 		this.branchingNodeAttribute = BranchingNodeAttribute.UNKNOWN;
 		this.parentNode = parent;
 		this.parentNodeTakenFlag = taken_flag;
+		this.depth = parent.getDepth() + 1;
 	}
 
 	public void initializeChildren() {
@@ -134,6 +136,10 @@ public class BranchingNode {
 
 	public BranchingNode getParent() {
 		return this.parentNode;
+	}
+
+	public Integer getDepth() {
+		return this.depth;
 	}
 
 	public void setSourceCodeExpression(String source_code_expression) {

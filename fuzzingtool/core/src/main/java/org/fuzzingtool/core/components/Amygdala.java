@@ -9,6 +9,8 @@ import org.fuzzingtool.core.symbolic.ExpressionType;
 import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.fuzzingtool.core.tactics.DepthSearchTactic;
 import org.fuzzingtool.core.tactics.FuzzingTactic;
+import org.fuzzingtool.core.tactics.InOrderSearchTactic;
+import org.fuzzingtool.core.tactics.RandomSearchTactic;
 import org.fuzzingtool.core.visualization.BranchingVisualizer;
 import org.graalvm.collections.Pair;
 
@@ -311,6 +313,19 @@ public class Amygdala {
 
 		String tactic_string = (String) parameters.getOrDefault("tactic", "DEPTH_SEARCH");
 		switch (tactic_string) {
+			case "IN_ORDER_SEARCH":
+				logger.info("Using tactic IN_ORDER_SEARCH");
+				this.tactic = new InOrderSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
+				if (parameters.containsKey("tactic_in_order_search")) {
+					Map<String, Object> ds_params = (Map<String, Object>) parameters.get("tactic_in_order_search");
+					if (ds_params.containsKey("max_loop_unrolling")) {
+						this.tactic.setOption("max_loop_unrolling", ds_params.get("max_loop_unrolling"));
+					}
+					if (ds_params.containsKey("max_depth")) {
+						this.tactic.setOption("max_depth", ds_params.get("max_depth"));
+					}
+				}
+				break;
 			case "DEPTH_SEARCH":
 				logger.info("Using tactic DEPTH_SEARCH");
 				this.tactic = new DepthSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
@@ -324,10 +339,26 @@ public class Amygdala {
 					}
 				}
 				break;
+			case "RANDOM_SEARCH":
+				logger.info("Using tactic RANDOM_SEARCH");
+				this.tactic = new RandomSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
+				if (parameters.containsKey("tactic_random_search")) {
+					Map<String, Object> ds_params = (Map<String, Object>) parameters.get("tactic_random_search");
+					if (ds_params.containsKey("max_loop_unrolling")) {
+						this.tactic.setOption("max_loop_unrolling", ds_params.get("max_loop_unrolling"));
+					}
+					if (ds_params.containsKey("max_depth")) {
+						this.tactic.setOption("max_depth", ds_params.get("max_depth"));
+					}
+					if (ds_params.containsKey("seed")) {
+						this.tactic.setOption("seed", ds_params.get("seed"));
+					}
+				}
+				break;
 			default:
 				logger.warning("Unknown tactic '" + tactic_string +
-									   "', using tactic DEPTH_SEARCH with default " + "params");
-				this.tactic = new DepthSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
+									   "', using tactic IN_ORDER_SEARCH with default " + "params");
+				this.tactic = new InOrderSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
 		}
 	}
 

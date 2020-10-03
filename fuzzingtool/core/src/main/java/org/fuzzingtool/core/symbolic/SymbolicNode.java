@@ -145,7 +145,7 @@ public abstract class SymbolicNode {
 	}
 
 	/**
-	 * This method tries to convert an expression to an integer as in hhttps://tc39.es/ecma262/2020/#sec-tointeger
+	 * This method tries to convert an expression to an integer as in https://tc39.es/ecma262/2020/#sec-tointeger
 	 *
 	 * @param ctx        The Z3-Context
 	 * @param expression The expression to be casted.

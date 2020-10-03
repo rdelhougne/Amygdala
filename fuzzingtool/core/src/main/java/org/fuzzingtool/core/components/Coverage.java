@@ -1,10 +1,6 @@
 package org.fuzzingtool.core.components;
 
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.SourceSection;
-import org.apache.commons.collections4.MultiSet;
-import org.apache.commons.collections4.MultiValuedMap;
-import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 import org.fuzzingtool.core.Logger;
 
 import java.util.*;
