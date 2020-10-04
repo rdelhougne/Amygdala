@@ -23,7 +23,7 @@ public abstract class FuzzingTactic {
 	protected Integer max_loop_unrolling = 16;
 	protected Integer max_depth = 32;
 
-	protected final HashMap<Integer, Integer> loop_unrolls = new HashMap<>();
+	protected HashMap<Integer, Integer> loop_unrolls = new HashMap<>();
 
 	/**
 	 * Set an option value.
@@ -175,7 +175,6 @@ public abstract class FuzzingTactic {
 
 		// Max loop unrolling functionality
 		if (overLoopLimit(node)) {
-			decrementLoop(node);
 			return false;
 		}
 
@@ -188,17 +187,21 @@ public abstract class FuzzingTactic {
 	}
 
 	protected void incrementLoop(BranchingNode node) {
-		Integer node_hash = node.getBranchIdentifier();
-		if (loop_unrolls.containsKey(node_hash)) {
-			loop_unrolls.put(node_hash, loop_unrolls.get(node_hash) + 1);
-		} else {
-			loop_unrolls.put(node_hash, 1);
+		if (node.getBranchingNodeAttribute() == BranchingNodeAttribute.LOOP) {
+			Integer node_hash = node.getBranchIdentifier();
+			if (loop_unrolls.containsKey(node_hash)) {
+				loop_unrolls.put(node_hash, loop_unrolls.get(node_hash) + 1);
+			} else {
+				loop_unrolls.put(node_hash, 1);
+			}
 		}
 	}
 
 	protected void decrementLoop(BranchingNode node) {
-		Integer node_hash = node.getBranchIdentifier();
-		loop_unrolls.put(node_hash, loop_unrolls.get(node_hash) - 1);
+		if (node.getBranchingNodeAttribute() == BranchingNodeAttribute.LOOP) {
+			Integer node_hash = node.getBranchIdentifier();
+			loop_unrolls.put(node_hash, loop_unrolls.get(node_hash) - 1);
+		}
 	}
 
 	protected boolean overLoopLimit(BranchingNode node) {

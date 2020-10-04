@@ -4,43 +4,42 @@ import com.microsoft.z3.*;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.components.BranchingNode;
 import org.fuzzingtool.core.components.BranchingNodeAttribute;
+import org.graalvm.collections.Pair;
 
 import java.util.*;
 
 public class DepthSearchTactic extends FuzzingTactic {
-	Stack<BranchingNode> last_max_nodes = new Stack<>();
+	Stack<Pair<BranchingNode, HashMap<Integer, Integer>>> last_max_nodes = new Stack<>();
 
 	public DepthSearchTactic(BranchingNode n, Context c, Logger l) {
 		this.ctx = c;
 		this.logger = l;
-		this.last_max_nodes.push(n);
+		this.last_max_nodes.push(Pair.create(n, new HashMap<>()));
 	}
 
-	protected ArrayList<BranchingNode> findCandidates(BranchingNode current_node) {
+	protected ArrayList<Pair<BranchingNode, HashMap<Integer, Integer>>> findCandidates(BranchingNode current_node) {
 		BranchingNodeAttribute node_type = current_node.getBranchingNodeAttribute();
 
-		if (node_type == BranchingNodeAttribute.LOOP) {
-			incrementLoop(current_node);
-		}
+		incrementLoop(current_node);
 
 		if (!isValidNode(current_node)) {
+			decrementLoop(current_node);
 			return new ArrayList<>();
 		}
 
 		if (node_type == BranchingNodeAttribute.BRANCH || node_type == BranchingNodeAttribute.LOOP) {
-			ArrayList<BranchingNode> candidates = new ArrayList<>();
+			ArrayList<Pair<BranchingNode, HashMap<Integer, Integer>>> candidates = new ArrayList<>();
 			for (Boolean taken_flag: new boolean[]{true, false}) {
 				BranchingNode child_node = current_node.getChildBranch(taken_flag);
-				ArrayList<BranchingNode> child_target_results = findCandidates(child_node);
+				ArrayList<Pair<BranchingNode, HashMap<Integer, Integer>>> child_target_results = findCandidates(child_node);
 				candidates.addAll(child_target_results);
 			}
-			if (node_type == BranchingNodeAttribute.LOOP) {
-				decrementLoop(current_node);
-			}
+			decrementLoop(current_node);
 			return candidates;
 		} else if (node_type == BranchingNodeAttribute.UNKNOWN) {
-			ArrayList<BranchingNode> candidate = new ArrayList<>();
-			candidate.add(current_node);
+			ArrayList<Pair<BranchingNode, HashMap<Integer, Integer>>> candidate = new ArrayList<>();
+			HashMap<Integer, Integer> loop_unrolling_state = new HashMap<>(this.loop_unrolls);
+			candidate.add(Pair.create(current_node, loop_unrolling_state));
 			return candidate;
 		} else {
 			return new ArrayList<>();
@@ -49,13 +48,14 @@ public class DepthSearchTactic extends FuzzingTactic {
 
 	@Override
 	protected BranchingNode findUnexplored() {
-		ArrayList<BranchingNode> candidates = new ArrayList<>();
+		ArrayList<Pair<BranchingNode, HashMap<Integer, Integer>>> candidates = new ArrayList<>();
 		while (candidates.isEmpty()) {
-			try {
-				candidates = findCandidates(this.last_max_nodes.peek());
-			} catch (EmptyStackException ese) {
+			if (this.last_max_nodes.empty()) {
 				break;
 			}
+			Pair<BranchingNode, HashMap<Integer, Integer>> state = this.last_max_nodes.peek();
+			this.loop_unrolls = new HashMap<>(state.getRight());
+			candidates = findCandidates(state.getLeft());
 			if (candidates.isEmpty()) {
 				this.last_max_nodes.pop();
 			}
@@ -64,15 +64,15 @@ public class DepthSearchTactic extends FuzzingTactic {
 			return null;
 		} else {
 			Integer max_depth = -1;
-			BranchingNode max_node = null;
-			for (BranchingNode candidate: candidates) {
-				if (candidate.getDepth() > max_depth) {
-					max_depth = candidate.getDepth();
+			Pair<BranchingNode, HashMap<Integer, Integer>> max_node = Pair.create(null, null);
+			for (Pair<BranchingNode, HashMap<Integer, Integer>> candidate: candidates) {
+				if (candidate.getLeft().getDepth() > max_depth) {
+					max_depth = candidate.getLeft().getDepth();
 					max_node = candidate;
 				}
 			}
 			this.last_max_nodes.push(max_node);
-			return max_node;
+			return max_node.getLeft();
 		}
 	}
 

@@ -17,11 +17,10 @@ public class InOrderSearchTactic extends FuzzingTactic {
 	protected BranchingNode findCandidate(BranchingNode current_node) {
 		BranchingNodeAttribute node_type = current_node.getBranchingNodeAttribute();
 
-		if (node_type == BranchingNodeAttribute.LOOP) {
-			incrementLoop(current_node);
-		}
+		incrementLoop(current_node);
 
 		if (!isValidNode(current_node)) {
+			decrementLoop(current_node);
 			return null;
 		}
 
@@ -33,9 +32,7 @@ public class InOrderSearchTactic extends FuzzingTactic {
 					return child_target_result;
 				}
 			}
-			if (node_type == BranchingNodeAttribute.LOOP) {
-				decrementLoop(current_node);
-			}
+			decrementLoop(current_node);
 			return null;
 		} else if (node_type == BranchingNodeAttribute.UNKNOWN) {
 			return current_node;
