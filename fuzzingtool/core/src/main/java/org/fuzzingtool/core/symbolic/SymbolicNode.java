@@ -10,12 +10,18 @@ import java.util.Set;
 public abstract class SymbolicNode {
 	protected SymbolicNode[] children;
 	protected LanguageSemantic languageSemantic;
+	private Pair<Expr, ExpressionType> cached_z3_expression = null;
+	private String cached_hr_string = null;
+	private String cached_smt_expression = null;
 
 	public static boolean PARTIAL_EVALUATION_ON_CAST = false;
 
 	public final String toHRString() throws SymbolicException.NotImplemented {
 		if (this.languageSemantic == LanguageSemantic.JAVASCRIPT) {
-			return toHRStringJS();
+			if (this.cached_hr_string == null) {
+				this.cached_hr_string = toHRStringJS();
+			}
+			return this.cached_hr_string;
 		} else {
 			throw new SymbolicException.NotImplemented("Only JavaScript semantic supported for now.");
 		}
@@ -23,7 +29,10 @@ public abstract class SymbolicNode {
 
 	public final String toSMTExpr() throws SymbolicException.NotImplemented {
 		if (this.languageSemantic == LanguageSemantic.JAVASCRIPT) {
-			return toSMTExprJS();
+			if (this.cached_smt_expression == null) {
+				this.cached_smt_expression = toSMTExprJS();
+			}
+			return this.cached_smt_expression;
 		} else {
 			throw new SymbolicException.NotImplemented("Only JavaScript semantic supported for now.");
 		}
@@ -44,7 +53,10 @@ public abstract class SymbolicNode {
 	public final Pair<Expr, ExpressionType> toZ3Expr(Context ctx) throws SymbolicException.NotImplemented,
 			SymbolicException.UndecidableExpression {
 		if (this.languageSemantic == LanguageSemantic.JAVASCRIPT) {
-			return toZ3ExprJS(ctx);
+			if (this.cached_z3_expression == null) {
+				this.cached_z3_expression = toZ3ExprJS(ctx);
+			}
+			return this.cached_z3_expression;
 		} else {
 			throw new SymbolicException.NotImplemented("Only JavaScript semantic supported in Z3-expressions.");
 		}

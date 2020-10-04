@@ -91,6 +91,14 @@ public class BranchingNode {
 	 */
 	private static final LanguageSemantic nodeLanguageSemantic = LanguageSemantic.JAVASCRIPT; //TODO
 
+	/**
+	 * Caching mechanisms
+	 */
+	private BoolExpr cached_z3_expression = null;
+	private Queue<Pair<Integer, Boolean>> cached_program_path = null;
+	private ArrayList<String> cached_hr_string = null;
+	private ArrayList<String> cached_smt_expression = null;
+
 	public BranchingNode() {
 		this.branch_identifier = 0;
 		this.symbolic_expression = null;
@@ -211,7 +219,10 @@ public class BranchingNode {
 
 	public ArrayList<String> getSymbolicPathSMTExpression() throws SymbolicException.NotImplemented {
 		if (parentNode != null) {
-			return this.parentNode.getSymbolicPathSMTExpression(this.parentNodeTakenFlag);
+			if (this.cached_smt_expression == null) {
+				this.cached_smt_expression = this.parentNode.getSymbolicPathSMTExpression(this.parentNodeTakenFlag);
+			}
+			return new ArrayList<>(this.cached_smt_expression);
 		} else {
 			return new ArrayList<>();
 		}
@@ -219,8 +230,10 @@ public class BranchingNode {
 
 	public ArrayList<String> getSymbolicPathSMTExpression(Boolean taken_flag) throws SymbolicException.NotImplemented {
 		if (parentNode != null) {
-			ArrayList<String> all_from_parents =
-					this.parentNode.getSymbolicPathSMTExpression(this.parentNodeTakenFlag);
+			if (this.cached_smt_expression == null) {
+				this.cached_smt_expression = this.parentNode.getSymbolicPathSMTExpression(this.parentNodeTakenFlag);
+			}
+			ArrayList<String> all_from_parents = new ArrayList<>(this.cached_smt_expression);
 			all_from_parents.add(getLocalSMTExpression(taken_flag));
 			return all_from_parents;
 		} else {
@@ -232,7 +245,10 @@ public class BranchingNode {
 
 	public ArrayList<String> getSymbolicPathHRExpression() throws SymbolicException.NotImplemented {
 		if (parentNode != null) {
-			return this.parentNode.getSymbolicPathHRExpression(this.parentNodeTakenFlag);
+			if (this.cached_hr_string == null) {
+				this.cached_hr_string = this.parentNode.getSymbolicPathHRExpression(this.parentNodeTakenFlag);
+			}
+			return new ArrayList<>(this.cached_hr_string);
 		} else {
 			return new ArrayList<>();
 		}
@@ -240,7 +256,10 @@ public class BranchingNode {
 
 	public ArrayList<String> getSymbolicPathHRExpression(Boolean taken_flag) throws SymbolicException.NotImplemented {
 		if (parentNode != null) {
-			ArrayList<String> all_from_parents = this.parentNode.getSymbolicPathHRExpression(this.parentNodeTakenFlag);
+			if (this.cached_hr_string == null) {
+				this.cached_hr_string = this.parentNode.getSymbolicPathHRExpression(this.parentNodeTakenFlag);
+			}
+			ArrayList<String> all_from_parents = new ArrayList<>(this.cached_hr_string);
 			all_from_parents.add(getLocalHRExpression(taken_flag));
 			return all_from_parents;
 		} else {
@@ -253,7 +272,10 @@ public class BranchingNode {
 	public BoolExpr getSymbolicPathZ3Expression(Context ctx) throws SymbolicException.NotImplemented,
 			SymbolicException.UndecidableExpression {
 		if (parentNode != null) {
-			return this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
+			if (this.cached_z3_expression == null) {
+				this.cached_z3_expression = this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
+			}
+			return this.cached_z3_expression;
 		} else {
 			throw new SymbolicException.NotImplemented("Cannot get expression of root node without hint");
 		}
@@ -263,9 +285,11 @@ public class BranchingNode {
 			SymbolicException.UndecidableExpression,
 			SymbolicException.NotImplemented {
 		if (parentNode != null) {
-			BoolExpr all_from_parents = this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
+			if (this.cached_z3_expression == null) {
+				this.cached_z3_expression = this.parentNode.getSymbolicPathZ3Expression(this.parentNodeTakenFlag, ctx);
+			}
 			try {
-				return ctx.mkAnd(all_from_parents, getLocalZ3Expression(taken_flag, ctx));
+				return ctx.mkAnd(this.cached_z3_expression, getLocalZ3Expression(taken_flag, ctx));
 			} catch (SymbolicException.NotImplemented | SymbolicException.UndecidableExpression ex) {
 				this.setUndecidable();
 				throw ex;
@@ -321,7 +345,10 @@ public class BranchingNode {
 
 	public Queue<Pair<Integer, Boolean>> getProgramPath() throws SymbolicException.NotImplemented {
 		if (parentNode != null) {
-			return this.parentNode.getProgramPath(this.parentNodeTakenFlag);
+			if (this.cached_program_path == null) {
+				this.cached_program_path = this.parentNode.getProgramPath(this.parentNodeTakenFlag);
+			}
+			return new LinkedList<>(this.cached_program_path);
 		} else {
 			throw new SymbolicException.NotImplemented("Cannot get path of root node without hint");
 		}
@@ -329,9 +356,12 @@ public class BranchingNode {
 
 	public Queue<Pair<Integer, Boolean>> getProgramPath(Boolean taken_flag) {
 		if (parentNode != null) {
-			Queue<Pair<Integer, Boolean>> all_from_parents = this.parentNode.getProgramPath(this.parentNodeTakenFlag);
-			all_from_parents.offer(Pair.create(this.branch_identifier, taken_flag));
-			return all_from_parents;
+			if (this.cached_program_path == null) {
+				this.cached_program_path = this.parentNode.getProgramPath(this.parentNodeTakenFlag);
+			}
+			Queue<Pair<Integer, Boolean>> q = new LinkedList<>(this.cached_program_path);
+			q.offer(Pair.create(this.branch_identifier, taken_flag));
+			return q;
 		} else {
 			Queue<Pair<Integer, Boolean>> q = new LinkedList<>();
 			q.offer(Pair.create(this.branch_identifier, taken_flag));
