@@ -8,7 +8,7 @@ import java.util.Queue;
 
 public class Logger {
 	final PrintStream outStream;
-	Queue<String> aggregate_queue = new CircularFifoQueue<String>(8);
+	Queue<String> aggregate_queue = new CircularFifoQueue<>(8);
 
 	// logging statistics
 	private static final boolean SHOW_DEBUGGING_STATS = true;
@@ -100,7 +100,19 @@ public class Logger {
 		num_fascinate++;
 	}
 
+	public static String capBack(String str, int max_size) {
+		if (str.length() > max_size) {
+			str = str.substring(0, max_size - 3) + "...";
+		}
+		return str;
+	}
 
+	public static String capFront(String str, int max_size) {
+		if (str.length() > max_size) {
+			str = "..." + str.substring(str.length() - max_size + 3);
+		}
+		return str;
+	}
 
 	public void printStatistics() {
 		outStream.println("===MESSAGE STATISTICS===");

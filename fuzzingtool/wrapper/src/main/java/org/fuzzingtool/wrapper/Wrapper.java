@@ -17,7 +17,7 @@ public class Wrapper {
 		Fuzzer fuzzer = new Fuzzer(args[0]);
 		if (fuzzer.usable()) {
 			fuzzer.fuzz();
-			fuzzer.saveResults("result.yaml");
+			fuzzer.saveResults();
 			fuzzer.print_results();
 		}
 	}

@@ -1,5 +1,6 @@
 ---
 program_path: "../benchmarksgame/fannkuchredux.js"
+results: "../results/fannkuchredux"
 variables:
   - line_num: 82
     name: num. permutations

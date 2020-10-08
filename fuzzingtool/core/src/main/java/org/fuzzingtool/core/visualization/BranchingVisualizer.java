@@ -33,14 +33,19 @@ public class BranchingVisualizer {
 		build_visualization(node, root);
 	}
 
-	public void save_image(String path) {
+	public void save_image(File path) {
 		Graphviz.useEngine(new GraphvizCmdLineEngine());
 		try {
-			logger.info("Saving branching-visualization to file '" + path + ".svg'");
-			Graphviz.fromGraph(vis_graph).render(Format.SVG).toFile(new File(path + ".svg"));
-			//Graphviz.fromGraph(vis_graph).render(Format.DOT).toFile(new File(path + ".dot"));
+			if (path.toString().endsWith(".svg")) {
+				logger.info("Saving trace-visualization to file '" + Logger.capFront(path.toString(), 32) + "'");
+				Graphviz.fromGraph(vis_graph).render(Format.SVG).toFile(path);
+			}
+			if (path.toString().endsWith(".dot")) {
+				logger.info("Saving trace-visualization to file '" + Logger.capFront(path.toString(), 32) + "'");
+				Graphviz.fromGraph(vis_graph).render(Format.DOT).toFile(path);
+			}
 		} catch (GraphvizException | IOException ex) {
-			logger.critical("Cannot save branching-visualization to file '" + path + ".svg'");
+			logger.critical("Cannot save trace-visualization to file '" + path.toString() + "'");
 			logger.log(ex.getMessage());
 		}
 	}

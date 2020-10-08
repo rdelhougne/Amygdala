@@ -1,5 +1,6 @@
 ---
 program_path: "../javascript/custom_error.js"
+results: "../results/custom_error"
 variables:
   - line_num: 1
     name: Nenner

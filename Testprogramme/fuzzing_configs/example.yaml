@@ -1,5 +1,6 @@
 ---
 program_path: "../javascript/example.js"
+results: "../results/example"
 variables:
   - line_num: 42
     name: last expected prime

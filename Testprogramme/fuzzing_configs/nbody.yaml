@@ -1,5 +1,6 @@
 ---
 program_path: "../benchmarksgame/nbody.js"
+results: "../results/nbody"
 variables:
   - line_num: 155
     name: iterations

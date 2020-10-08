@@ -1,5 +1,6 @@
 ---
 program_path: "../javascript/partial_evaluation.js"
+results: "../results/partial_evaluation"
 variables:
   - line_num: 6
     name: var_integer

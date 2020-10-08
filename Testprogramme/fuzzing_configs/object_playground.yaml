@@ -1,5 +1,6 @@
 ---
 program_path: "../javascript/object_playground.js"
+results: "../results/object_playground"
 variables:
   - line_num: 5
     name: The special age

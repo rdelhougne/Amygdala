@@ -1,5 +1,6 @@
 ---
 program_path: "../javascript/increment_decrement.js"
+results: "../results/increment_decrement"
 variables:
   - line_num: 1
     name: The ever changing ocean

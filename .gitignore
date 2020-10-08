@@ -162,3 +162,5 @@ fuzzingtool/build/
 fuzzingtool/hs_err_pid*.log
 
 fuzzingtool/result.yaml
+
+Testprogramme/results/

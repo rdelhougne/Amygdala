@@ -1,5 +1,6 @@
 ---
 program_path: "../javascript/string.js"
+results: "../results/string"
 variables:
   - line_num: 6
     name: fruit name

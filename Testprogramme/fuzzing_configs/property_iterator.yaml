@@ -1,5 +1,6 @@
 ---
 program_path: "../javascript/property_iterator.js"
+results: "../results/property_iterator"
 variables:
   - line_num: 1
     name: absolutely useless

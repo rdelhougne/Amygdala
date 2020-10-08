@@ -1,5 +1,6 @@
 ---
 program_path: "../javascript/array_playground.js"
+results: "../results/array_playground"
 variables:
   - line_num: 1
     name: The special int

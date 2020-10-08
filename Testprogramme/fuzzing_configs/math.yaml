@@ -1,5 +1,6 @@
 ---
 program_path: "../javascript/math.js"
+results: "../results/math"
 variables:
   - line_num: 1
     name: integer i

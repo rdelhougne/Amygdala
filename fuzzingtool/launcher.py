@@ -124,6 +124,7 @@ def main():
 	args = [
 		engine_exec_path,
 		"-XX:-UseJVMCIClassLoader",
+		"-Xss128m",
 		"-Dgraalvm.locatorDisabled=true",
 		"-Dtruffle.class.path.append=" + dtruffle_classpaths,
 		"-cp", java_classpaths,
@@ -131,7 +132,6 @@ def main():
 		fuzzing_configuration
 	]
 
-	#print(args)
 	fuzzing_process = subprocess.Popen(args, preexec_fn=os.setpgrp)
 	fuzzing_process.wait()
 

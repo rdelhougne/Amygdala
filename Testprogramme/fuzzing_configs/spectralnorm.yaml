@@ -1,5 +1,6 @@
 ---
 program_path: "../benchmarksgame/spectralnorm.js"
+results: "../results/spectralnorm"
 variables:
   - line_num: 57
     name: input

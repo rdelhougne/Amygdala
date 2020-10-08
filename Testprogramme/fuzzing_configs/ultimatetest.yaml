@@ -1,5 +1,6 @@
 ---
 program_path: "../javascript/ultimatetest.js"
+results: "../results/ultimatetest"
 variables:
   - line_num: 5
     name: integer named k

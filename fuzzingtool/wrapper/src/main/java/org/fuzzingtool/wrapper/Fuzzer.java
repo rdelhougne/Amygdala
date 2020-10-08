@@ -49,20 +49,11 @@ public class Fuzzer {
 		this.logger = fuzzing_instrument.getLogger();
 
 		Map<String, Object> configuration = loadConfigurationFile(fuzzing_config);
-		this.amygdala.loadOptions(configuration);
+		this.amygdala.loadOptions(configuration, new File(fuzzing_config).getAbsoluteFile().getParent());
 
-		if (configuration.containsKey("program_path") && configuration.get("program_path") instanceof String) {
-			String config_file_path_abs = new File(fuzzing_config).getAbsoluteFile().getParent();
-			File program_file_path = new File((String) configuration.get("program_path"));
-			if (program_file_path.isAbsolute()) {
-				this.source = loadSource(program_file_path.getAbsoluteFile());
-			} else {
-				this.source = loadSource(new File(Paths.get(config_file_path_abs, program_file_path.getPath()).toString()));
-			}
-		} else {
-			logger.critical("No attribute 'program_path' in configuration file.");
-		}
+		this.source = loadSource(amygdala.getProgramPath());
 	}
+
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> loadConfigurationFile(String file_path) throws Exception {
 		FileInputStream fis;
@@ -77,14 +68,16 @@ public class Fuzzer {
 		return map;
 	}
 
-	private Source loadSource(File source_file) throws Exception {
+	private Source loadSource(String source_path) throws Exception {
+		File source_file = new File(source_path);
 		if (source_file.getName().endsWith(".js")) {
 			try {
 				String language = Source.findLanguage(source_file);
 				if (!language.equals("js")) {
 					throw new Exception("Source file " + source_file.getName() + " is not a JavaScript source file.");
 				}
-				return Source.newBuilder(language, source_file).build();
+				Source program_source = Source.newBuilder(language, source_file).build();
+				return program_source;
 			} catch (IOException e) {
 				throw new Exception("Cannot open file " + source_file.getName() + ".");
 			}
@@ -109,6 +102,10 @@ public class Fuzzer {
 				String message = pe.getMessage();
 				if (message.startsWith("org.fuzzingtool.core.components.CustomError$EscalatedException:")) {
 					error_reason = message.replace("org.fuzzingtool.core.components.CustomError$EscalatedException: ", "");
+				} else if (message.startsWith("SyntaxError")) {
+					logger.critical("JavaScript program is not valid");
+					logger.log(message);
+					return;
 				} else {
 					error_reason = message;
 				}
@@ -122,6 +119,10 @@ public class Fuzzer {
 				amygdala.error_event(error_reason, runtime);
 			}
 			amygdala.coverage.saveSnapshot();
+
+			if (amygdala.isBranchingVisEnabled()) {
+				amygdala.visualizeProgramFlow("trace_tree_" + amygdala.getIterations() + ".svg");
+			}
 
 			// TODO hackyyy...
 			File f = new File(TERMINATE_FILE_NAME);
@@ -150,9 +151,9 @@ public class Fuzzer {
 		return this.initialization_successful;
 	}
 
-	public void saveResults(String path) {
+	public void saveResults() {
 		if (amygdala.isBranchingVisEnabled()) {
-			amygdala.visualizeProgramFlow(Paths.get(".").toAbsolutePath().normalize().toString() + "/program_flow");
+			amygdala.visualizeProgramFlow("trace_tree_explored.svg");
 		}
 
 		Map<String, Object> map = amygdala.getResults();
@@ -160,13 +161,14 @@ public class Fuzzer {
 				DumpSettings.builder().setDefaultFlowStyle(FlowStyle.BLOCK).setDefaultScalarStyle(ScalarStyle.PLAIN)
 						.setExplicitStart(true).setExplicitEnd(true).build();
 		Dump dump = new Dump(settings);
+		String result_yaml_path = Paths.get(amygdala.getResultsPath(), "result.yaml").toString();
 		try {
-			FileWriter file_writer = new FileWriter(path);
+			FileWriter file_writer = new FileWriter(result_yaml_path);
 			file_writer.write(dump.dumpToString(map));
 			file_writer.close();
-			logger.info("Results written to " + path);
+			logger.info("Results written to '" + result_yaml_path + "'.");
 		} catch (IOException ioe) {
-			logger.critical("Cannot write results to " + path + ". Reason: " + ioe.getMessage());
+			logger.critical("Cannot write results to " + result_yaml_path + ". Reason: " + ioe.getMessage());
 		}
 	}
 }

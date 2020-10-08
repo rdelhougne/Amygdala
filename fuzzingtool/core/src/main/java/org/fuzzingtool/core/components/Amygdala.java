@@ -14,6 +14,8 @@ import org.fuzzingtool.core.tactics.RandomSearchTactic;
 import org.fuzzingtool.core.visualization.BranchingVisualizer;
 import org.graalvm.collections.Pair;
 
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -42,6 +44,8 @@ public class Amygdala {
 	private boolean function_visualization = false;
 	private boolean branching_visualization = false;
 	private boolean event_logging = true;
+	private String program_path = "";
+	private String results_path = "";
 
 	// Experimental
 	// This option advises JSReadCurrent/ScopeFrameSlotNodeGen to fill in values if they are not found.
@@ -137,6 +141,14 @@ public class Amygdala {
 		return this.fuzzing_iterations;
 	}
 
+	public String getResultsPath() {
+		return this.results_path;
+	}
+
+	public String getProgramPath() {
+		return this.program_path;
+	}
+
 	/**
 	 * This Method uses a specified tactic to find the next path in the program flow.
 	 * If the tactic cannot find another path, the global fuzzing-loop has to be terminated.
@@ -198,11 +210,15 @@ public class Amygdala {
 	/**
 	 * Visualize and save the complete program-flow tree to a file.
 	 *
-	 * @param path Filepath of the .svg file
+	 * @param name Name of the .svg file, saved into results directory
 	 */
-	public void visualizeProgramFlow(String path) {
-		BranchingVisualizer bv = new BranchingVisualizer(branchingRootNode, this.logger);
-		bv.save_image(path);
+	public void visualizeProgramFlow(String name) {
+		String save_name = Paths.get(this.results_path, "trace_tree", name).toString();
+		File save_path = new File(save_name);
+		if (!save_path.exists()) {
+			BranchingVisualizer bv = new BranchingVisualizer(branchingRootNode, this.logger);
+			bv.save_image(save_path);
+		}
 	}
 
 	/**
@@ -211,7 +227,32 @@ public class Amygdala {
 	 * @param map Java Object containing the options
 	 */
 	@SuppressWarnings("unchecked")
-	public void loadOptions(Map<String, Object> map) {
+	public void loadOptions(Map<String, Object> map, String config_file_path_abs) {
+		if (map.containsKey("program_path") && map.get("program_path") instanceof String) {
+			File program_file_path = new File((String) map.get("program_path"));
+			if (program_file_path.isAbsolute()) {
+				this.program_path = program_file_path.getAbsolutePath();
+			} else {
+				this.program_path = Paths.get(config_file_path_abs, program_file_path.getPath()).toString();
+			}
+		} else {
+			logger.critical("No attribute 'program_path' in configuration file.");
+		}
+		this.program_path = Paths.get(this.program_path).normalize().toString();
+
+		if (map.containsKey("results") && map.get("results") instanceof String) {
+			File results_file_path = new File((String) map.get("results"));
+			if (results_file_path.isAbsolute()) {
+				this.results_path = results_file_path.getAbsolutePath();
+			} else {
+				this.results_path = Paths.get(config_file_path_abs, results_file_path.getPath()).toString();
+			}
+		} else {
+			this.results_path = Paths.get(config_file_path_abs, "results").toString();
+		}
+		this.results_path = Paths.get(this.results_path).normalize().toString();
+		logger.info("Results are written to '" + this.results_path + "'.");
+
 		if (map.containsKey("variables") && map.get("variables") instanceof List) {
 			loadVariables((List<Map<String, Object>>) map.get("variables"));
 		} else {
@@ -474,9 +515,7 @@ public class Amygdala {
 			boolean instrumented = curr_set.get(1) || curr_set.get(2) || curr_set.get(3) || curr_set.get(4);
 
 			String node_name = key;
-			if (node_name.length() > NAME_WIDTH - 1) {
-				node_name = node_name.substring(0, NAME_WIDTH - 4) + "...";
-			}
+			node_name = Logger.capBack(node_name, NAME_WIDTH - 1);
 			node_name = String.format("%-" + NAME_WIDTH + "s", node_name);
 
 			if (executed) {

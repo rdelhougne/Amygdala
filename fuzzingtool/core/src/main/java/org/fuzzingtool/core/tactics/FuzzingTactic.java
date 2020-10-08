@@ -81,11 +81,11 @@ public abstract class FuzzingTactic {
 					nie.printStackTrace();
 					logger.log(nie.getMessage());
 				}*/
-				logger.hypnotize(expr.getSExpr());
+				//logger.hypnotize(expr.getSExpr());
 				Solver s = ctx.mkSolver();
 				s.add(expr);
 				Status status = s.check();
-				logger.shock("Checked.");
+				//logger.shock("Checked.");
 				if (status == Status.SATISFIABLE) {
 					Model model = s.getModel();
 					FuncDecl[] declarations = model.getConstDecls();
@@ -156,14 +156,14 @@ public abstract class FuzzingTactic {
 				} else {
 					new_target.setBranchingNodeAttribute(BranchingNodeAttribute.UNREACHABLE);
 					logger.info("Satisfiability of expression unknown, reason: " + s.getReasonUnknown());
-					logger.alert(s.getStatistics().toString());
+					//logger.alert(s.getStatistics().toString());
 				}
-				logger.shock("Before.");
+				//logger.shock("Before.");
 				s.reset();
-				logger.shock("End.");
+				//logger.shock("End.");
 			}
 		}
-		logger.shock("Super-End.");
+		//logger.shock("Super-End.");
 		return false;
 	}
 

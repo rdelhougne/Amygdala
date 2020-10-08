@@ -20,6 +20,7 @@ import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.JSRuntime;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
+import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.components.*;
 import org.fuzzingtool.core.symbolic.ExpressionType;
 import org.fuzzingtool.core.symbolic.LanguageSemantic;
@@ -92,21 +93,21 @@ public class FuzzingNode extends ExecutionEventNode {
 		this.source_relative_identifier = getSourceRelativeIdentifier(source_section, instrumented_node);
 
 		if (amygdala.isFunctionVisEnabled() && instrumented_node_type.equals("MaterializedFunctionBodyNode")) {
-			StringBuilder save_path = new StringBuilder();
-			save_path.append(Paths.get(".").toAbsolutePath().normalize().toString()).append("/");
-			save_path.append("function_");
-			save_path.append(source_section.getStartLine()).append("-");
-			save_path.append(source_section.getEndLine()).append("_");
+			StringBuilder save_name = new StringBuilder();
+			save_name.append("function_");
+			save_name.append(source_section.getStartLine()).append("-");
+			save_name.append(source_section.getEndLine()).append("_");
 			RootNode rn = instrumented_node.getRootNode();
 			if (rn != null) {
-				save_path.append(JSNodeUtil.resolveName(rn).replace(":", ""));
+				save_name.append(JSNodeUtil.resolveName(rn).replace(":", ""));
 			} else {
-				save_path.append("(unknown)");
+				save_name.append("(unknown)");
 			}
-			File save_file = new File(save_path.toString() + ".svg");
-			if (!save_file.exists()) {
+			save_name.append(".svg");
+			File save_path = new File(Paths.get(amygdala.getResultsPath(), "ast", save_name.toString()).toString());
+			if (!save_path.exists()) {
 				ASTVisualizer av = new ASTVisualizer(instrumented_node, amygdala.logger);
-				av.save_image(save_path.toString());
+				av.save_image(save_path);
 			}
 		}
 
@@ -139,7 +140,7 @@ public class FuzzingNode extends ExecutionEventNode {
 				line_padded = "  ~";
 			}
 			String characters = source_section.getCharacters().toString().replace("\n", "");
-			String characters_cropped = characters.substring(0, Math.min(characters.length(), 16));
+			String characters_cropped = Logger.capBack(characters, 16);
 			return "[" + node_type_padded + " " + hash_padded + " " + line_padded + ":" + characters_cropped + "]";
 		} else {
 			return "[" + node_type_padded + " " + hash_padded + "     (NO SOURCE)]";
@@ -793,10 +794,7 @@ public class FuzzingNode extends ExecutionEventNode {
 			Matcher branch_matcher = branch_pattern.matcher(source_section.getCharacters().toString());
 			if (branch_matcher.lookingAt()) {
 				String kind = branch_matcher.group(1);
-				String predicate = branch_matcher.group(2);
-				if (predicate.length() > 16) {
-					predicate = predicate.substring(0, 12) + "...";
-				}
+				String predicate = Logger.capBack(branch_matcher.group(2), 16);
 				return kind.toUpperCase() + " " + predicate;
 			} else {
 				return "(NO SOURCE)";

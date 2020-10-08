@@ -1,5 +1,6 @@
 ---
 program_path: "generated_test.js"
+results: "../results/generated_test"
 variables:
   - line_num: 3
     name: "input_number_integer"

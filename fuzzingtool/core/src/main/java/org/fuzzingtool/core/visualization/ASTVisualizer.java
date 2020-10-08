@@ -42,14 +42,19 @@ public class ASTVisualizer {
 		build_visualization(root_node, root);
 	}
 
-	public void save_image(String path) {
+	public void save_image(File path) {
 		Graphviz.useEngine(new GraphvizCmdLineEngine());
 		try {
-			logger.info("Saving AST-visualization to file '" + path + ".svg'");
-			Graphviz.fromGraph(vis_graph).render(Format.SVG).toFile(new File(path + ".svg"));
-			//Graphviz.fromGraph(vis_graph).render(Format.DOT).toFile(new File(path + ".dot"));
+			if (path.toString().endsWith(".svg")) {
+				logger.info("Saving AST-visualization to file '" + Logger.capFront(path.toString(), 32) + "'");
+				Graphviz.fromGraph(vis_graph).render(Format.SVG).toFile(path);
+			}
+			if (path.toString().endsWith(".dot")) {
+				logger.info("Saving AST-visualization to file '" + Logger.capFront(path.toString(), 32) + "'");
+				Graphviz.fromGraph(vis_graph).render(Format.DOT).toFile(path);
+			}
 		} catch (GraphvizException | IOException ex) {
-			logger.critical("Cannot save AST-visualization to file '" + path + ".svg'");
+			logger.critical("Cannot save AST-visualization to file '" + path.toString() + "'");
 			logger.log(ex.getMessage());
 		}
 	}
@@ -83,10 +88,7 @@ public class ASTVisualizer {
 	private Label getNodeContents(String node_type, SourceSection node_source) {
 		String source = "(NO SOURCE)";
 		if (node_source != null && node_source.isAvailable()) {
-			String characters = node_source.getCharacters().toString().replaceAll("\\s+", " ");
-			if (characters.length() > 16) {
-				characters = characters.substring(0, 13) + "...";
-			}
+			String characters = Logger.capBack(node_source.getCharacters().toString().replaceAll("\\s+", " "), 16);
 			String line_numbering;
 			int start_line = node_source.getStartLine();
 			int end_line = node_source.getEndLine();
