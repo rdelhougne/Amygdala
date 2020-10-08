@@ -26,7 +26,7 @@ function combination(n, k) {
 
 function binomial(n, k) {
 	if (n < 0 || k < 0 || n < k) {
-		throw 'Invalid values';
+		throw 'Invalid values!';
 	}
 	return combination(n, k);
 }
@@ -34,4 +34,12 @@ function binomial(n, k) {
 var input_n = 2;
 var input_k = 3;
 
-print(binomial(input_n, input_k));
+var coefficient = 0;
+
+try {
+	coefficient = binomial(input_n, input_k)
+} catch(ex) {
+	print("Calculation not successful :(");
+}
+
+print(coefficient);

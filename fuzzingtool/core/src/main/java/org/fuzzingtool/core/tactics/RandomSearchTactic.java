@@ -52,6 +52,7 @@ public class RandomSearchTactic extends FuzzingTactic {
 
 	@Override
 	protected BranchingNode findUnexplored() {
+		this.loop_unrolls.clear();
 		return findCandidate(root_node);
 	}
 

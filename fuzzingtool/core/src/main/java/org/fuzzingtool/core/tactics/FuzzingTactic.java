@@ -55,7 +55,6 @@ public abstract class FuzzingTactic {
 		Map<VariableIdentifier, Object> new_values = new HashMap<>();
 		this.has_next_path = false;
 		this.next_path.clear();
-		this.loop_unrolls.clear();
 
 		boolean path_found = true;
 		while (path_found) {
