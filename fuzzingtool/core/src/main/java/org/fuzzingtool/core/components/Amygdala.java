@@ -28,6 +28,7 @@ public class Amygdala {
 	public final Tracer tracer;
 	public final Coverage coverage;
 	public final CustomError custom_error;
+	public TimeProbe probe;
 	private FuzzingTactic tactic;
 	private final BranchingNode branchingRootNode;
 	private BranchingNode currentBranch;
@@ -149,6 +150,10 @@ public class Amygdala {
 		return this.program_path;
 	}
 
+	public void setTimeProbe(TimeProbe tp) {
+		this.probe = tp;
+	}
+
 	/**
 	 * This Method uses a specified tactic to find the next path in the program flow.
 	 * If the tactic cannot find another path, the global fuzzing-loop has to be terminated.
@@ -157,7 +162,9 @@ public class Amygdala {
 	 */
 	public Boolean calculateNextPath() {
 		if (fuzzing_iterations < max_iterations) {
+			probe.switchState(TimeProbe.ProgramState.TACTIC);
 			boolean res = this.tactic.calculate();
+			probe.switchState(TimeProbe.ProgramState.MANAGE);
 			if (res) {
 				variable_values.add(this.tactic.getNextValues());
 				next_program_path = this.tactic.getNextPath();
@@ -371,6 +378,7 @@ public class Amygdala {
 									   "', using tactic IN_ORDER_SEARCH");
 				this.tactic = new InOrderSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
 		}
+		this.tactic.setTimeProbe(this.probe);
 		if (parameters.containsKey("tactic_options")) {
 			Map<String, Object> ds_params = (Map<String, Object>) parameters.get("tactic_options");
 			if (ds_params.containsKey("max_loop_unrolling")) {

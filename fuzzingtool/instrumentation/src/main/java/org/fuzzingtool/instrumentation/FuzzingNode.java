@@ -82,8 +82,8 @@ public class FuzzingNode extends ExecutionEventNode {
 	private CustomError.EscalatedException cached_exception = null;
 
 	public FuzzingNode(TruffleInstrument.Env env, Amygdala amy, EventContext ec) {
-		this.environment = env;
 		this.amygdala = amy;
+		this.environment = env;
 		this.event_context = ec;
 
 		this.source_section = ec.getInstrumentedSourceSection();
@@ -247,6 +247,7 @@ public class FuzzingNode extends ExecutionEventNode {
 
 	@Override
 	public void onEnter(VirtualFrame vFrame) {
+		amygdala.probe.switchState(TimeProbe.ProgramState.INSTRUMENTATION);
 		if (amygdala.isEventLoggingEnabled()) {
 			amygdala.logger.event(getSignatureString() + " \033[32m→\033[0m");
 		}
@@ -301,11 +302,13 @@ public class FuzzingNode extends ExecutionEventNode {
 		}
 
 		this.cached_exception = null;
+		amygdala.probe.switchState(TimeProbe.ProgramState.EXECUTION);
 	}
 
 	@Override
 	public void onInputValue(VirtualFrame vFrame, EventContext inputContext, int inputIndex,
 								Object inputValue) {
+		amygdala.probe.switchState(TimeProbe.ProgramState.INSTRUMENTATION);
 		if (amygdala.isEventLoggingEnabled()) {
 			amygdala.logger.event(getSignatureString() + " \033[34m•\033[0m");
 		}
@@ -360,10 +363,12 @@ public class FuzzingNode extends ExecutionEventNode {
 				this.cached_exception = ee;
 			}
 		}
+		amygdala.probe.switchState(TimeProbe.ProgramState.EXECUTION);
 	}
 
 	@Override
 	public void onReturnValue(VirtualFrame vFrame, Object result) {
+		amygdala.probe.switchState(TimeProbe.ProgramState.INSTRUMENTATION);
 		if (amygdala.isEventLoggingEnabled()) {
 			amygdala.logger.event(getSignatureString() + " \033[31m↵\033[0m");
 		}
@@ -570,10 +575,12 @@ public class FuzzingNode extends ExecutionEventNode {
 				throw event_context.createError(ee);
 			}
 		}
+		amygdala.probe.switchState(TimeProbe.ProgramState.EXECUTION);
 	}
 
 	@Override
 	protected void onReturnExceptional(VirtualFrame frame, Throwable exception) {
+		amygdala.probe.switchState(TimeProbe.ProgramState.INSTRUMENTATION);
 		if (amygdala.isEventLoggingEnabled()) {
 			amygdala.logger.event(getSignatureString() + " \033[33m↯\033[0m");
 		}
@@ -600,25 +607,30 @@ public class FuzzingNode extends ExecutionEventNode {
 		if (was_instrumented_on_return_exceptional) {
 			amygdala.node_type_instrumented.get(instrumented_node_type).set(4);
 		}
+		amygdala.probe.switchState(TimeProbe.ProgramState.EXECUTION);
 	}
 
 	@Override
 	public Object onUnwind(VirtualFrame frame, Object info) {
+		amygdala.probe.switchState(TimeProbe.ProgramState.INSTRUMENTATION);
 		if (amygdala.isEventLoggingEnabled()) {
 			amygdala.logger.event(getSignatureString() + " \033[35m↺\033[0m");
 		}
 
 		amygdala.node_type_instrumented.get(instrumented_node_type).set(5);
+		amygdala.probe.switchState(TimeProbe.ProgramState.EXECUTION);
 		return info;
 	}
 
 	@Override
 	protected void onDispose(VirtualFrame frame) {
+		amygdala.probe.switchState(TimeProbe.ProgramState.INSTRUMENTATION);
 		if (amygdala.isEventLoggingEnabled()) {
 			amygdala.logger.event(getSignatureString() + " \033[36m×\033[0m");
 		}
 
 		amygdala.node_type_instrumented.get(instrumented_node_type).set(6);
+		amygdala.probe.switchState(TimeProbe.ProgramState.EXECUTION);
 	}
 
 	private ArrayList<Pair<Integer, String>> getChildHashes() {

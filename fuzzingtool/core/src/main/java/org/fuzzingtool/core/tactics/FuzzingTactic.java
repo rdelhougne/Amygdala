@@ -4,6 +4,7 @@ import com.microsoft.z3.*;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.components.BranchingNode;
 import org.fuzzingtool.core.components.BranchingNodeAttribute;
+import org.fuzzingtool.core.components.TimeProbe;
 import org.fuzzingtool.core.components.VariableIdentifier;
 import org.fuzzingtool.core.symbolic.SymbolicException;
 import org.graalvm.collections.Pair;
@@ -13,6 +14,7 @@ import java.util.*;
 public abstract class FuzzingTactic {
 	protected Context ctx = null;
 	protected Logger logger = null;
+	protected TimeProbe probe = null;
 
 	// Results
 	protected boolean has_next_path = false;
@@ -72,19 +74,11 @@ public abstract class FuzzingTactic {
 					logger.info(ue.getMessage());
 					continue;
 				}
-				/*try {
-					for(String s: new_target.getSymbolicPathHRExpression()) {
-						logger.log(s);
-					}
-				} catch (SymbolicException.NotImplemented nie) {
-					nie.printStackTrace();
-					logger.log(nie.getMessage());
-				}*/
-				//logger.hypnotize(expr.getSExpr());
 				Solver s = ctx.mkSolver();
 				s.add(expr);
+				probe.switchState(TimeProbe.ProgramState.SOLVE);
 				Status status = s.check();
-				//logger.shock("Checked.");
+				probe.switchState(TimeProbe.ProgramState.TACTIC);
 				if (status == Status.SATISFIABLE) {
 					Model model = s.getModel();
 					FuncDecl[] declarations = model.getConstDecls();
@@ -155,14 +149,10 @@ public abstract class FuzzingTactic {
 				} else {
 					new_target.setBranchingNodeAttribute(BranchingNodeAttribute.UNREACHABLE);
 					logger.info("Satisfiability of expression unknown, reason: " + s.getReasonUnknown());
-					//logger.alert(s.getStatistics().toString());
 				}
-				//logger.shock("Before.");
 				s.reset();
-				//logger.shock("End.");
 			}
 		}
-		//logger.shock("Super-End.");
 		return false;
 	}
 
@@ -237,5 +227,14 @@ public abstract class FuzzingTactic {
 	 */
 	public Queue<Pair<Integer, Boolean>> getNextPath() {
 		return next_path;
+	}
+
+	/**
+	 * Set the time probe
+	 *
+	 * @param tp The time probe object
+	 */
+	public void setTimeProbe(TimeProbe tp) {
+		this.probe = tp;
 	}
 }

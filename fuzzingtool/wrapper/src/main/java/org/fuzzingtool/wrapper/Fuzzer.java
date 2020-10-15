@@ -2,6 +2,7 @@ package org.fuzzingtool.wrapper;
 
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.components.Amygdala;
+import org.fuzzingtool.core.components.TimeProbe;
 import org.fuzzingtool.instrumentation.FuzzingTool;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -21,11 +22,13 @@ public class Fuzzer {
 	private Source source = null;
 	private Amygdala amygdala = null;
 	private Logger logger = null;
+	private final TimeProbe probe;
 	private boolean initialization_successful;
 
 	private static final String TERMINATE_FILE_NAME = "terminate-1bfa427b-a460-4088-b578-e388a6bce94d";
 
 	public Fuzzer(String fuzzing_config) {
+		this.probe = new TimeProbe(false);
 		try {
 			init(fuzzing_config);
 			this.initialization_successful = true;
@@ -47,6 +50,7 @@ public class Fuzzer {
 		}
 		this.amygdala = fuzzing_instrument.getAmygdala();
 		this.logger = fuzzing_instrument.getLogger();
+		this.amygdala.setTimeProbe(this.probe);
 
 		Map<String, Object> configuration = loadConfigurationFile(fuzzing_config);
 		this.amygdala.loadOptions(configuration, new File(fuzzing_config).getAbsoluteFile().getParent());
@@ -90,15 +94,13 @@ public class Fuzzer {
 		boolean one_more = true;
 		while (one_more) {
 			boolean run_successful = true;
-			long eval_start_time = 0;
-			long eval_finish_time = 0;
 			String error_reason = "UNKNOWN";
 			try {
-				eval_start_time = System.nanoTime();
+				probe.switchStateAndStartIteration(TimeProbe.ProgramState.EXECUTION);
 				context.eval(source);
-				eval_finish_time = System.nanoTime();
+				probe.switchStateAndEndIteration(TimeProbe.ProgramState.MANAGE);
 			} catch (PolyglotException pe) {
-				eval_finish_time = System.nanoTime();
+				probe.switchStateAndEndIteration(TimeProbe.ProgramState.MANAGE);
 				String message = pe.getMessage();
 				if (message.startsWith("org.fuzzingtool.core.components.CustomError$EscalatedException:")) {
 					error_reason = message.replace("org.fuzzingtool.core.components.CustomError$EscalatedException: ", "");
@@ -111,12 +113,11 @@ public class Fuzzer {
 				}
 				run_successful = false;
 			}
-			long runtime = eval_finish_time - eval_start_time;
 
 			if (run_successful) {
-				amygdala.terminate_event(runtime);
+				amygdala.terminate_event(probe.getIterationDuration());
 			} else {
-				amygdala.error_event(error_reason, runtime);
+				amygdala.error_event(error_reason, probe.getIterationDuration());
 			}
 			amygdala.coverage.saveSnapshot();
 
@@ -144,6 +145,8 @@ public class Fuzzer {
 		amygdala.printStatistics();
 		amygdala.printInstrumentation();
 		amygdala.coverage.printCoverage();
+		probe.switchState(TimeProbe.ProgramState.STOP);
+		logger.log(probe.toString());
 		logger.printStatistics();
 	}
 

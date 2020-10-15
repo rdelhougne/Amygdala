@@ -2,6 +2,7 @@ package org.fuzzingtool.instrumentation;
 
 import com.oracle.truffle.api.instrumentation.*;
 import org.fuzzingtool.core.components.Amygdala;
+import org.fuzzingtool.core.components.TimeProbe;
 
 class FuzzingNodeFactory implements ExecutionEventNodeFactory {
 	private final TruffleInstrument.Env env;
@@ -14,6 +15,9 @@ class FuzzingNodeFactory implements ExecutionEventNodeFactory {
 
 	@Override
 	public ExecutionEventNode create(final EventContext ec) {
-		return new FuzzingNode(this.env, this.amygdala, ec);
+		amygdala.probe.switchState(TimeProbe.ProgramState.INSTRUMENTATION);
+		FuzzingNode wrapper_node = new FuzzingNode(this.env, this.amygdala, ec);
+		amygdala.probe.switchState(TimeProbe.ProgramState.EXECUTION);
+		return wrapper_node;
 	}
 }
