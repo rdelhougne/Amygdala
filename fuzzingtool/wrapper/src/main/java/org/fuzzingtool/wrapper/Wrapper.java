@@ -18,7 +18,8 @@ public class Wrapper {
 		if (fuzzer.usable()) {
 			fuzzer.fuzz();
 			fuzzer.saveResults();
-			fuzzer.print_results();
+			fuzzer.printResults();
+			fuzzer.saveAndPrintRuntimeInformation();
 		}
 	}
 }

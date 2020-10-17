@@ -50,7 +50,10 @@ public class Amygdala {
 
 	// Experimental
 	// This option advises JSReadCurrent/ScopeFrameSlotNodeGen to fill in values if they are not found.
-	public boolean experimental_frameslot_fill_in_nonexistent = false;
+	public static final boolean experimental_frameslot_fill_in_nonexistent = false;
+	// This option disables computation of new input values and instead
+	// locks them to the values specified in the configuration YAML-file.
+	public static final boolean lock_values = false;
 
 	// Debugging Bits: is node executed, onEnter (E), onInputValue (I), OnReturn (R), onReturnExceptional (X), onUnwind (U), onDispose (D)
 	public final HashMap<String, BitSet> node_type_instrumented = new HashMap<>();
@@ -142,6 +145,14 @@ public class Amygdala {
 		return this.fuzzing_iterations;
 	}
 
+	public List<Long> getRuntimes() {
+		return this.runtime_nanos;
+	}
+
+	public List<Map<VariableIdentifier, Object>> getVariableValues() {
+		return this.variable_values;
+	}
+
 	public String getResultsPath() {
 		return this.results_path;
 	}
@@ -162,16 +173,20 @@ public class Amygdala {
 	 */
 	public Boolean calculateNextPath() {
 		if (fuzzing_iterations < max_iterations) {
-			probe.switchState(TimeProbe.ProgramState.TACTIC);
-			boolean res = this.tactic.calculate();
-			probe.switchState(TimeProbe.ProgramState.MANAGE);
-			if (res) {
-				variable_values.add(this.tactic.getNextValues());
-				next_program_path = this.tactic.getNextPath();
-				return true;
+			if (!lock_values) {
+				probe.switchState(TimeProbe.ProgramState.TACTIC);
+				boolean res = this.tactic.calculate();
+				probe.switchState(TimeProbe.ProgramState.MANAGE);
+				if (res) {
+					variable_values.add(this.tactic.getNextValues());
+					next_program_path = this.tactic.getNextPath();
+					return true;
+				} else {
+					fuzzing_finished = true;
+					return false;
+				}
 			} else {
-				fuzzing_finished = true;
-				return false;
+				return true;
 			}
 		} else {
 			logger.info("Max iterations reached (" + max_iterations + ")");
@@ -568,14 +583,14 @@ public class Amygdala {
 			iteration.put("runtime", runtime_nanos.get(i) / 1000000);
 
 			List<Map<String, Object>> variables = new ArrayList<>();
-			for (Map.Entry<VariableIdentifier, Object> entry: variable_values.get(i).entrySet()) {
-				VariableIdentifier key = entry.getKey();
-				Object value = entry.getValue();
-				Map<String, Object> variable = new HashMap<>();
-				variable.put("name", variable_names.get(key));
-				variable.put("line", variable_lines.get(key));
-				variable.put("value", value);
-				variables.add(variable);
+			if (lock_values) {
+				for (Map.Entry<VariableIdentifier, Object> entry: variable_values.get(0).entrySet()) {
+					addVariableResult(variables, entry);
+				}
+			} else {
+				for (Map.Entry<VariableIdentifier, Object> entry: variable_values.get(i).entrySet()) {
+					addVariableResult(variables, entry);
+				}
 			}
 			iteration.put("assignments", variables);
 
@@ -586,5 +601,15 @@ public class Amygdala {
 		result_map.put("iterations", iterations);
 
 		return result_map;
+	}
+
+	private void addVariableResult(List<Map<String, Object>> variables, Map.Entry<VariableIdentifier, Object> entry) {
+		VariableIdentifier key = entry.getKey();
+		Object value = entry.getValue();
+		Map<String, Object> variable = new HashMap<>();
+		variable.put("name", variable_names.get(key));
+		variable.put("line", variable_lines.get(key));
+		variable.put("value", value);
+		variables.add(variable);
 	}
 }

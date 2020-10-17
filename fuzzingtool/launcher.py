@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 import signal
 import argparse
 import subprocess
@@ -6,6 +7,11 @@ import os
 import yaml
 
 import testgenerator
+
+
+MEASURE_TIME = False
+NUM_SAMPLES = 10
+
 
 MAIN_CLASS = "org.fuzzingtool.wrapper.Wrapper"
 BUILD_DIRECTORY = "build"
@@ -77,6 +83,7 @@ def main():
 	generate = args.generate
 
 	program_path = ""
+	runtime_fractional_output = ""
 
 	# Check if program exists
 	try:
@@ -84,6 +91,8 @@ def main():
 			try:
 				yaml_dict = yaml.safe_load(cfile)
 				program_path = yaml_dict["program_path"]
+				if "runtime_fractional_output" in yaml_dict:
+					runtime_fractional_output = yaml_dict["runtime_fractional_output"]
 			except yaml.YAMLError as ye:
 				print("ERROR: Cannot parse " + fuzzing_configuration + ".")
 				exit(1)
@@ -131,9 +140,28 @@ def main():
 		MAIN_CLASS,
 		fuzzing_configuration
 	]
+	
+	if MEASURE_TIME:
+		for sample in range(NUM_SAMPLES):
+			print(f"Sample {sample + 1}/{NUM_SAMPLES}")
+			iter_start = time.perf_counter_ns()
+			subprocess.run(args, capture_output=True)
+			iter_end = time.perf_counter_ns()
+			total_duration = iter_end - iter_start
+			if runtime_fractional_output != "":
+				with open(runtime_fractional_output, 'a+') as outfile:
+					outfile.seek(0)
+					outfile_contents = outfile.read()
+					last_line = outfile_contents.split('\n')[-1].split(',')
+					total_probed_duration = sum([int(x) for x in last_line])
+					vm_duration = total_duration - total_probed_duration
+					measure_string = f",{vm_duration},{total_duration}\n"
+					outfile.write(measure_string)
+	else:
+		fuzzing_process = subprocess.Popen(args, preexec_fn=os.setpgrp)
+		fuzzing_process.wait()
 
-	fuzzing_process = subprocess.Popen(args, preexec_fn=os.setpgrp)
-	fuzzing_process.wait()
+	
 
 
 if __name__ == "__main__":

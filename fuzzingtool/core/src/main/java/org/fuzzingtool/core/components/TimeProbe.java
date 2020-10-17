@@ -72,6 +72,10 @@ public class TimeProbe {
 		return this.iteration_duration;
 	}
 
+	public long getDuration(ProgramState state) {
+		return this.durations.get(state);
+	}
+
 	public enum ProgramState {
 		MANAGE,
 		EXECUTION,

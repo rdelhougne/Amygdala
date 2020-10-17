@@ -8,12 +8,17 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
-import org.snakeyaml.engine.v2.api.*;
+import org.snakeyaml.engine.v2.api.Dump;
+import org.snakeyaml.engine.v2.api.DumpSettings;
+import org.snakeyaml.engine.v2.api.Load;
+import org.snakeyaml.engine.v2.api.LoadSettings;
 import org.snakeyaml.engine.v2.common.FlowStyle;
 import org.snakeyaml.engine.v2.common.ScalarStyle;
 
 import java.io.*;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 public class Fuzzer {
@@ -26,6 +31,8 @@ public class Fuzzer {
 	private boolean initialization_successful;
 
 	private static final String TERMINATE_FILE_NAME = "terminate-1bfa427b-a460-4088-b578-e388a6bce94d";
+	private String runtime_complete_output;
+	private String runtime_fractional_output;
 
 	public Fuzzer(String fuzzing_config) {
 		this.probe = new TimeProbe(false);
@@ -39,7 +46,7 @@ public class Fuzzer {
 	}
 
 	private void init(String fuzzing_config) throws Exception {
-		this.engine = Engine.newBuilder().allowExperimentalOptions(true).option("engine.Compilation", "false").option(FuzzingTool.ID, "true").build();
+		this.engine = Engine.newBuilder().option(FuzzingTool.ID, "true").build();
 		if (!this.engine.getLanguages().containsKey("js")) {
 			throw new Exception("JS Language context not available.");
 		}
@@ -56,6 +63,13 @@ public class Fuzzer {
 		this.amygdala.loadOptions(configuration, new File(fuzzing_config).getAbsoluteFile().getParent());
 
 		this.source = loadSource(amygdala.getProgramPath());
+
+		if (configuration.containsKey("runtime_complete_output") && configuration.get("runtime_complete_output") instanceof String) {
+			this.runtime_complete_output = (String) configuration.get("runtime_complete_output");
+		}
+		if (configuration.containsKey("runtime_fractional_output") && configuration.get("runtime_fractional_output") instanceof String) {
+			this.runtime_fractional_output = (String) configuration.get("runtime_fractional_output");
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -140,13 +154,11 @@ public class Fuzzer {
 		}
 	}
 
-	public void print_results() {
+	public void printResults() {
 		logger.info("Printing results\n");
 		amygdala.printStatistics();
 		amygdala.printInstrumentation();
 		amygdala.coverage.printCoverage();
-		probe.switchState(TimeProbe.ProgramState.STOP);
-		logger.log(probe.toString());
 		logger.printStatistics();
 	}
 
@@ -173,5 +185,49 @@ public class Fuzzer {
 		} catch (IOException ioe) {
 			logger.critical("Cannot write results to " + result_yaml_path + ". Reason: " + ioe.getMessage());
 		}
+	}
+
+	public void saveAndPrintRuntimeInformation() {
+		if (!this.runtime_complete_output.isEmpty()) {
+			String type = "instrumentation";
+			List<Long> durations = amygdala.getRuntimes();
+			Collection<Object> values = amygdala.getVariableValues().get(0).values();
+
+			if (values.size() == 1) {
+				String input_val = String.valueOf(values.iterator().next());
+				try {
+					FileWriter fw = new FileWriter(this.runtime_complete_output, true);
+					BufferedWriter bw = new BufferedWriter(fw);
+					for (int i = 0; i < durations.size(); i++) {
+						String measure_string = type + "," + input_val + "," + (i + 1) + "," + durations.get(i);
+						bw.write(measure_string);
+						bw.newLine();
+					}
+					bw.close();
+				} catch (IOException e) {
+					logger.critical("Cannot write runtime information to file '" + this.runtime_complete_output + "'.");
+				}
+			} else {
+				logger.critical("Cannot obtain locked input value.");
+			}
+		}
+		probe.switchState(TimeProbe.ProgramState.STOP);
+		if (!this.runtime_fractional_output.isEmpty()) {
+			try {
+				FileWriter fw = new FileWriter(this.runtime_fractional_output, true);
+				BufferedWriter bw = new BufferedWriter(fw);
+				String measure_string = probe.getDuration(TimeProbe.ProgramState.MANAGE) + "," +
+										probe.getDuration(TimeProbe.ProgramState.EXECUTION) + "," +
+										probe.getDuration(TimeProbe.ProgramState.INSTRUMENTATION) + "," +
+										probe.getDuration(TimeProbe.ProgramState.SOLVE) + "," +
+										probe.getDuration(TimeProbe.ProgramState.TACTIC);
+										// vm measurement and linebreak will be added by python script
+				bw.write(measure_string);
+				bw.close();
+			} catch (IOException e) {
+				logger.critical("Cannot write runtime information to file '" + this.runtime_fractional_output + "'.");
+			}
+		}
+		logger.log(probe.toString());
 	}
 }
