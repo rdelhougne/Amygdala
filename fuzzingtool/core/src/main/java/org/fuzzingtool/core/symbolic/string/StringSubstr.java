@@ -12,12 +12,12 @@ import org.graalvm.collections.Pair;
 
 public class StringSubstr extends SymbolicNode {
 	public StringSubstr(LanguageSemantic s, SymbolicNode a, SymbolicNode b, SymbolicNode c) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b, c);
 	}
 
 	public StringSubstr(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b);
 	}
 

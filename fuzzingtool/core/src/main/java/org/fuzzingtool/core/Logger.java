@@ -7,8 +7,8 @@ import java.io.PrintStream;
 import java.util.Queue;
 
 public class Logger {
-	final PrintStream outStream;
-	Queue<String> aggregate_queue = new CircularFifoQueue<>(8);
+	final PrintStream out_stream;
+	final Queue<String> aggregate_queue = new CircularFifoQueue<>(8);
 
 	// logging statistics
 	private static final boolean SHOW_DEBUGGING_STATS = true;
@@ -28,11 +28,11 @@ public class Logger {
 
 
 	public Logger(OutputStream os) {
-		this.outStream = new PrintStream(os);
+		this.out_stream = new PrintStream(os);
 	}
 
 	public void log(String msg) {
-		outStream.println(msg);
+		out_stream.println(msg);
 		num_log++;
 	}
 
@@ -40,63 +40,63 @@ public class Logger {
 		if (AGGREGATE_EVENTS) {
 			aggregate_queue.offer(msg);
 		} else {
-			outStream.println(msg);
+			out_stream.println(msg);
 		}
 		num_event++;
 	}
 
 	public void debug(String msg) {
-		outStream.println("\033[35m[DEBUG]\033[0m " + msg);
+		out_stream.println("\033[35m[DEBUG]\033[0m " + msg);
 		num_debug++;
 	}
 
 	public void info(String msg) {
-		outStream.println("\033[34m[INFO]\033[0m " + msg);
+		out_stream.println("\033[34m[INFO]\033[0m " + msg);
 		num_info++;
 	}
 
 	public void warning(String msg) {
-		outStream.println("\033[33m[WARNING]\033[0m " + msg);
+		out_stream.println("\033[33m[WARNING]\033[0m " + msg);
 		num_warning++;
 	}
 
 	public void critical(String msg) {
 		if (AGGREGATE_EVENTS) {
 			for (String message: aggregate_queue) {
-				outStream.println(message);
+				out_stream.println(message);
 			}
 		}
-		outStream.println("\033[31m[CRITICAL]\033[0m " + msg);
+		out_stream.println("\033[31m[CRITICAL]\033[0m " + msg);
 		num_critical++;
 	}
 
 	public void alert(String msg) {
-		outStream.println("\033[41m" + msg + "\033[0m");
+		out_stream.println("\033[41m" + msg + "\033[0m");
 		num_alert++;
 	}
 
 	public void mesmerize(String msg) {
-		outStream.println("\033[42m" + msg + "\033[0m");
+		out_stream.println("\033[42m" + msg + "\033[0m");
 		num_mesmerize++;
 	}
 
 	public void shock(String msg) {
-		outStream.println("\033[43m" + msg + "\033[0m");
+		out_stream.println("\033[43m" + msg + "\033[0m");
 		num_shock++;
 	}
 
 	public void highlight(String msg) {
-		outStream.println("\033[44m" + msg + "\033[0m");
+		out_stream.println("\033[44m" + msg + "\033[0m");
 		num_highlight++;
 	}
 
 	public void hypnotize(String msg) {
-		outStream.println("\033[45m" + msg + "\033[0m");
+		out_stream.println("\033[45m" + msg + "\033[0m");
 		num_hypnotize++;
 	}
 
 	public void fascinate(String msg) {
-		outStream.println("\033[46m" + msg + "\033[0m");
+		out_stream.println("\033[46m" + msg + "\033[0m");
 		num_fascinate++;
 	}
 
@@ -115,20 +115,21 @@ public class Logger {
 	}
 
 	public void printStatistics() {
-		outStream.println("===MESSAGE STATISTICS===");
-		outStream.println("LOG: " + num_log);
-		outStream.println("EVENT: " + num_event);
-		outStream.println("DEBUG: " + num_debug);
-		outStream.println("INFO: " + num_info);
-		outStream.println("WARNING: " + num_warning);
-		outStream.println("CRITICAL: " + num_critical);
+		out_stream.println("===MESSAGE STATISTICS===");
+		out_stream.println("LOG: " + num_log);
+		out_stream.println("EVENT: " + num_event);
+		out_stream.println("DEBUG: " + num_debug);
+		out_stream.println("INFO: " + num_info);
+		out_stream.println("WARNING: " + num_warning);
+		out_stream.println("CRITICAL: " + num_critical);
 		if (SHOW_DEBUGGING_STATS) {
-			outStream.println("ALERT: " + num_alert);
-			outStream.println("MESMERIZE: " + num_mesmerize);
-			outStream.println("SHOCK: " + num_shock);
-			outStream.println("HIGHLIGHT: " + num_highlight);
-			outStream.println("HYPNOTIZE: " + num_hypnotize);
-			outStream.println("FASCINATE: " + num_fascinate);
+			out_stream.println("ALERT: " + num_alert);
+			out_stream.println("MESMERIZE: " + num_mesmerize);
+			out_stream.println("SHOCK: " + num_shock);
+			out_stream.println("HIGHLIGHT: " + num_highlight);
+			out_stream.println("HYPNOTIZE: " + num_hypnotize);
+			out_stream.println("FASCINATE: " + num_fascinate);
 		}
+		out_stream.println("");
 	}
 }

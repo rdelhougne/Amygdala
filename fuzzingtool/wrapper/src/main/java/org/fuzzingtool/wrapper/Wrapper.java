@@ -3,7 +3,7 @@ package org.fuzzingtool.wrapper;
 public class Wrapper {
 	public static void main(String[] args) {
 		if (args.length != 1) {
-			System.out.println("ERROR: Wrong number of options.");
+			System.out.println("ERROR: Wrong number of options");
 			return;
 		}
 

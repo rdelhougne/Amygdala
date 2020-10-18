@@ -1,15 +1,17 @@
 package org.fuzzingtool.core.tactics;
 
-import com.microsoft.z3.*;
+import com.microsoft.z3.Context;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.components.BranchingNode;
 import org.fuzzingtool.core.components.BranchingNodeAttribute;
 import org.graalvm.collections.Pair;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Stack;
 
 public class DepthSearchTactic extends FuzzingTactic {
-	Stack<Pair<BranchingNode, HashMap<Integer, Integer>>> last_max_nodes = new Stack<>();
+	final Stack<Pair<BranchingNode, HashMap<Integer, Integer>>> last_max_nodes = new Stack<>();
 
 	public DepthSearchTactic(BranchingNode n, Context c, Logger l) {
 		this.ctx = c;
@@ -22,7 +24,7 @@ public class DepthSearchTactic extends FuzzingTactic {
 
 		incrementLoop(current_node);
 
-		if (!isValidNode(current_node)) {
+		if (nodeIsInvalid(current_node)) {
 			decrementLoop(current_node);
 			return new ArrayList<>();
 		}
@@ -84,7 +86,7 @@ public class DepthSearchTactic extends FuzzingTactic {
 					this.max_loop_unrolling = (Integer) value;
 					logger.info("DEPTH_SEARCH.max_loop_unrolling option set: " + value);
 				} catch (ClassCastException cce) {
-					logger.warning("DepthSearchTactic: Wrong parameter type for option 'max_loop_unrolling' (Integer).");
+					logger.warning("DepthSearchTactic: Wrong parameter type for option 'max_loop_unrolling' (Integer)");
 				}
 				break;
 			case "max_depth":
@@ -92,11 +94,11 @@ public class DepthSearchTactic extends FuzzingTactic {
 					this.max_depth = (Integer) value;
 					logger.info("DEPTH_SEARCH.max_depth option set: " + value);
 				} catch (ClassCastException cce) {
-					logger.warning("DepthSearchTactic: Wrong parameter type for option 'max_depth' (Integer).");
+					logger.warning("DepthSearchTactic: Wrong parameter type for option 'max_depth' (Integer)");
 				}
 				break;
 			default:
-				logger.warning("DEPTH_SEARCH: Unknown option '" + option_name + "'.");
+				logger.warning("DEPTH_SEARCH: Unknown option '" + option_name + "'");
 		}
 	}
 
@@ -108,7 +110,7 @@ public class DepthSearchTactic extends FuzzingTactic {
 			case "max_depth":
 				return this.max_depth;
 			default:
-				logger.warning("DepthSearchTactic: Unknown option '" + option_name + "'.");
+				logger.warning("DepthSearchTactic: Unknown option '" + option_name + "'");
 				return null;
 		}
 	}

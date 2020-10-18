@@ -13,7 +13,7 @@ public class SymbolicVariable extends SymbolicNode {
 	private final VariableIdentifier identifier;
 
 	public SymbolicVariable(LanguageSemantic s, VariableIdentifier var_id) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		this.identifier = var_id;
 	}
 

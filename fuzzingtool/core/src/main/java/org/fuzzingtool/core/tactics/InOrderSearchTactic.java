@@ -1,6 +1,6 @@
 package org.fuzzingtool.core.tactics;
 
-import com.microsoft.z3.*;
+import com.microsoft.z3.Context;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.components.BranchingNode;
 import org.fuzzingtool.core.components.BranchingNodeAttribute;
@@ -19,7 +19,7 @@ public class InOrderSearchTactic extends FuzzingTactic {
 
 		incrementLoop(current_node);
 
-		if (!isValidNode(current_node)) {
+		if (nodeIsInvalid(current_node)) {
 			decrementLoop(current_node);
 			return null;
 		}
@@ -55,7 +55,7 @@ public class InOrderSearchTactic extends FuzzingTactic {
 					this.max_loop_unrolling = (Integer) value;
 					logger.info("IN_ORDER_SEARCH.max_loop_unrolling option set: " + value);
 				} catch (ClassCastException cce) {
-					logger.warning("InOrderSearchTactic: Wrong parameter type for option 'max_loop_unrolling' (Integer).");
+					logger.warning("InOrderSearchTactic: Wrong parameter type for option 'max_loop_unrolling' (Integer)");
 				}
 				break;
 			case "max_depth":
@@ -63,11 +63,11 @@ public class InOrderSearchTactic extends FuzzingTactic {
 					this.max_depth = (Integer) value;
 					logger.info("IN_ORDER_SEARCH.max_depth option set: " + value);
 				} catch (ClassCastException cce) {
-					logger.warning("InOrderSearchTactic: Wrong parameter type for option 'max_depth' (Integer).");
+					logger.warning("InOrderSearchTactic: Wrong parameter type for option 'max_depth' (Integer)");
 				}
 				break;
 			default:
-				logger.warning("IN_ORDER_SEARCH: Unknown option '" + option_name + "'.");
+				logger.warning("IN_ORDER_SEARCH: Unknown option '" + option_name + "'");
 		}
 	}
 
@@ -79,7 +79,7 @@ public class InOrderSearchTactic extends FuzzingTactic {
 			case "max_depth":
 				return this.max_depth;
 			default:
-				logger.warning("InOrderSearchTactic: Unknown option '" + option_name + "'.");
+				logger.warning("InOrderSearchTactic: Unknown option '" + option_name + "'");
 				return null;
 		}
 	}

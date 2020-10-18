@@ -1,11 +1,11 @@
 package org.fuzzingtool.core.tactics;
 
-import com.microsoft.z3.*;
+import com.microsoft.z3.Context;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.components.BranchingNode;
 import org.fuzzingtool.core.components.BranchingNodeAttribute;
 
-import java.util.*;
+import java.util.Random;
 
 public class RandomSearchTactic extends FuzzingTactic {
 	private final BranchingNode root_node;
@@ -23,7 +23,7 @@ public class RandomSearchTactic extends FuzzingTactic {
 
 		incrementLoop(current_node);
 
-		if (!isValidNode(current_node)) {
+		if (nodeIsInvalid(current_node)) {
 			decrementLoop(current_node);
 			return null;
 		}
@@ -64,7 +64,7 @@ public class RandomSearchTactic extends FuzzingTactic {
 					this.max_loop_unrolling = (Integer) value;
 					logger.info("RANDOM_SEARCH.max_loop_unrolling option set: " + value);
 				} catch (ClassCastException cce) {
-					logger.warning("RandomSearchTactic: Wrong parameter type for option 'max_loop_unrolling' (Integer).");
+					logger.warning("RandomSearchTactic: Wrong parameter type for option 'max_loop_unrolling' (Integer)");
 				}
 				break;
 			case "max_depth":
@@ -72,7 +72,7 @@ public class RandomSearchTactic extends FuzzingTactic {
 					this.max_depth = (Integer) value;
 					logger.info("RANDOM_SEARCH.max_depth option set: " + value);
 				} catch (ClassCastException cce) {
-					logger.warning("RandomSearchTactic: Wrong parameter type for option 'max_depth' (Integer).");
+					logger.warning("RandomSearchTactic: Wrong parameter type for option 'max_depth' (Integer)");
 				}
 				break;
 			case "seed":
@@ -80,11 +80,11 @@ public class RandomSearchTactic extends FuzzingTactic {
 					this.generator.setSeed((Long) value);
 					logger.info("RANDOM_SEARCH.seed option set: " + value);
 				} catch (ClassCastException cce) {
-					logger.warning("RandomSearchTactic: Wrong parameter type for option 'seed' (Long).");
+					logger.warning("RandomSearchTactic: Wrong parameter type for option 'seed' (Long)");
 				}
 				break;
 			default:
-				logger.warning("RANDOM_SEARCH: Unknown option '" + option_name + "'.");
+				logger.warning("RANDOM_SEARCH: Unknown option '" + option_name + "'");
 		}
 	}
 
@@ -96,10 +96,10 @@ public class RandomSearchTactic extends FuzzingTactic {
 			case "max_depth":
 				return this.max_depth;
 			case "seed":
-				logger.warning("RandomSearchTactic: Cannot get option 'seed'.");
+				logger.warning("RandomSearchTactic: Cannot get option 'seed'");
 				return null;
 			default:
-				logger.warning("RandomSearchTactic: Unknown option '" + option_name + "'.");
+				logger.warning("RandomSearchTactic: Unknown option '" + option_name + "'");
 				return null;
 		}
 	}

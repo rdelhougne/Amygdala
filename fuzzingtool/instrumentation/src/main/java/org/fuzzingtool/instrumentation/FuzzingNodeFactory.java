@@ -1,6 +1,9 @@
 package org.fuzzingtool.instrumentation;
 
-import com.oracle.truffle.api.instrumentation.*;
+import com.oracle.truffle.api.instrumentation.EventContext;
+import com.oracle.truffle.api.instrumentation.ExecutionEventNode;
+import com.oracle.truffle.api.instrumentation.ExecutionEventNodeFactory;
+import com.oracle.truffle.api.instrumentation.TruffleInstrument;
 import org.fuzzingtool.core.components.Amygdala;
 import org.fuzzingtool.core.components.TimeProbe;
 

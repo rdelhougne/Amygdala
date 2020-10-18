@@ -10,13 +10,13 @@ import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.graalvm.collections.Pair;
 
 public class SymbolicConstant extends SymbolicNode {
-	private final ExpressionType constantType;
+	private final ExpressionType constant_type;
 	private final Object value;
 
 	public SymbolicConstant(LanguageSemantic s, ExpressionType t, Object v) {
 		Object new_value;
 		ExpressionType new_type;
-		this.languageSemantic = s;
+		this.language_semantic = s;
 
 		try {
 			switch (t) {
@@ -57,15 +57,15 @@ public class SymbolicConstant extends SymbolicNode {
 		} catch ( SymbolicException.IncompatibleType it) {
 			new_type = ExpressionType.INTERNAL_ERROR;
 			new_value = null;
-			System.out.println("[CRITICAL] IncompatibleType exception occured: " + it.getMessage());
+			System.out.println("[CRITICAL] IncompatibleType exception occurred: " + it.getMessage());
 		}
-		this.constantType = new_type;
+		this.constant_type = new_type;
 		this.value = new_value;
 	}
 
 	@Override
 	public String toHRStringJS() {
-		switch (this.constantType) {
+		switch (this.constant_type) {
 			case BOOLEAN:
 				return ((Boolean) this.value).toString();
 			case STRING:
@@ -102,7 +102,7 @@ public class SymbolicConstant extends SymbolicNode {
 
 	public Pair<Expr, ExpressionType> toZ3ExprJS(Context ctx) throws SymbolicException.NotImplemented,
 			SymbolicException.UndecidableExpression {
-		switch (this.constantType) {
+		switch (this.constant_type) {
 			case BOOLEAN:
 				return Pair.create(ctx.mkBool((Boolean) this.value), ExpressionType.BOOLEAN);
 			case STRING:
@@ -121,7 +121,7 @@ public class SymbolicConstant extends SymbolicNode {
 				}
 			case NUMBER_REAL:
 				// https://stackoverflow.com/questions/11249894/precision-for-double-parsedouble-and-string-valueof
-				return Pair.create(ctx.mkReal(String.valueOf((Double) this.value)), ExpressionType.NUMBER_REAL);
+				return Pair.create(ctx.mkReal(String.valueOf(this.value)), ExpressionType.NUMBER_REAL);
 			case UNDEFINED:
 				return Pair.create(null, ExpressionType.UNDEFINED);
 			case NULL:
@@ -137,9 +137,9 @@ public class SymbolicConstant extends SymbolicNode {
 			case SYMBOL:
 				return Pair.create(null, ExpressionType.SYMBOL);
 			case INTERNAL_ERROR:
-				throw new SymbolicException.UndecidableExpression("Z3", "Internal error detected.");
+				throw new SymbolicException.UndecidableExpression("Z3", "Internal error detected");
 			default:
-				throw new SymbolicException.NotImplemented("Unknown constant expression type.");
+				throw new SymbolicException.NotImplemented("Unknown constant expression type");
 		}
 	}
 }

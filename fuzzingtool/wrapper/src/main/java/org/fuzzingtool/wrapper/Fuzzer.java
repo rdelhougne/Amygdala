@@ -15,7 +15,12 @@ import org.snakeyaml.engine.v2.api.LoadSettings;
 import org.snakeyaml.engine.v2.common.FlowStyle;
 import org.snakeyaml.engine.v2.common.ScalarStyle;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
@@ -31,8 +36,8 @@ public class Fuzzer {
 	private boolean initialization_successful;
 
 	private static final String TERMINATE_FILE_NAME = "terminate-1bfa427b-a460-4088-b578-e388a6bce94d";
-	private String runtime_complete_output;
-	private String runtime_fractional_output;
+	private String runtime_complete_output = null;
+	private String runtime_fractional_output = null;
 
 	public Fuzzer(String fuzzing_config) {
 		this.probe = new TimeProbe(false);
@@ -48,12 +53,12 @@ public class Fuzzer {
 	private void init(String fuzzing_config) throws Exception {
 		this.engine = Engine.newBuilder().option(FuzzingTool.ID, "true").build();
 		if (!this.engine.getLanguages().containsKey("js")) {
-			throw new Exception("JS Language context not available.");
+			throw new Exception("JS Language context not available");
 		}
 		this.context = Context.newBuilder("js").engine(this.engine).build();
 		FuzzingTool fuzzing_instrument = context.getEngine().getInstruments().get(FuzzingTool.ID).lookup(FuzzingTool.class);
 		if (fuzzing_instrument == null) {
-			throw new Exception("Cannot communicate with Truffle Instrument, perhaps classpath-isolation is enabled.");
+			throw new Exception("Cannot communicate with Truffle Instrument, perhaps classpath-isolation is enabled");
 		}
 		this.amygdala = fuzzing_instrument.getAmygdala();
 		this.logger = fuzzing_instrument.getLogger();
@@ -81,7 +86,7 @@ public class Fuzzer {
 			fis = new FileInputStream(file_path);
 			map = (Map<String, Object>) load.loadFromInputStream(fis);
 		} catch (FileNotFoundException e) {
-			throw new Exception("File '" + file_path + "' not found.");
+			throw new Exception("File '" + file_path + "' not found");
 		}
 		return map;
 	}
@@ -92,15 +97,14 @@ public class Fuzzer {
 			try {
 				String language = Source.findLanguage(source_file);
 				if (!language.equals("js")) {
-					throw new Exception("Source file " + source_file.getName() + " is not a JavaScript source file.");
+					throw new Exception("Source file " + source_file.getName() + " is not a JavaScript source file");
 				}
-				Source program_source = Source.newBuilder(language, source_file).build();
-				return program_source;
+				return Source.newBuilder(language, source_file).build();
 			} catch (IOException e) {
-				throw new Exception("Cannot open file " + source_file.getName() + ".");
+				throw new Exception("Cannot open file " + source_file.getName());
 			}
 		} else {
-			throw new Exception("Source file " + source_file.getName() + " does not end with '.js'.");
+			throw new Exception("Source file " + source_file.getName() + " does not end with '.js'");
 		}
 	}
 
@@ -129,9 +133,9 @@ public class Fuzzer {
 			}
 
 			if (run_successful) {
-				amygdala.terminate_event(probe.getIterationDuration());
+				amygdala.terminateEvent(probe.getIterationDuration());
 			} else {
-				amygdala.error_event(error_reason, probe.getIterationDuration());
+				amygdala.errorEvent(error_reason, probe.getIterationDuration());
 			}
 			amygdala.coverage.saveSnapshot();
 
@@ -143,9 +147,9 @@ public class Fuzzer {
 			File f = new File(TERMINATE_FILE_NAME);
 			if(f.exists()) {
 				boolean delete_successful = f.delete();
-				amygdala.logger.info("User requested shutdown.");
+				amygdala.logger.info("User requested shutdown");
 				if (!delete_successful) {
-					amygdala.logger.warning("Cannot delete termination indicator file, should be deleted manually.");
+					amygdala.logger.warning("Cannot delete termination indicator file, should be deleted manually");
 				}
 				return;
 			}
@@ -181,14 +185,14 @@ public class Fuzzer {
 			FileWriter file_writer = new FileWriter(result_yaml_path);
 			file_writer.write(dump.dumpToString(map));
 			file_writer.close();
-			logger.info("Results written to '" + result_yaml_path + "'.");
+			logger.info("Results written to '" + result_yaml_path + "'");
 		} catch (IOException ioe) {
 			logger.critical("Cannot write results to " + result_yaml_path + ". Reason: " + ioe.getMessage());
 		}
 	}
 
 	public void saveAndPrintRuntimeInformation() {
-		if (!this.runtime_complete_output.isEmpty()) {
+		if (this.runtime_complete_output != null) {
 			String type = "instrumentation";
 			List<Long> durations = amygdala.getRuntimes();
 			Collection<Object> values = amygdala.getVariableValues().get(0).values();
@@ -205,14 +209,14 @@ public class Fuzzer {
 					}
 					bw.close();
 				} catch (IOException e) {
-					logger.critical("Cannot write runtime information to file '" + this.runtime_complete_output + "'.");
+					logger.critical("Cannot write runtime information to file '" + this.runtime_complete_output + "'");
 				}
 			} else {
-				logger.critical("Cannot obtain locked input value.");
+				logger.critical("Cannot obtain locked input value");
 			}
 		}
 		probe.switchState(TimeProbe.ProgramState.STOP);
-		if (!this.runtime_fractional_output.isEmpty()) {
+		if (this.runtime_fractional_output != null) {
 			try {
 				FileWriter fw = new FileWriter(this.runtime_fractional_output, true);
 				BufferedWriter bw = new BufferedWriter(fw);
@@ -225,7 +229,7 @@ public class Fuzzer {
 				bw.write(measure_string);
 				bw.close();
 			} catch (IOException e) {
-				logger.critical("Cannot write runtime information to file '" + this.runtime_fractional_output + "'.");
+				logger.critical("Cannot write runtime information to file '" + this.runtime_fractional_output + "'");
 			}
 		}
 		logger.log(probe.toString());

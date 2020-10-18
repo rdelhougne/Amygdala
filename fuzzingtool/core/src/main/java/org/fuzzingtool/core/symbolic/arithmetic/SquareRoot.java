@@ -15,7 +15,7 @@ import org.graalvm.collections.Pair;
  */
 public class SquareRoot extends SymbolicNode {
 	public SquareRoot(LanguageSemantic s, SymbolicNode a) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a);
 	}
 

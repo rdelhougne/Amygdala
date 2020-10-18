@@ -79,12 +79,12 @@ public final class VariableIdentifier {
 	}
 
 	public static VariableIdentifier fromString(String representation) {
-		String[] splitted = representation.split("_");
-		if (splitted.length != 2) {
-			throw new IllegalArgumentException("String representation '" + representation + "' of VariableIdentifier is invalid.");
+		String[] split = representation.split("_");
+		if (split.length != 2) {
+			throw new IllegalArgumentException("String representation '" + representation + "' of VariableIdentifier is invalid");
 		}
 		ExpressionType id_type;
-		switch (splitted[0]) {
+		switch (split[0]) {
 			case "boolean":
 				id_type = ExpressionType.BOOLEAN;
 				break;
@@ -101,8 +101,8 @@ public final class VariableIdentifier {
 				id_type = ExpressionType.NUMBER_REAL;
 				break;
 			default:
-				throw new IllegalArgumentException("String representation '" + representation + "' of VariableIdentifier is invalid.");
+				throw new IllegalArgumentException("String representation '" + representation + "' of VariableIdentifier is invalid");
 		}
-		return new VariableIdentifier(id_type, splitted[1]);
+		return new VariableIdentifier(id_type, split[1]);
 	}
 }

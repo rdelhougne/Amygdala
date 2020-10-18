@@ -10,7 +10,7 @@ import org.graalvm.collections.Pair;
 
 public class GreaterThan extends SymbolicNode {
 	public GreaterThan(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b);
 	}
 

@@ -11,7 +11,7 @@ import org.graalvm.collections.Pair;
 
 public class Multiplication extends SymbolicNode {
 	public Multiplication(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b);
 	}
 
@@ -55,9 +55,9 @@ public class Multiplication extends SymbolicNode {
 		}
 		if (checkTypeContains(ExpressionType.NUMBER_POS_INFINITY, a_numeric, b_numeric) ||
 				checkTypeContains(ExpressionType.NUMBER_NEG_INFINITY, a_numeric, b_numeric)) {
-			//TODO evtl anderen Ausdruck nach const auflösen, wenn 0 dann Ergebnis NaN
+			//TODO perhaps solve other expression to constant, if 0 then result is NaN
 			throw new SymbolicException.UndecidableExpression("Z3",
-															  "Cannot solve multiplication with infinity and non-infinity parameters.");
+															  "Cannot solve multiplication with infinity and non-infinity parameters");
 		}
 		if (checkTypeAll(ExpressionType.BIGINT, a_numeric, b_numeric)) {
 			return Pair.create(ctx.mkMul((ArithExpr) a_numeric.getLeft(), (ArithExpr) b_numeric.getLeft()),

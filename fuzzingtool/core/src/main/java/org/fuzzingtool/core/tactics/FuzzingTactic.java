@@ -1,6 +1,14 @@
 package org.fuzzingtool.core.tactics;
 
-import com.microsoft.z3.*;
+import com.microsoft.z3.BoolExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
+import com.microsoft.z3.FuncDecl;
+import com.microsoft.z3.IntNum;
+import com.microsoft.z3.Model;
+import com.microsoft.z3.RatNum;
+import com.microsoft.z3.Solver;
+import com.microsoft.z3.Status;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.components.BranchingNode;
 import org.fuzzingtool.core.components.BranchingNodeAttribute;
@@ -9,7 +17,10 @@ import org.fuzzingtool.core.components.VariableIdentifier;
 import org.fuzzingtool.core.symbolic.SymbolicException;
 import org.graalvm.collections.Pair;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Queue;
 
 public abstract class FuzzingTactic {
 	protected Context ctx = null;
@@ -92,14 +103,14 @@ public abstract class FuzzingTactic {
 								if (result.isBool()) {
 									new_values.put(identifier, result.isTrue());
 								} else {
-									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Bool.");
+									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Bool");
 								}
 								break;
 							case STRING:
 								if (result.isString()) {
 									new_values.put(identifier, result.getString());
 								} else {
-									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to String.");
+									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to String");
 								}
 								break;
 							case BIGINT:
@@ -109,10 +120,10 @@ public abstract class FuzzingTactic {
 										IntNum cast_result = (IntNum) result;
 										new_values.put(identifier, cast_result.getInt());
 									} catch (ClassCastException cce) {
-										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer.");
+										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer");
 									}
 								} else {
-									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer.");
+									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer");
 								}
 								break;
 							case NUMBER_REAL: //TODO Z3 RatNum to Double conversion
@@ -121,14 +132,14 @@ public abstract class FuzzingTactic {
 										RatNum cast_result = (RatNum) result;
 										new_values.put(identifier, Double.parseDouble(cast_result.toDecimalString(128)));
 									} catch (ClassCastException cce) {
-										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double.");
+										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double");
 									}
 								} else {
-									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double.");
+									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double");
 								}
 								break;
 							default:
-								logger.critical("Variable " + identifier.getIdentifierString() + " has not allowed type '" + identifier.getVariableType().toString() + "'.");
+								logger.critical("Variable " + identifier.getIdentifierString() + " has not allowed type '" + identifier.getVariableType().toString() + "'");
 								break;
 						}
 					}
@@ -156,23 +167,19 @@ public abstract class FuzzingTactic {
 		return false;
 	}
 
-	protected boolean isValidNode(BranchingNode node) {
+	protected boolean nodeIsInvalid(BranchingNode node) {
 		// Max depth functionality
 		if (node.getDepth() > this.max_depth) {
-			return false;
+			return true;
 		}
 
 		// Max loop unrolling functionality
 		if (overLoopLimit(node)) {
-			return false;
+			return true;
 		}
 
 		// Other characteristics
-		if (node.isUndecidable() || node.isDiverging() || node.isExplored()) {
-			return false;
-		}
-
-		return true;
+		return node.isUndecidable() || node.isDiverging() || node.isExplored();
 	}
 
 	protected void incrementLoop(BranchingNode node) {

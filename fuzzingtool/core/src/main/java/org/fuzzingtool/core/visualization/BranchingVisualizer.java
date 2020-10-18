@@ -1,6 +1,10 @@
 package org.fuzzingtool.core.visualization;
 
-import guru.nidi.graphviz.attribute.*;
+import guru.nidi.graphviz.attribute.Color;
+import guru.nidi.graphviz.attribute.Font;
+import guru.nidi.graphviz.attribute.Label;
+import guru.nidi.graphviz.attribute.Shape;
+import guru.nidi.graphviz.attribute.Style;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.engine.GraphvizCmdLineEngine;
@@ -30,10 +34,10 @@ public class BranchingVisualizer {
 		MutableNode root = mutNode(visualization_node_name).add(getNodeContents(node));
 		setNodeAttributes(root, node.getBranchingNodeAttribute());
 		vis_graph.add(root);
-		build_visualization(node, root);
+		buildVisualization(node, root);
 	}
 
-	public void save_image(File path) {
+	public void saveImage(File path) {
 		Graphviz.useEngine(new GraphvizCmdLineEngine());
 		try {
 			if (path.toString().endsWith(".svg")) {
@@ -51,7 +55,7 @@ public class BranchingVisualizer {
 	}
 
     // Parents created me and gave me my identity
-	private void build_visualization(BranchingNode current_node, MutableNode current_vis_node) {
+	private void buildVisualization(BranchingNode current_node, MutableNode current_vis_node) {
 		for (Boolean taken_flag: new boolean[]{true, false}) {
 			BranchingNode child_node = current_node.getChildBranch(taken_flag);
 			if (child_node != null) {
@@ -64,7 +68,7 @@ public class BranchingVisualizer {
 				} else {
 					current_vis_node.addLink(Link.to(child).with(Color.rgb(0xa4, 0x00, 0x00), Label.of("⊥")));
 				}
-				build_visualization(child_node, child);
+				buildVisualization(child_node, child);
 			}
 		}
 	}

@@ -12,7 +12,7 @@ import org.graalvm.collections.Pair;
  */
 public class Modulo extends SymbolicNode {
 	public Modulo(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b);
 	}
 
@@ -47,12 +47,12 @@ public class Modulo extends SymbolicNode {
 		if (checkTypeAll(ExpressionType.NUMBER_POS_INFINITY, a_numeric) || checkTypeAll(ExpressionType.NUMBER_NEG_INFINITY, a_numeric)) {
 			return Pair.create(null, ExpressionType.NUMBER_NAN);
 		}
-		//TODO punkt 3 prüfen
+		//TODO check statement 3...
 		if (checkTypeAll(ExpressionType.NUMBER_POS_INFINITY, b_numeric) || checkTypeAll(ExpressionType.NUMBER_NEG_INFINITY, b_numeric)) {
 			return a_numeric;
 		}
-		//TODO punkt 5 prüfen
-		//TODO punkt 6...
+		//TODO check statement 5...
+		//TODO check statement 6...
 		if (checkTypeAll(ExpressionType.NUMBER_INTEGER, a_numeric, b_numeric)) {
 			return Pair.create(ctx.mkMod((IntExpr) a_numeric.getLeft(), (IntExpr) b_numeric.getLeft()), ExpressionType.NUMBER_INTEGER);
 		} else if (checkTypeAll(ExpressionType.BIGINT, a_numeric, b_numeric)) {

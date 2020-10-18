@@ -13,7 +13,7 @@ import org.graalvm.collections.Pair;
  */
 public class UnaryPlus extends SymbolicNode {
 	public UnaryPlus(LanguageSemantic s, SymbolicNode a) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a);
 	}
 

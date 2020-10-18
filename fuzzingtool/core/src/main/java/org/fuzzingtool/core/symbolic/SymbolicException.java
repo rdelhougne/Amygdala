@@ -4,11 +4,11 @@ public class SymbolicException {
 	public static class IncompatibleType extends Exception {
 		public IncompatibleType(ExpressionType a, ExpressionType b, String op_name) {
 			super("Types " + a.toString() + " and " + b.toString() +
-                          " are not compatible in Operation " + op_name + ".");
+                          " are not compatible in Operation " + op_name);
 		}
 
 		public IncompatibleType(ExpressionType a, String op_name) {
-			super("ExpressionType " + a.toString() + " cannot be used with Operation " + op_name + ".");
+			super("ExpressionType " + a.toString() + " cannot be used with Operation " + op_name);
 		}
 
 		public IncompatibleType(ExpressionType a) {

@@ -14,7 +14,7 @@ import org.graalvm.collections.Pair;
  */
 public class Division extends SymbolicNode {
 	public Division(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b);
 	}
 
@@ -58,9 +58,9 @@ public class Division extends SymbolicNode {
 		}
 		if (checkTypeContains(ExpressionType.NUMBER_POS_INFINITY, a_numeric, b_numeric) ||
 				checkTypeContains(ExpressionType.NUMBER_NEG_INFINITY, a_numeric, b_numeric)) {
-			//TODO evtl anderen Ausdruck nach const auflösen
+			//TODO perhaps solve other expression to constant
 			throw new SymbolicException.UndecidableExpression("Z3",
-															  "Cannot solve division with infinity and non-infinity parameters.");
+															  "Cannot solve division with infinity and non-infinity parameters");
 		}
 		//TODO zero rules
 		if (checkTypeAll(ExpressionType.BIGINT, a_numeric, b_numeric)) {

@@ -1,11 +1,18 @@
 package org.fuzzingtool.instrumentation;
 
 import com.oracle.truffle.api.Option;
-import com.oracle.truffle.api.instrumentation.*;
+import com.oracle.truffle.api.instrumentation.Instrumenter;
+import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.instrumentation.TruffleInstrument;
 import com.oracle.truffle.api.instrumentation.TruffleInstrument.Registration;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.components.Amygdala;
-import org.graalvm.options.*;
+import org.graalvm.options.OptionCategory;
+import org.graalvm.options.OptionDescriptors;
+import org.graalvm.options.OptionKey;
+import org.graalvm.options.OptionStability;
+import org.graalvm.options.OptionValues;
 
 @Registration(id = FuzzingTool.ID, name = "Fuzzing Tool", version = "1.0-SNAPSHOT", services = FuzzingTool.class)
 public final class FuzzingTool extends TruffleInstrument {
@@ -48,17 +55,7 @@ public final class FuzzingTool extends TruffleInstrument {
 		instrumenter.attachLoadSourceSectionListener(branch_coverage_filter, new BranchSourceSectionListener(amygdala), false);
 		instrumenter.attachLoadSourceSectionListener(statement_coverage_filter, new StatementSourceSectionListener(amygdala), false);
 		instrumenter.attachLoadSourceSectionListener(root_coverage_filter, new RootSourceSectionListener(amygdala), false);
-
-		// Load source listener
-		SourceFilter source_filter = SourceFilter.newBuilder().build();
-		instrumenter.attachLoadSourceListener(source_filter, new FuzzingSourceListener(amygdala), false);
 	}
-
-	@Override
-	protected void onDispose(Env env) {
-		//logger.info("FuzzingTool shutting down.");
-	}
-
 
 	public Amygdala getAmygdala() {
 		return this.amygdala;

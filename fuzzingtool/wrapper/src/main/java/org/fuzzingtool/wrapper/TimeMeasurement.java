@@ -1,6 +1,9 @@
 package org.fuzzingtool.wrapper;
 
-import org.graalvm.polyglot.*;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Source;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -19,7 +22,7 @@ public class TimeMeasurement {
 		 * 4: output path
 		 */
 		if (args.length != 5) {
-			System.out.println("ERROR: Wrong number of options.");
+			System.out.println("ERROR: Wrong number of options");
 			return;
 		}
 
@@ -48,6 +51,7 @@ public class TimeMeasurement {
 			}
 			durations.add(end_time - start_time);
 		}
+
 		/*System.out.println("===DURATIONS===");
 		for (int i = 0; i < num_iterations; i++) {
 			System.out.println(durations.get(i));

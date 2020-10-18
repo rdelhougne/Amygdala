@@ -11,7 +11,7 @@ import org.graalvm.collections.Pair;
 
 public class LessEqual extends SymbolicNode {
 	public LessEqual(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b);
 	}
 

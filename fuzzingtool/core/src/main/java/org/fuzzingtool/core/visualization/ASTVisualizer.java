@@ -3,7 +3,10 @@ package org.fuzzingtool.core.visualization;
 import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.SourceSection;
-import guru.nidi.graphviz.attribute.*;
+import guru.nidi.graphviz.attribute.Color;
+import guru.nidi.graphviz.attribute.Label;
+import guru.nidi.graphviz.attribute.Shape;
+import guru.nidi.graphviz.attribute.Style;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.engine.GraphvizCmdLineEngine;
@@ -17,7 +20,8 @@ import org.fuzzingtool.core.Logger;
 import java.io.File;
 import java.io.IOException;
 
-import static guru.nidi.graphviz.model.Factory.*;
+import static guru.nidi.graphviz.model.Factory.mutGraph;
+import static guru.nidi.graphviz.model.Factory.mutNode;
 
 public class ASTVisualizer {
 	private final MutableGraph vis_graph = mutGraph("AST Visualization").setDirected(true);
@@ -39,10 +43,10 @@ public class ASTVisualizer {
 				mutNode(visualization_node_name).add(getNodeContents(node_type, root_node.getSourceSection()));
 		root.add(Shape.ELLIPSE, Style.FILLED, Color.rgb(0x72, 0x9f, 0xcf));
 		vis_graph.add(root);
-		build_visualization(root_node, root);
+		buildVisualization(root_node, root);
 	}
 
-	public void save_image(File path) {
+	public void saveImage(File path) {
 		Graphviz.useEngine(new GraphvizCmdLineEngine());
 		try {
 			if (path.toString().endsWith(".svg")) {
@@ -60,7 +64,7 @@ public class ASTVisualizer {
 	}
 
     // Parents created me and gave me my identity
-	private void build_visualization(Node current_node, MutableNode current_vis_node) {
+	private void buildVisualization(Node current_node, MutableNode current_vis_node) {
 		for (Node n: current_node.getChildren()) {
 			Node realnode;
 			Color node_color;
@@ -81,7 +85,7 @@ public class ASTVisualizer {
 			child.add(getNodeContents(node_type, realnode.getSourceSection()));
 			vis_graph.add(child);
 			current_vis_node.addLink(child);
-			build_visualization(realnode, child);
+			buildVisualization(realnode, child);
 		}
 	}
 

@@ -10,7 +10,7 @@ import org.graalvm.collections.Pair;
 
 public class Equal extends SymbolicNode {
 	public Equal(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b);
 	}
 
@@ -70,7 +70,7 @@ public class Equal extends SymbolicNode {
 			return abstractEqualityComparisonZ3JS(ctx, x, toNumericZ3JS(ctx, y));
 		}
 		if (checkTypeAll(ExpressionType.OBJECT, x) || checkTypeAll(ExpressionType.OBJECT, y)) {
-			throw new SymbolicException.UndecidableExpression("Z3", "Cannot perform equality with OBJECT type.");
+			throw new SymbolicException.UndecidableExpression("Z3", "Cannot perform equality with OBJECT type");
 		}
 		if ((checkTypeAll(ExpressionType.BIGINT, x) && checkTypeIsNumeric(y)) ||
 				checkTypeAll(ExpressionType.BIGINT, y) && checkTypeIsNumeric(x)) {
@@ -81,6 +81,6 @@ public class Equal extends SymbolicNode {
 			}
 			return Pair.create(ctx.mkEq(x.getLeft(), y.getLeft()), ExpressionType.BOOLEAN);
 		}
-		throw new SymbolicException.NotImplemented("Equality not implemented for types " + x.getRight().name() + " and " + y.getRight().name() + ".");
+		throw new SymbolicException.NotImplemented("Equality not implemented for types " + x.getRight().name() + " and " + y.getRight().name());
 	}
 }

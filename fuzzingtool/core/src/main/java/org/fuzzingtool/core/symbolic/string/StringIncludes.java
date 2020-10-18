@@ -9,12 +9,12 @@ import org.graalvm.collections.Pair;
 
 public class StringIncludes extends SymbolicNode {
 	public StringIncludes(LanguageSemantic s, SymbolicNode a, SymbolicNode b, SymbolicNode c) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b, c);
 	}
 
 	public StringIncludes(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b);
 	}
 
@@ -30,7 +30,7 @@ public class StringIncludes extends SymbolicNode {
 	@Override
 	public String toSMTExprJS() throws SymbolicException.NotImplemented {
 		if (children.length == 3) {
-			throw new SymbolicException.NotImplemented("String includes with min index.");
+			throw new SymbolicException.NotImplemented("String includes with min index");
 		} else {
 			return parentheses("str.contains " + this.children[0].toSMTExpr() + " " + this.children[1].toSMTExpr());
 		}

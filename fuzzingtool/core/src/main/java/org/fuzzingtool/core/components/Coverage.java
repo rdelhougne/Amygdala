@@ -1,9 +1,12 @@
 package org.fuzzingtool.core.components;
 
-import com.oracle.truffle.api.source.Source;
 import org.fuzzingtool.core.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Coverage {
 	public final Logger logger;
@@ -12,17 +15,13 @@ public class Coverage {
 	// BitSet[0] -> branch taken, BitSet[1] -> branch not taken
 	private final Map<Integer, BitSet> covered_branches = new HashMap<>();
 
-	// Snaphots
+	// Snapshots
 	private final List<Double> root_coverage = new ArrayList<>();
 	private final List<Double> statement_coverage = new ArrayList<>();
 	private final List<Double> branch_coverage = new ArrayList<>();
 
 	public Coverage(Logger lgr) {
 		this.logger = lgr;
-	}
-
-	public void registerSource(Source src) {
-		return;
 	}
 
 	public void registerStatement(Integer id) {

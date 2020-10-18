@@ -10,7 +10,7 @@ import org.graalvm.collections.Pair;
 
 public class StrictEqual extends SymbolicNode {
 	public StrictEqual(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b);
 	}
 
@@ -91,7 +91,7 @@ public class StrictEqual extends SymbolicNode {
 		}
 		if (checkTypeContains(ExpressionType.NUMBER_POS_INFINITY, x, y) ||
 				checkTypeContains(ExpressionType.NUMBER_NEG_INFINITY, x, y)) {
-			throw new SymbolicException.UndecidableExpression("Z3", "Cannot solve equality with 'Infinity' type.");
+			throw new SymbolicException.UndecidableExpression("Z3", "Cannot solve equality with 'Infinity' type");
 		}
 		return Pair.create(ctx.mkEq(x.getLeft(), y.getLeft()), ExpressionType.BOOLEAN);
 	}
@@ -124,11 +124,11 @@ public class StrictEqual extends SymbolicNode {
 			case NULL:
 				return Pair.create(ctx.mkTrue(), ExpressionType.BOOLEAN);
 			case OBJECT:
-				throw new SymbolicException.NotImplemented("Comparison between Objects not implemented.");
+				throw new SymbolicException.NotImplemented("Comparison between Objects not implemented");
 			case SYMBOL:
-				throw new SymbolicException.NotImplemented("Comparison between Symbols not implemented.");
+				throw new SymbolicException.NotImplemented("Comparison between Symbols not implemented");
 		}
 
-		throw new SymbolicException.NotImplemented("Cannot perform comparison.");
+		throw new SymbolicException.NotImplemented("Cannot perform comparison");
 	}
 }

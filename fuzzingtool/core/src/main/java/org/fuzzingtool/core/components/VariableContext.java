@@ -2,7 +2,6 @@ package org.fuzzingtool.core.components;
 
 import org.fuzzingtool.core.symbolic.ExpressionType;
 import org.fuzzingtool.core.symbolic.LanguageSemantic;
-import org.fuzzingtool.core.symbolic.SymbolicException;
 import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.fuzzingtool.core.symbolic.basic.SymbolicConstant;
 
@@ -36,6 +35,6 @@ public class VariableContext {
 		if (key instanceof String) {
 			return (String) key;
 		}
-		throw new IllegalArgumentException("VariableContext.convertProperty(): Cannot use property key with type '" + key.getClass().getSimpleName() + "'.");
+		throw new IllegalArgumentException("VariableContext.convertProperty(): Cannot use property key with type '" + key.getClass().getSimpleName() + "'");
 	}
 }

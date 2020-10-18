@@ -11,7 +11,7 @@ import org.graalvm.collections.Pair;
 
 public class Not extends SymbolicNode {
 	public Not(LanguageSemantic s, SymbolicNode a) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a);
 	}
 

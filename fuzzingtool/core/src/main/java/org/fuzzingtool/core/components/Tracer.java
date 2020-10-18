@@ -2,10 +2,13 @@ package org.fuzzingtool.core.components;
 
 import org.apache.commons.text.RandomStringGenerator;
 import org.fuzzingtool.core.Logger;
-import org.fuzzingtool.core.symbolic.*;
-import org.fuzzingtool.core.symbolic.arithmetic.*;
+import org.fuzzingtool.core.symbolic.ExpressionType;
+import org.fuzzingtool.core.symbolic.LanguageSemantic;
+import org.fuzzingtool.core.symbolic.Operation;
+import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.fuzzingtool.core.symbolic.basic.SymbolicConstant;
 import org.fuzzingtool.core.symbolic.basic.SymbolicVariable;
+import org.fuzzingtool.core.symbolic.arithmetic.*;
 import org.fuzzingtool.core.symbolic.logical.*;
 import org.fuzzingtool.core.symbolic.string.*;
 
@@ -47,7 +50,7 @@ public class Tracer {
 	public void argumentToIntermediate(Integer argument_index, Integer node_id_intermediate) {
 		assert argument_index >= 0;
 		if (argument_index >= this.arguments_array.size()) {
-			logger.warning("Tracer::argumentToIntermediate(): Argument index " + argument_index + " out of range.");
+			logger.warning("Tracer::argumentToIntermediate(): Argument index " + argument_index + " out of range");
 		}
 		this.intermediate_results.put(node_id_intermediate, this.arguments_array.get(argument_index));
 	}
@@ -77,7 +80,7 @@ public class Tracer {
 		if (intermediate_results.containsKey(intermediate_key)) {
 			this.function_return_value = intermediate_results.get(intermediate_key);
 		} else {
-			logger.critical("Tracer::setFunctionReturnValueFromIntermediate(): Trying to set return value to result from " + intermediate_key + " but it does not exist.");
+			logger.critical("Tracer::setFunctionReturnValueFromIntermediate(): Trying to set return value to result from " + intermediate_key + " but it does not exist");
 		}
 	}
 
@@ -102,7 +105,7 @@ public class Tracer {
 		if (symbolic_program.containsKey(context_key)) {
 			return symbolic_program.get(context_key);
 		} else {
-			logger.critical("Tracer.getSymbolicContext(): Context with key " + context_key + " does not exist.");
+			logger.critical("Tracer.getSymbolicContext(): Context with key " + context_key + " does not exist");
 			return null;
 		}
 	}
@@ -118,7 +121,7 @@ public class Tracer {
 		if (symbolic_program.containsKey(context)) {
 			VariableContext var_ctx = symbolic_program.get(context);
 			if (!var_ctx.hasProperty(key)) {
-				logger.warning("Tracer::propertyToIntermediate(): Context " + context + " has no property '" + key + "', returning JS.undefined.");
+				logger.warning("Tracer::propertyToIntermediate(): Context " + context + " has no property '" + key + "', returning JS.undefined");
 			}
 			try {
 				intermediate_results.put(node_id_intermediate, var_ctx.get(key));
@@ -147,7 +150,7 @@ public class Tracer {
 					logger.critical(iae.getMessage());
 				}
 			} else {
-				logger.critical("Tracer::intermediateToProperty(): Context " + context + " does not exist.");
+				logger.critical("Tracer::intermediateToProperty(): Context " + context + " does not exist");
 			}
 		} else {
 			logger.critical("Tracer::intermediateToProperty(): No intermediate result for " + node_id_intermediate);
@@ -180,7 +183,7 @@ public class Tracer {
 				logger.critical("Tracer::frameSlotToIntermediate(): No frame slot " + function_scope);
 			}
 		}
-		logger.critical("Tracer::frameSlotToIntermediate(): No function scope with variable '" + key + "' found.");
+		logger.critical("Tracer::frameSlotToIntermediate(): No function scope with variable '" + key + "' found");
 		return false;
 	}
 
@@ -206,7 +209,7 @@ public class Tracer {
 						logger.critical(iae.getMessage());
 					}
 				} else {
-					logger.critical("Tracer::intermediateToFrameSlot(): Context " + frame_stack.get(0) + " does not exist.");
+					logger.critical("Tracer::intermediateToFrameSlot(): Context " + frame_stack.get(0) + " does not exist");
 				}
 			} else if (frame_stack.size() > 1) {
 				// Behavior for JSWriteScopeFrameSlotNodeGen
@@ -225,9 +228,9 @@ public class Tracer {
 						logger.warning("Tracer::intermediateToFrameSlot(): No frame slot " + function_scope);
 					}
 				}
-				logger.critical("Tracer::intermediateToFrameSlot(): No function scope with variable '" + key + "' found.");
+				logger.critical("Tracer::intermediateToFrameSlot(): No function scope with variable '" + key + "' found");
 			} else {
-				logger.critical("Tracer::intermediateToFrameSlot(): No function scopes provided.");
+				logger.critical("Tracer::intermediateToFrameSlot(): No function scopes provided");
 			}
 		} else {
 			logger.critical("Tracer::intermediateToFrameSlot(): No intermediate result for " + node_id_intermediate);
@@ -496,11 +499,11 @@ public class Tracer {
 					}
 					break;
 				default:
-					logger.critical("Tracer::addStringOperation(): Cannot process operation " + op.name() + ".");
+					logger.critical("Tracer::addStringOperation(): Cannot process operation " + op.name());
 			}
 		} else {
 			logger.critical("Tracer::addStringOperation(): Trying to add operation " + op.name() + " but operand " +
-									operand_intermediate_id + " does not exist.");
+									operand_intermediate_id + " does not exist");
 		}
 	}
 
@@ -535,7 +538,7 @@ public class Tracer {
 				}
 
 				// forces string concatenation
-				SymbolicNode join_expression = null;
+				SymbolicNode join_expression;
 				join_expression = new SymbolicConstant(s, ExpressionType.STRING, "");
 				for (long i = 0; i < arr_length; i++) {
 					if (i == arr_length - 1) {
@@ -549,7 +552,7 @@ public class Tracer {
 				setIntermediate(node_target, join_expression);
 				break;
 			default:
-				logger.critical("Tracer::addArrayOperation(): Cannot process operation " + op.name() + ".");
+				logger.critical("Tracer::addArrayOperation(): Cannot process operation " + op.name());
 		}
 	}
 
@@ -559,7 +562,7 @@ public class Tracer {
 	 * and writes the result to {@link #function_return_value}.
 	 *
 	 * @param s Semantic of the language
-	 * @param s Operation
+	 * @param op Operation
 	 */
 	public void performSingularMethodInvocation(LanguageSemantic s, Operation op) {
 		switch (op) {
@@ -567,12 +570,12 @@ public class Tracer {
 				if (arguments_array.size() == 1) {
 					function_return_value = new SquareRoot(s, arguments_array.get(0));
 				} else {
-					logger.critical("Arguments for Operation SQRT have the wrong size.");
+					logger.critical("Arguments for Operation SQRT have the wrong size");
 					function_return_value = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
 				}
 				break;
 			default:
-				logger.critical("Operation '" + op.name() + "' is not an internal method call.");
+				logger.critical("Operation '" + op.name() + "' is not an internal method call");
 		}
 	}
 

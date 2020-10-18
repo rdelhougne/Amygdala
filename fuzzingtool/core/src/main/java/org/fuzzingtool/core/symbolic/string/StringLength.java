@@ -11,7 +11,7 @@ import org.graalvm.collections.Pair;
 
 public class StringLength extends SymbolicNode {
 	public StringLength(LanguageSemantic s, SymbolicNode a) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a);
 	}
 
@@ -39,7 +39,7 @@ public class StringLength extends SymbolicNode {
 		if (string_expr.getRight() == ExpressionType.STRING) {
 			return Pair.create(ctx.mkLength((SeqExpr) string_expr.getLeft()), ExpressionType.NUMBER_INTEGER);
 		} else {
-			throw new SymbolicException.UndecidableExpression("Z3", "Cannot determine sequence length of expression of type '" + string_expr.getRight().name() + "'.");
+			throw new SymbolicException.UndecidableExpression("Z3", "Cannot determine sequence length of expression of type '" + string_expr.getRight().name() + "'");
 		}
 	}
 }

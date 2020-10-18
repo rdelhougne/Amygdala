@@ -74,19 +74,19 @@ public class CustomError {
 					logSetOption(name, division_op_no_zero);
 					break;
 				default:
-					logger.warning("CustomError: Unknown option '" + name + "'.");
+					logger.warning("CustomError: Unknown option '" + name + "'");
 			}
 		} catch (ClassCastException cce) {
-			logger.warning("CustomError: Cannot cast value for option '" + name + "'.");
+			logger.warning("CustomError: Cannot cast value for option '" + name + "'");
 		}
 		recalculateSomeEnabled();
 	}
 
 	private void logSetOption(String name, boolean enabled) {
 		if (enabled) {
-			logger.info("Custom error class '" + name + "' enabled.");
+			logger.info("Custom error class '" + name + "' enabled");
 		} else {
-			logger.info("Custom error class '" + name + "' disabled.");
+			logger.info("Custom error class '" + name + "' disabled");
 		}
 	}
 
@@ -117,7 +117,7 @@ public class CustomError {
 			case "division_op_no_zero":
 				return this.division_op_no_zero;
 			default:
-				logger.warning("CustomError: Unknown option '" + name + "'.");
+				logger.warning("CustomError: Unknown option '" + name + "'");
 				return null;
 		}
 	}
@@ -195,7 +195,7 @@ public class CustomError {
 			case "JSNotNodeGen":
 				if (boolean_op_only_boolean_operands) {
 					if (!JSGuards.isBoolean(value)) {
-						logger.info("Object of type '" + value.toString() + "' for boolean operation detected (boolean_op_only_boolean_operands).");
+						logger.info("Object of type '" + value.toString() + "' for boolean operation detected (boolean_op_only_boolean_operands)");
 						throw new EscalatedException("Object of type '" + value.toString() + "' for boolean operation detected (boolean_op_only_boolean_operands). [" + operation_name + ", line " + line_num + "]");
 					}
 				}
@@ -209,7 +209,7 @@ public class CustomError {
 			if (num instanceof BigInt) {
 				BigInt bigint_num = (BigInt) num;
 				if (bigint_num.equals(BigInt.ZERO)) {
-					logger.info("Detected zero value for division operation (division_op_no_zero).");
+					logger.info("Detected zero value for division operation (division_op_no_zero)");
 					throw new EscalatedException(
 							"Detected zero value for division operation (division_op_no_zero). [" + operation_name + ", line " +
 									line_num + "]");
@@ -217,7 +217,7 @@ public class CustomError {
 			} else if (num instanceof Integer) {
 				Integer int_num = (Integer) num;
 				if (int_num.equals(0)) {
-					logger.info("Detected zero value for division operation (division_op_no_zero).");
+					logger.info("Detected zero value for division operation (division_op_no_zero)");
 					throw new EscalatedException(
 							"Detected zero value for division operation (division_op_no_zero). [" + operation_name +
 									", line " +
@@ -226,7 +226,7 @@ public class CustomError {
 			} else if (num instanceof SafeInteger) {
 				SafeInteger safeint_num = (SafeInteger) num;
 				if (safeint_num.intValue() == 0) {
-					logger.info("Detected zero value for division operation (division_op_no_zero).");
+					logger.info("Detected zero value for division operation (division_op_no_zero)");
 					throw new EscalatedException(
 							"Detected zero value for division operation (division_op_no_zero). [" + operation_name + ", line " +
 									line_num + "]");
@@ -234,7 +234,7 @@ public class CustomError {
 			} else if (num instanceof Double) {
 				Double double_num = (Double) num;
 				if (double_num.equals(0.0)) {
-					logger.info("Detected zero value for division operation (division_op_no_zero).");
+					logger.info("Detected zero value for division operation (division_op_no_zero)");
 					throw new EscalatedException(
 							"Detected zero value for division operation (division_op_no_zero). [" + operation_name + ", line " +
 									line_num + "]");
@@ -273,7 +273,7 @@ public class CustomError {
 	private void inspectArithmeticValues(String operation_name, Object value, int line_num) {
 		if (arith_op_no_undefined) {
 			if (JSGuards.isUndefined(value)) {
-				logger.info("Detected undefined value for arithmetic operation (arith_op_no_undefined).");
+				logger.info("Detected undefined value for arithmetic operation (arith_op_no_undefined)");
 				throw new EscalatedException(
 						"Detected undefined value for arithmetic operation (arith_op_no_undefined). [" + operation_name + ", line " + line_num + "]");
 			}
@@ -281,21 +281,21 @@ public class CustomError {
 		if (arith_op_no_null) {
 			//if (JSGuards.isJSNull(value)) { //TODO does not work
 			if (value.toString().startsWith("DynamicObject<null>")) {
-				logger.info("Detected null value for arithmetic operation (arith_op_no_null).");
+				logger.info("Detected null value for arithmetic operation (arith_op_no_null)");
 				throw new EscalatedException(
 						"Detected null value for arithmetic operation (arith_op_no_null). [" + operation_name + ", line " + line_num + "]");
 			}
 		}
 		if (arith_op_no_nan) {
 			if (JSGuards.isNumberDouble(value) && JSRuntime.isNaN(value)) {
-				logger.info("Detected NaN value for arithmetic operation (arith_op_no_nan).");
+				logger.info("Detected NaN value for arithmetic operation (arith_op_no_nan)");
 				throw new EscalatedException(
 						"Detected NaN value for arithmetic operation (arith_op_no_nan). [" + operation_name + ", line " + line_num + "]");
 			}
 		}
 		if (arith_op_no_infinity) {
 			if (JSGuards.isNumberDouble(value) && (JSRuntime.isPositiveInfinity((double) value) || JSRuntime.isPositiveInfinity(-(double) value))) {
-				logger.info("Detected Infinity value for arithmetic operation (arith_op_no_infinity).");
+				logger.info("Detected Infinity value for arithmetic operation (arith_op_no_infinity)");
 				throw new EscalatedException(
 						"Detected Infinity value for arithmetic operation (arith_op_no_infinity). [" + operation_name + ", line " + line_num + "]");
 			}

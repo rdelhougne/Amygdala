@@ -1,6 +1,10 @@
 package org.fuzzingtool.core.symbolic;
 
-import com.microsoft.z3.*;
+import com.microsoft.z3.ArithExpr;
+import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
+import com.microsoft.z3.RealExpr;
+import com.microsoft.z3.SeqExpr;
 import com.microsoft.z3.enumerations.Z3_decl_kind;
 import org.graalvm.collections.Pair;
 
@@ -9,32 +13,32 @@ import java.util.Set;
 
 public abstract class SymbolicNode {
 	protected SymbolicNode[] children;
-	protected LanguageSemantic languageSemantic;
+	protected LanguageSemantic language_semantic;
 	private Pair<Expr, ExpressionType> cached_z3_expression = null;
 	private String cached_hr_string = null;
 	private String cached_smt_expression = null;
 
-	public static boolean PARTIAL_EVALUATION_ON_CAST = false;
+	public static boolean partial_evaluation_on_cast = false;
 
 	public final String toHRString() throws SymbolicException.NotImplemented {
-		if (this.languageSemantic == LanguageSemantic.JAVASCRIPT) {
+		if (this.language_semantic == LanguageSemantic.JAVASCRIPT) {
 			if (this.cached_hr_string == null) {
 				this.cached_hr_string = toHRStringJS();
 			}
 			return this.cached_hr_string;
 		} else {
-			throw new SymbolicException.NotImplemented("Only JavaScript semantic supported for now.");
+			throw new SymbolicException.NotImplemented("Only JavaScript semantic supported for now");
 		}
 	}
 
 	public final String toSMTExpr() throws SymbolicException.NotImplemented {
-		if (this.languageSemantic == LanguageSemantic.JAVASCRIPT) {
+		if (this.language_semantic == LanguageSemantic.JAVASCRIPT) {
 			if (this.cached_smt_expression == null) {
 				this.cached_smt_expression = toSMTExprJS();
 			}
 			return this.cached_smt_expression;
 		} else {
-			throw new SymbolicException.NotImplemented("Only JavaScript semantic supported for now.");
+			throw new SymbolicException.NotImplemented("Only JavaScript semantic supported for now");
 		}
 	}
 
@@ -52,13 +56,13 @@ public abstract class SymbolicNode {
 	 */
 	public final Pair<Expr, ExpressionType> toZ3Expr(Context ctx) throws SymbolicException.NotImplemented,
 			SymbolicException.UndecidableExpression {
-		if (this.languageSemantic == LanguageSemantic.JAVASCRIPT) {
+		if (this.language_semantic == LanguageSemantic.JAVASCRIPT) {
 			if (this.cached_z3_expression == null) {
 				this.cached_z3_expression = toZ3ExprJS(ctx);
 			}
 			return this.cached_z3_expression;
 		} else {
-			throw new SymbolicException.NotImplemented("Only JavaScript semantic supported in Z3-expressions.");
+			throw new SymbolicException.NotImplemented("Only JavaScript semantic supported in Z3-expressions");
 		}
 	}
 
@@ -82,19 +86,19 @@ public abstract class SymbolicNode {
 			SymbolicException.UndecidableExpression {
 		switch (expression.getRight()) {
 			case BOOLEAN:
-				if (PARTIAL_EVALUATION_ON_CAST) {
+				if (partial_evaluation_on_cast) {
 					return tryPartialEvaluationCastNumeric(ctx, expression);
 				} else {
 					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-							expression.getRight().toString() + "' to a Number type.");
+							expression.getRight().toString() + "' to a Number type");
 				}
 			case STRING:
 				if (!containsVars(expression.getLeft())) {
-					if (PARTIAL_EVALUATION_ON_CAST) {
+					if (partial_evaluation_on_cast) {
 						return tryPartialEvaluationCastNumeric(ctx, expression);
 					} else {
 						throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-							expression.getRight().toString() + "' to a Number type.");
+							expression.getRight().toString() + "' to a Number type");
 					}
 				} else {
 					return Pair.create(ctx.stringToInt(expression.getLeft()), ExpressionType.NUMBER_INTEGER);
@@ -112,7 +116,7 @@ public abstract class SymbolicNode {
 				return Pair.create(ctx.mkInt(0), ExpressionType.NUMBER_INTEGER);
 			default:
 				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-						expression.getRight().toString() + "' to a Number type.");
+						expression.getRight().toString() + "' to a Number type");
 		}
 	}
 
@@ -129,11 +133,11 @@ public abstract class SymbolicNode {
 
 		switch (expression.getRight()) {
 			case BOOLEAN:
-				if (PARTIAL_EVALUATION_ON_CAST) {
+				if (partial_evaluation_on_cast) {
 					return tryPartialEvaluationCast(ctx, expression, ExpressionType.STRING);
 				} else {
 					throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-							expression.getRight().toString() + "' to a String type.");
+							expression.getRight().toString() + "' to a String type");
 				}
 			case STRING:
 				return expression;
@@ -152,7 +156,7 @@ public abstract class SymbolicNode {
 				return Pair.create(ctx.mkString("-Infinity"), ExpressionType.STRING);
 			default:
 				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression of type '" +
-						expression.getRight().toString() + "' to a String type.");
+						expression.getRight().toString() + "' to a String type");
 		}
 	}
 
@@ -215,7 +219,7 @@ public abstract class SymbolicNode {
 				return Pair.create(ctx.mkTrue(), ExpressionType.BOOLEAN);
 			default:
 				throw new SymbolicException.NotImplemented(
-						"Method toBoolean not implemented for type '" + expression.getRight().toString() + "'.");
+						"Method toBoolean not implemented for type '" + expression.getRight().toString() + "'");
 		}
 	}
 
@@ -244,7 +248,7 @@ public abstract class SymbolicNode {
 				return Pair.create(null, ExpressionType.NUMBER_POS_INFINITY);
 			default:
 				throw new SymbolicException.UndecidableExpression("Z3", "Cannot negate expression with type '" +
-						expression.getRight().toString() + "'.");
+						expression.getRight().toString() + "'");
 		}
 	}
 
@@ -279,14 +283,14 @@ public abstract class SymbolicNode {
 						break;
 				}
 				throw new SymbolicException.UndecidableExpression("Z3", "Casting from expression '" +
-						simplified_expr.toString() + "' to '" + goal.name() + "' with partial evaluation not implemented.");
+						simplified_expr.toString() + "' to '" + goal.name() + "' with partial evaluation not implemented");
 			} else {
 				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression with type '" +
-						old_expr_type.name() + "' to '" + goal.name() + "' with partial evaluation because it can not be simplified to a constant.");
+						old_expr_type.name() + "' to '" + goal.name() + "' with partial evaluation because it can not be simplified to a constant");
 			}
 		} else {
 			throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression with type '" +
-					old_expr_type.name() + "' to '" + goal.name() + "' with partial evaluation because it contains variables.");
+					old_expr_type.name() + "' to '" + goal.name() + "' with partial evaluation because it contains variables");
 		}
 	}
 
@@ -324,7 +328,7 @@ public abstract class SymbolicNode {
 						return Pair.create(null, ExpressionType.NUMBER_NEG_INFINITY);
 					} else {
 						try {
-							Integer int_rep = Integer.valueOf(result);
+							int int_rep = Integer.parseInt(result);
 							return Pair.create(ctx.mkInt(int_rep), ExpressionType.NUMBER_INTEGER);
 						} catch (NumberFormatException nfe) {
 							// do nothing
@@ -339,15 +343,15 @@ public abstract class SymbolicNode {
 					return Pair.create(null, ExpressionType.NUMBER_NAN);
 				} else {
 					throw new SymbolicException.UndecidableExpression("Z3", "Casting from expression '" +
-							simplified_expr.toString() + "' to a numeric value with partial evaluation not implemented.");
+							simplified_expr.toString() + "' to a numeric value with partial evaluation not implemented");
 				}
 			} else {
 				throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression with type '" +
-						old_expr_type.name() + "' to a numeric value with partial evaluation because it can not be simplified to a constant.");
+						old_expr_type.name() + "' to a numeric value with partial evaluation because it can not be simplified to a constant");
 			}
 		} else {
 			throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression with type '" +
-					old_expr_type.name() + "' to a numeric value with partial evaluation because it contains variables.");
+					old_expr_type.name() + "' to a numeric value with partial evaluation because it contains variables");
 		}
 		return Pair.create(null, ExpressionType.INTERNAL_ERROR);
 	}

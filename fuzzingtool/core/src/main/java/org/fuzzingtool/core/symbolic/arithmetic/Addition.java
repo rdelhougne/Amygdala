@@ -15,7 +15,7 @@ import org.graalvm.collections.Pair;
  */
 public class Addition extends SymbolicNode {
 	public Addition(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b);
 	}
 

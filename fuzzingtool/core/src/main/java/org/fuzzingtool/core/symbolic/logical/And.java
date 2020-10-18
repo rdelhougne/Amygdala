@@ -11,7 +11,7 @@ import org.graalvm.collections.Pair;
 
 public class And extends SymbolicNode {
 	public And(LanguageSemantic s, SymbolicNode a, SymbolicNode b) {
-		this.languageSemantic = s;
+		this.language_semantic = s;
 		addChildren(a, b);
 	}
 
@@ -42,7 +42,7 @@ public class And extends SymbolicNode {
 		if (checkTypeAll(ExpressionType.BOOLEAN, a, b)) {
 			return Pair.create(ctx.mkAnd((BoolExpr) a.getLeft(), (BoolExpr) b.getLeft()), ExpressionType.BOOLEAN);
 		} else {
-			throw new SymbolicException.NotImplemented("Expression 'AND' can only handle boolean children for now.");
+			throw new SymbolicException.NotImplemented("Expression 'AND' can only handle boolean children for now");
 		}
 	}
 }

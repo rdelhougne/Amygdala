@@ -16,12 +16,18 @@ import org.graalvm.collections.Pair;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 
 /**
  * Central class for managing execution flow events and fuzzing attempts
  * The class is designed as a state-machine. Methods
- * like {@link #branching_event(Integer, BranchingNodeAttribute, Integer, Boolean, String)} modify said machine.
+ * like {@link #branchingEvent(Integer, BranchingNodeAttribute, Integer, Boolean, String)} modify said machine.
  */
 public class Amygdala {
 	public final Logger logger;
@@ -30,8 +36,8 @@ public class Amygdala {
 	public final CustomError custom_error;
 	public TimeProbe probe;
 	private FuzzingTactic tactic;
-	private final BranchingNode branchingRootNode;
-	private BranchingNode currentBranch;
+	private final BranchingNode branching_root_node;
+	private BranchingNode current_branch;
 	private final Context z3_ctx;
 	private Queue<Pair<Integer, Boolean>> next_program_path = new LinkedList<>();
 	private final List<Map<VariableIdentifier, Object>> variable_values;
@@ -50,10 +56,10 @@ public class Amygdala {
 
 	// Experimental
 	// This option advises JSReadCurrent/ScopeFrameSlotNodeGen to fill in values if they are not found.
-	public static final boolean experimental_frameslot_fill_in_nonexistent = false;
+	public static final boolean EXPERIMENTAL_FRAMESLOT_FILL_IN_NONEXISTENT = false;
 	// This option disables computation of new input values and instead
 	// locks them to the values specified in the configuration YAML-file.
-	public static final boolean lock_values = false;
+	public static final boolean LOCK_VALUES = false;
 
 	// Debugging Bits: is node executed, onEnter (E), onInputValue (I), OnReturn (R), onReturnExceptional (X), onUnwind (U), onDispose (D)
 	public final HashMap<String, BitSet> node_type_instrumented = new HashMap<>();
@@ -78,8 +84,8 @@ public class Amygdala {
 		cfg.put("model", "true");
 		z3_ctx = new Context(cfg);
 
-		branchingRootNode = new BranchingNode();
-		currentBranch = branchingRootNode;
+		branching_root_node = new BranchingNode();
+		current_branch = branching_root_node;
 	}
 
 	/**
@@ -94,31 +100,31 @@ public class Amygdala {
 	 * @param taken                 Result of the evaluated expression
 	 * @param vis_predicate_string  String representation of the expression for visualization
 	 */
-	public void branching_event(Integer branching_node_hash, BranchingNodeAttribute bt, Integer predicate_interim_key,
-								Boolean taken, String vis_predicate_string) {
+	public void branchingEvent(Integer branching_node_hash, BranchingNodeAttribute bt, Integer predicate_interim_key,
+							   Boolean taken, String vis_predicate_string) {
 		if (next_program_path.peek() != null) {
 			Pair<Integer, Boolean> expected_behavior = next_program_path.poll();
 			if (!expected_behavior.getLeft().equals(branching_node_hash) || !expected_behavior.getRight().equals(taken)) {
-				logger.info("Diverging program path detected.");
-				currentBranch.setDiverging();
+				logger.info("Diverging program path detected");
+				current_branch.setDiverging();
 			}
 		}
-		if (currentBranch.getBranchingNodeAttribute() != BranchingNodeAttribute.BRANCH &&
-				currentBranch.getBranchingNodeAttribute() != BranchingNodeAttribute.LOOP) {
-			currentBranch.setProperties(tracer.getIntermediate(predicate_interim_key), branching_node_hash, bt);
-			currentBranch.setSourceCodeExpression(vis_predicate_string);
-			currentBranch.initializeChildren();
+		if (current_branch.getBranchingNodeAttribute() != BranchingNodeAttribute.BRANCH &&
+				current_branch.getBranchingNodeAttribute() != BranchingNodeAttribute.LOOP) {
+			current_branch.setProperties(tracer.getIntermediate(predicate_interim_key), branching_node_hash, bt);
+			current_branch.setSourceCodeExpression(vis_predicate_string);
+			current_branch.initializeChildren();
 		}
-		currentBranch = currentBranch.getChildBranch(taken);
+		current_branch = current_branch.getChildBranch(taken);
 	}
 
 	/**
 	 * A call to this method indicates that the fuzzed
 	 * program has been terminated under normal circumstances.
 	 */
-	public void terminate_event(Long runtime) {
-		currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.TERMINATE);
-		currentBranch = branchingRootNode;
+	public void terminateEvent(Long runtime) {
+		current_branch.setBranchingNodeAttribute(BranchingNodeAttribute.TERMINATE);
+		current_branch = branching_root_node;
 		iteration_information.add(Pair.create(true, ""));
 		runtime_nanos.add(runtime);
 		fuzzing_iterations += 1;
@@ -128,9 +134,9 @@ public class Amygdala {
 	 * A call to this method indicates an error while executing the program.
 	 * The function suppresses the next terminate-event.
 	 */
-	public void error_event(String reason, Long runtime) {
-		currentBranch.setBranchingNodeAttribute(BranchingNodeAttribute.ERROR);
-		currentBranch = branchingRootNode;
+	public void errorEvent(String reason, Long runtime) {
+		current_branch.setBranchingNodeAttribute(BranchingNodeAttribute.ERROR);
+		current_branch = branching_root_node;
 		iteration_information.add(Pair.create(false, reason));
 		runtime_nanos.add(runtime);
 		this.fuzzing_iterations += 1;
@@ -173,7 +179,7 @@ public class Amygdala {
 	 */
 	public Boolean calculateNextPath() {
 		if (fuzzing_iterations < max_iterations) {
-			if (!lock_values) {
+			if (!LOCK_VALUES) {
 				probe.switchState(TimeProbe.ProgramState.TACTIC);
 				boolean res = this.tactic.calculate();
 				probe.switchState(TimeProbe.ProgramState.MANAGE);
@@ -204,13 +210,13 @@ public class Amygdala {
 		if (variable_values.get(variable_values.size() - 1).containsKey(var_id)) {
 			Object next_input = variable_values.get(variable_values.size() - 1).get(var_id);
 			if (var_id.getVariableType() == ExpressionType.STRING) {
-				logger.info("Next input value for variable \"" + variable_names.get(var_id) + "\": \"" + next_input + "\" [STRING]");
+				logger.info("Next input value for variable '" + variable_names.get(var_id) + "': '" + next_input + "' [STRING]");
 			} else {
-				logger.info("Next input value for variable \"" + variable_names.get(var_id) + "\": " + next_input + " [" + var_id.getVariableType().name() + "]");
+				logger.info("Next input value for variable '" + variable_names.get(var_id) + "': " + next_input + " [" + var_id.getVariableType().name() + "]");
 			}
 			return next_input;
 		} else {
-			logger.info("No new value for variable: \"" + variable_names.get(var_id) + "\"");
+			logger.info("No new value for variable: '" + variable_names.get(var_id) + "'");
 			switch (var_id.getVariableType()) {
 				case BOOLEAN:
 					return true;
@@ -222,8 +228,8 @@ public class Amygdala {
 				case NUMBER_REAL:
 					return 1.5;
 				default:
-					logger.critical("Variable \"" + variable_names.get(var_id) + "\" has not allowed type '" +
-											var_id.getVariableType().toString() + "'.");
+					logger.critical("Variable '" + variable_names.get(var_id) + "' has not allowed type '" +
+											var_id.getVariableType().toString() + "'");
 					return null;
 			}
 		}
@@ -238,8 +244,8 @@ public class Amygdala {
 		String save_name = Paths.get(this.results_path, "trace_tree", name).toString();
 		File save_path = new File(save_name);
 		if (!save_path.exists()) {
-			BranchingVisualizer bv = new BranchingVisualizer(branchingRootNode, this.logger);
-			bv.save_image(save_path);
+			BranchingVisualizer bv = new BranchingVisualizer(branching_root_node, this.logger);
+			bv.saveImage(save_path);
 		}
 	}
 
@@ -258,7 +264,7 @@ public class Amygdala {
 				this.program_path = Paths.get(config_file_path_abs, program_file_path.getPath()).toString();
 			}
 		} else {
-			logger.critical("No attribute 'program_path' in configuration file.");
+			logger.critical("No attribute 'program_path' in configuration file");
 		}
 		this.program_path = Paths.get(this.program_path).normalize().toString();
 
@@ -273,30 +279,30 @@ public class Amygdala {
 			this.results_path = Paths.get(config_file_path_abs, "results").toString();
 		}
 		this.results_path = Paths.get(this.results_path).normalize().toString();
-		logger.info("Results are written to '" + this.results_path + "'.");
+		logger.info("Results are written to '" + this.results_path + "'");
 
 		if (map.containsKey("variables") && map.get("variables") instanceof List) {
 			loadVariables((List<Map<String, Object>>) map.get("variables"));
 		} else {
-			logger.warning("No variable configuration found.");
+			logger.warning("No variable configuration found");
 		}
 
 		if (map.containsKey("fuzzing_parameters") && map.get("fuzzing_parameters") instanceof Map) {
 			loadFuzzingParameters((Map<String, Object>) map.get("fuzzing_parameters"));
 		} else {
-			logger.warning("No general configuration found.");
+			logger.warning("No general configuration found");
 		}
 
 		if (map.containsKey("visualization") && map.get("visualization") instanceof Map) {
 			loadVisualizationParameters((Map<String, Object>) map.get("visualization"));
 		} else {
-			logger.info("No visualization configuration found, visualization disabled.");
+			logger.info("No visualization configuration found, visualization disabled");
 		}
 
 		if (map.containsKey("custom_errors") && map.get("custom_errors") instanceof Map) {
 			loadCustomErrorParameters((Map<String, Object>) map.get("custom_errors"));
 		} else {
-			logger.info("No custom error configuration found.");
+			logger.info("No custom error configuration found");
 		}
 	}
 
@@ -342,17 +348,11 @@ public class Amygdala {
 
 			switch (var_type_enum) {
 				case BOOLEAN:
-					initial_values.put(new_identifier, (Boolean) var_declaration.get("sample"));
-					break;
 				case STRING:
-					initial_values.put(new_identifier, (String) var_declaration.get("sample"));
-					break;
 				case BIGINT:
 				case NUMBER_INTEGER:
-					initial_values.put(new_identifier, (Integer) var_declaration.get("sample"));
-					break;
 				case NUMBER_REAL:
-					initial_values.put(new_identifier, (Double) var_declaration.get("sample"));
+					initial_values.put(new_identifier, var_declaration.get("sample"));
 					break;
 			}
 		}
@@ -369,8 +369,8 @@ public class Amygdala {
 		this.max_iterations = (int) parameters.getOrDefault("max_iterations", this.max_iterations);
 		logger.info("Option max_iterations set to " + this.max_iterations);
 
-		SymbolicNode.PARTIAL_EVALUATION_ON_CAST = (boolean) parameters.getOrDefault("partial_evaluation_on_cast", false);
-		if (SymbolicNode.PARTIAL_EVALUATION_ON_CAST) {
+		SymbolicNode.partial_evaluation_on_cast = (boolean) parameters.getOrDefault("partial_evaluation_on_cast", false);
+		if (SymbolicNode.partial_evaluation_on_cast) {
 			logger.info("Option partial_evaluation_on_cast enabled");
 		}
 
@@ -378,20 +378,20 @@ public class Amygdala {
 		switch (tactic_string) {
 			case "IN_ORDER_SEARCH":
 				logger.info("Using tactic IN_ORDER_SEARCH");
-				this.tactic = new InOrderSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
+				this.tactic = new InOrderSearchTactic(this.branching_root_node, this.z3_ctx, this.logger);
 				break;
 			case "DEPTH_SEARCH":
 				logger.info("Using tactic DEPTH_SEARCH");
-				this.tactic = new DepthSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
+				this.tactic = new DepthSearchTactic(this.branching_root_node, this.z3_ctx, this.logger);
 				break;
 			case "RANDOM_SEARCH":
 				logger.info("Using tactic RANDOM_SEARCH");
-				this.tactic = new RandomSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
+				this.tactic = new RandomSearchTactic(this.branching_root_node, this.z3_ctx, this.logger);
 				break;
 			default:
 				logger.warning("Unknown tactic '" + tactic_string +
 									   "', using tactic IN_ORDER_SEARCH");
-				this.tactic = new InOrderSearchTactic(this.branchingRootNode, this.z3_ctx, this.logger);
+				this.tactic = new InOrderSearchTactic(this.branching_root_node, this.z3_ctx, this.logger);
 		}
 		this.tactic.setTimeProbe(this.probe);
 		if (parameters.containsKey("tactic_options")) {
@@ -416,15 +416,15 @@ public class Amygdala {
 	private void loadVisualizationParameters(Map<String, Object> parameters) {
 		this.function_visualization = (boolean) parameters.getOrDefault("function_visualization", this.function_visualization);
 		if (this.function_visualization) {
-			logger.info("Function visualization enabled.");
+			logger.info("Function visualization enabled");
 		}
 		this.branching_visualization = (boolean) parameters.getOrDefault("branching_visualization", this.branching_visualization);
 		if (this.branching_visualization) {
-			logger.info("Branching visualization enabled.");
+			logger.info("Branching visualization enabled");
 		}
 		this.event_logging = (boolean) parameters.getOrDefault("event_logging", this.event_logging);
 		if (this.event_logging) {
-			logger.info("Event logging enabled.");
+			logger.info("Event logging enabled");
 		}
 	}
 
@@ -583,7 +583,7 @@ public class Amygdala {
 			iteration.put("runtime", runtime_nanos.get(i) / 1000000);
 
 			List<Map<String, Object>> variables = new ArrayList<>();
-			if (lock_values) {
+			if (LOCK_VALUES) {
 				for (Map.Entry<VariableIdentifier, Object> entry: variable_values.get(0).entrySet()) {
 					addVariableResult(variables, entry);
 				}
