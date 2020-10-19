@@ -29,6 +29,9 @@ public class Tracer {
 	private ArrayList<SymbolicNode> arguments_array = new ArrayList<>();
 	private SymbolicNode function_return_value;
 
+	// Caching
+	public final Map<Integer, Integer> cached_scopes = new HashMap<>();
+
 	private Integer js_global_object_id = 0;
 
 	private final HashSet<String> used_gids = new HashSet<>();
@@ -159,83 +162,71 @@ public class Tracer {
 	}
 
 	/**
-	 * Read a symbolic variable from a list of function scopes into an intermediate result.
+	 * Read a symbolic variable from a function scope into an intermediate result.
 	 * This function is used by JSReadCurrentFrameSlotNodeGen and JSReadScopeFrameSlotNodeGen.
-	 * Calling from JSReadCurrentFrameSlotNodeGen, frame_stack.length should always be 1.
 	 *
-	 * @param frame_stack A list of function scope identifiers, ranging from the innermost [0] to outermost [n] scopes.
+	 * @param function_scope Hash-Code of the function object
 	 * @param key The name of the variable
 	 * @param node_id_intermediate The ID of the new intermediate result
 	 * @return A boolean, indicating if the read was successful
 	 */
-	public boolean frameSlotToIntermediate(ArrayList<Integer> frame_stack, Object key, Integer node_id_intermediate) {
-		for (Integer function_scope: frame_stack) {
-			if (symbolic_program.containsKey(function_scope)) {
-				VariableContext var_ctx = symbolic_program.get(function_scope);
-				try {
-					if (var_ctx.hasProperty(key)) {
-						intermediate_results.put(node_id_intermediate, var_ctx.get(key));
-						return true;
-					}
-				} catch (IllegalArgumentException iae) {
-					logger.critical(iae.getMessage());
+	public boolean frameSlotToIntermediate(int function_scope, Object key, Integer node_id_intermediate) {
+		if (symbolic_program.containsKey(function_scope)) {
+			VariableContext var_ctx = symbolic_program.get(function_scope);
+			try {
+				if (var_ctx.hasProperty(key)) {
+					intermediate_results.put(node_id_intermediate, var_ctx.get(key));
+					return true;
 				}
-			} else {
-				logger.critical("Tracer::frameSlotToIntermediate(): No frame slot " + function_scope);
+			} catch (IllegalArgumentException iae) {
+				logger.critical(iae.getMessage());
 			}
+			logger.critical("Tracer::frameSlotToIntermediate(): Function scope does not contain variable '" + key + "'");
+		} else {
+			logger.critical("Tracer::frameSlotToIntermediate(): No function scope " + function_scope + " found");
 		}
-		logger.critical("Tracer::frameSlotToIntermediate(): No function scope with variable '" + key + "' found");
 		return false;
 	}
 
 	/**
 	 * Writes an intermediate result to a frame slot (e.g. a variable).
 	 * Used by JSWriteCurrentFrameSlotNodeGen and JSWriteScopeFrameSlotNodeGen.
-	 * If called by JSWriteCurrentFrameSlotNodeGen, the number of function scopes has
-	 * to be 1. The behavior for these two nodes differs significantly.
 	 *
-	 * @param frame_stack A list of function scopes, starting with the innermost
+	 * @param function_scope Hash-Code of the function object
 	 * @param key The name of the variable
 	 * @param node_id_intermediate The key to the intermediate result.
 	 */
-	public void intermediateToFrameSlot(ArrayList<Integer> frame_stack, Object key, Integer node_id_intermediate) {
+	public void intermediateToFrameSlot(int function_scope, Object key, Integer node_id_intermediate) {
 		if (intermediate_results.containsKey(node_id_intermediate)) {
-			if (frame_stack.size() == 1) {
-				// Behavior for JSWriteCurrentFrameSlotNodeGen (or block scopes)?
-				if (symbolic_program.containsKey(frame_stack.get(0))) {
-					VariableContext var_ctx = symbolic_program.get(frame_stack.get(0));
-					try {
-						var_ctx.set(key, intermediate_results.get(node_id_intermediate));
-					} catch (IllegalArgumentException iae) {
-						logger.critical(iae.getMessage());
-					}
-				} else {
-					logger.critical("Tracer::intermediateToFrameSlot(): Context " + frame_stack.get(0) + " does not exist");
+			if (symbolic_program.containsKey(function_scope)) {
+				VariableContext var_ctx = symbolic_program.get(function_scope);
+				try {
+					var_ctx.set(key, intermediate_results.get(node_id_intermediate));
+				} catch (IllegalArgumentException iae) {
+					logger.critical(iae.getMessage());
 				}
-			} else if (frame_stack.size() > 1) {
-				// Behavior for JSWriteScopeFrameSlotNodeGen
-				for (Integer function_scope: frame_stack) {
-					if (symbolic_program.containsKey(function_scope)) {
-						VariableContext var_ctx = symbolic_program.get(function_scope);
-						try {
-							if (var_ctx.hasProperty(key)) {
-								var_ctx.set(key, intermediate_results.get(node_id_intermediate));
-								return;
-							}
-						} catch (IllegalArgumentException iae) {
-							logger.critical(iae.getMessage());
-						}
-					} else {
-						logger.warning("Tracer::intermediateToFrameSlot(): No frame slot " + function_scope);
-					}
-				}
-				logger.critical("Tracer::intermediateToFrameSlot(): No function scope with variable '" + key + "' found");
 			} else {
-				logger.critical("Tracer::intermediateToFrameSlot(): No function scopes provided");
+				logger.critical("Tracer::intermediateToFrameSlot(): Function scope " + function_scope + " does not exist");
 			}
 		} else {
 			logger.critical("Tracer::intermediateToFrameSlot(): No intermediate result for " + node_id_intermediate);
 		}
+	}
+
+	public boolean containsVariable(int context, Object key) {
+		if (symbolic_program.containsKey(context)) {
+			VariableContext var_ctx = symbolic_program.get(context);
+			try {
+				if (var_ctx.hasProperty(key)) {
+					return true;
+				}
+			} catch (IllegalArgumentException iae) {
+				logger.critical(iae.getMessage());
+			}
+		} else {
+			logger.critical("Tracer::containsVariable(): No context " + context);
+		}
+		return false;
 	}
 
 	/**
@@ -296,6 +287,7 @@ public class Tracer {
 		symbolic_program.clear();
 		arguments_array.clear();
 		resetFunctionReturnValue();
+		cached_scopes.clear();
 	}
 
 	/**

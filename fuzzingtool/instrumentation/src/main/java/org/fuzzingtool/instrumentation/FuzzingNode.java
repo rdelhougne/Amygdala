@@ -905,93 +905,94 @@ public class FuzzingNode extends ExecutionEventNode {
 		amygdala.tracer.passThroughIntermediate(instrumented_node_hash, children.get(1).getLeft());
 	}
 
-	private void onReturnBehaviorJSReadCurrentFrameSlotNodeGen(VirtualFrame frame, Object result) {
-		JSReadFrameSlotNode jsrfsn = (JSReadFrameSlotNode) instrumented_node;
-		Iterator<Scope> local_scopes = environment.findLocalScopes(instrumented_node, frame).iterator();
-		if (local_scopes.hasNext()) {
-			Scope innermost_scope = local_scopes.next();
-			Object root_instance = innermost_scope.getRootInstance();
-			if (root_instance != null) {
-				ArrayList<Integer> scope_hashes = new ArrayList<>();
-				scope_hashes.add(System.identityHashCode(root_instance));
-				boolean read_successful = amygdala.tracer.frameSlotToIntermediate(scope_hashes, JSFrameUtil.getPublicName(jsrfsn.getFrameSlot()),
-														instrumented_node_hash);
-				if (!read_successful && Amygdala.EXPERIMENTAL_FRAMESLOT_FILL_IN_NONEXISTENT) {
-					amygdala.tracer.setIntermediate(instrumented_node_hash, jsObjectToSymbolic(result));
-					amygdala.logger.warning("onReturnBehaviorJSReadCurrentFrameSlotNodeGen(): Experimental option frameslot_fill_in_nonexistent is enabled, filling in value '" + result.toString() + "'");
+	private int getScopeHashCurrent(VirtualFrame frame) {
+		if (amygdala.tracer.cached_scopes.containsKey(instrumented_node_hash)) {
+			return amygdala.tracer.cached_scopes.get(instrumented_node_hash);
+		} else {
+			Iterator<Scope> local_scopes = environment.findLocalScopes(instrumented_node, frame).iterator();
+			if (local_scopes.hasNext()) {
+				Scope innermost_scope = local_scopes.next();
+				Object root_instance = innermost_scope.getRootInstance();
+				if (root_instance != null) {
+					int scope_hash = System.identityHashCode(root_instance);
+					amygdala.tracer.cached_scopes.put(instrumented_node_hash, scope_hash);
+					return scope_hash;
+				} else {
+					amygdala.logger.critical("getScopeHashCurrent(): Cannot get root instance, returning -1");
 				}
 			} else {
-				amygdala.logger.critical("onReturnBehaviorJSReadCurrentFrameSlotNodeGen(): Cannot get root instance");
+				amygdala.logger.critical("getScopeHashCurrent(): Cannot find any local scopes, returning -1");
 			}
+		}
+		return -1;
+	}
+
+	private int getScopeHashScoped(VirtualFrame frame, String variable_name) {
+		if (amygdala.tracer.cached_scopes.containsKey(instrumented_node_hash)) {
+			return amygdala.tracer.cached_scopes.get(instrumented_node_hash);
 		} else {
-			amygdala.logger.critical("onReturnBehaviorJSReadCurrentFrameSlotNodeGen(): Cannot find any local scopes");
+			Iterator<Scope> local_scopes = environment.findLocalScopes(instrumented_node, frame).iterator();
+			if (local_scopes.hasNext()) {
+				while (local_scopes.hasNext()) {
+					Scope curr_scope = local_scopes.next();
+					Object root_instance = curr_scope.getRootInstance();
+					if (root_instance != null) {
+						int scope_hash = System.identityHashCode(root_instance);
+						if (amygdala.tracer.containsVariable(scope_hash, variable_name)) {
+							amygdala.tracer.cached_scopes.put(instrumented_node_hash, scope_hash);
+							return scope_hash;
+						}
+					} else {
+						amygdala.logger.critical("getScopeHashScoped(): Cannot get root instance");
+					}
+				}
+				amygdala.logger.critical("getScopeHashScoped(): No scope with variable '" + variable_name + "' found, returning -1");
+			} else {
+				amygdala.logger.critical("getScopeHashScoped(): Cannot find any local scopes, returning -1");
+			}
+		}
+		return -1;
+	}
+
+	private void onReturnBehaviorJSReadCurrentFrameSlotNodeGen(VirtualFrame frame, Object result) {
+		JSReadFrameSlotNode jsrfsn = (JSReadFrameSlotNode) instrumented_node;
+		boolean read_successful = amygdala.tracer.frameSlotToIntermediate(getScopeHashCurrent(frame),
+																		  JSFrameUtil.getPublicName(jsrfsn.getFrameSlot()),
+																		  instrumented_node_hash);
+		if (!read_successful && Amygdala.EXPERIMENTAL_FRAMESLOT_FILL_IN_NONEXISTENT) {
+			amygdala.tracer.setIntermediate(instrumented_node_hash, jsObjectToSymbolic(result));
+			amygdala.logger.warning("onReturnBehaviorJSReadCurrentFrameSlotNodeGen(): Experimental option frameslot_fill_in_nonexistent is enabled, filling in value '" + result.toString() + "'");
 		}
 	}
 
 	private void onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(VirtualFrame frame, Object result) {
 		ArrayList<Pair<Integer, String>> children = getChildHashes();
 		JSWriteFrameSlotNode jswfsn = (JSWriteFrameSlotNode) instrumented_node;
-		Iterator<Scope> local_scopes = environment.findLocalScopes(instrumented_node, frame).iterator();
-		if (local_scopes.hasNext()) {
-			Scope innermost_scope = local_scopes.next();
-			Object root_instance = innermost_scope.getRootInstance();
-			if (root_instance != null) {
-				ArrayList<Integer> scope_hashes = new ArrayList<>();
-				scope_hashes.add(System.identityHashCode(root_instance));
-				amygdala.tracer.intermediateToFrameSlot(scope_hashes, JSFrameUtil.getPublicName(jswfsn.getFrameSlot()), children.get(0).getLeft());
-			} else {
-				amygdala.logger.critical("onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(): Cannot get root instance");
-			}
-		} else {
-			amygdala.logger.critical("onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(): Cannot find any local scopes");
-		}
+		amygdala.tracer.intermediateToFrameSlot(getScopeHashCurrent(frame),
+												JSFrameUtil.getPublicName(jswfsn.getFrameSlot()),
+												children.get(0).getLeft());
 		amygdala.tracer.passThroughIntermediate(instrumented_node_hash, children.get(0).getLeft());
 	}
 
 	private void onReturnBehaviorJSReadScopeFrameSlotNodeGen(VirtualFrame frame, Object result) {
 		JSReadFrameSlotNode jsrfsn = (JSReadFrameSlotNode) instrumented_node;
-		Iterator<Scope> local_scopes = environment.findLocalScopes(instrumented_node, frame).iterator();
-		if (local_scopes.hasNext()) {
-			ArrayList<Integer> scope_hashes = new ArrayList<>();
-			while (local_scopes.hasNext()) {
-				Scope curr_scope = local_scopes.next();
-				Object root_instance = curr_scope.getRootInstance();
-				if (root_instance != null) {
-					scope_hashes.add(System.identityHashCode(root_instance));
-				} else {
-					amygdala.logger.critical("onReturnBehaviorJSScopeFrameSlotNodeGen(): Cannot get root instance");
-				}
-			}
-			boolean read_successful = amygdala.tracer.frameSlotToIntermediate(scope_hashes, JSFrameUtil.getPublicName(jsrfsn.getFrameSlot()),
-													instrumented_node_hash);
-			if (!read_successful && Amygdala.EXPERIMENTAL_FRAMESLOT_FILL_IN_NONEXISTENT) {
-				amygdala.tracer.setIntermediate(instrumented_node_hash, jsObjectToSymbolic(result));
-				amygdala.logger.warning("onReturnBehaviorJSReadCurrentFrameSlotNodeGen(): Experimental option frameslot_fill_in_nonexistent is enabled, filling in value '" + result.toString() + "'");
-			}
-		} else {
-			amygdala.logger.critical("onReturnBehaviorJSReadScopeFrameSlotNodeGen(): Cannot find any local scopes");
+		String variable_name = JSFrameUtil.getPublicName(jsrfsn.getFrameSlot());
+		boolean read_successful = amygdala.tracer.frameSlotToIntermediate(getScopeHashScoped(frame, variable_name),
+																		  variable_name,
+																		  instrumented_node_hash);
+		if (!read_successful && Amygdala.EXPERIMENTAL_FRAMESLOT_FILL_IN_NONEXISTENT) {
+			amygdala.tracer.setIntermediate(instrumented_node_hash, jsObjectToSymbolic(result));
+			amygdala.logger.warning("onReturnBehaviorJSReadScopeFrameSlotNodeGen(): Experimental option frameslot_fill_in_nonexistent is enabled, filling in value '" + result.toString() + "'");
 		}
 	}
 
 	private void onReturnBehaviorJSWriteScopeFrameSlotNodeGen(VirtualFrame frame, Object result) {
 		ArrayList<Pair<Integer, String>> children = getChildHashes();
 		JSWriteFrameSlotNode jswfsn = (JSWriteFrameSlotNode) instrumented_node;
-		Iterator<Scope> local_scopes = environment.findLocalScopes(instrumented_node, frame).iterator();
-		if (local_scopes.hasNext()) {
-			ArrayList<Integer> scope_hashes = new ArrayList<>();
-			while (local_scopes.hasNext()) {
-				Scope curr_scope = local_scopes.next();
-				Object root_instance = curr_scope.getRootInstance();
-				if (root_instance != null) {
-					scope_hashes.add(System.identityHashCode(root_instance));
-				} else {
-					amygdala.logger.critical("onReturnBehaviorJSScopeFrameSlotNodeGen(): Cannot get root instance");
-				}
-			}
-			amygdala.tracer.intermediateToFrameSlot(scope_hashes, JSFrameUtil.getPublicName(jswfsn.getFrameSlot()), children.get(0).getLeft());
-		} else {
-			amygdala.logger.critical("onReturnBehaviorJSReadScopeFrameSlotNodeGen(): Cannot find any local scopes");
-		}
+		String variable_name = JSFrameUtil.getPublicName(jswfsn.getFrameSlot());
+		amygdala.tracer.intermediateToFrameSlot(getScopeHashScoped(frame, variable_name),
+												variable_name,
+												children.get(0).getLeft());
 		amygdala.tracer.passThroughIntermediate(instrumented_node_hash, children.get(0).getLeft());
 	}
 
