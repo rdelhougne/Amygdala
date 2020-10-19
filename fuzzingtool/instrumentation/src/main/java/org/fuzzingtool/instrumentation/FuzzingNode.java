@@ -94,8 +94,9 @@ public class FuzzingNode extends ExecutionEventNode {
 	private String type_of_first_equal_input = "";
 	// used by all nodes to cache a custom error exception because it cannot be thrown at onInputValue
 	private CustomError.EscalatedException cached_exception = null;
-	// used for performance
+	// performance improvements
 	ArrayList<Pair<Integer, String>> cached_child_hashes = null;
+	String cached_predicate = null;
 
 	public FuzzingNode(TruffleInstrument.Env env, Amygdala amy, EventContext ec) {
 		this.amygdala = amy;
@@ -820,18 +821,21 @@ public class FuzzingNode extends ExecutionEventNode {
 	}
 
 	private String extractPredicate() {
-		if (source_section != null && source_section.isAvailable()) {
-			Matcher branch_matcher = BRANCH_PATTERN.matcher(source_section.getCharacters().toString());
-			if (branch_matcher.lookingAt()) {
-				String kind = branch_matcher.group(1);
-				String predicate = Logger.capBack(branch_matcher.group(2), 16);
-				return kind.toUpperCase() + " " + predicate;
+		if (this.cached_predicate == null) {
+			if (source_section != null && source_section.isAvailable()) {
+				Matcher branch_matcher = BRANCH_PATTERN.matcher(source_section.getCharacters().toString());
+				if (branch_matcher.lookingAt()) {
+					String kind = branch_matcher.group(1);
+					String predicate = Logger.capBack(branch_matcher.group(2), 16);
+					this.cached_predicate = kind.toUpperCase() + " " + predicate;
+				} else {
+					this.cached_predicate = "(NO SOURCE)";
+				}
 			} else {
-				return "(NO SOURCE)";
+				this.cached_predicate = "(NO SOURCE)";
 			}
-		} else {
-			return "(NO SOURCE)";
 		}
+		return this.cached_predicate;
 	}
 
 	// Default Behavior is to just pass through any symbolic flow
@@ -862,7 +866,6 @@ public class FuzzingNode extends ExecutionEventNode {
 	}
 
 	private void onReturnBehaviorPropertyNode(VirtualFrame frame, Object result) {
-		ArrayList<Pair<Integer, String>> child = getChildHashes();
 		PropertyNode pnode = (PropertyNode) instrumented_node;
 		String property_name = pnode.getPropertyKey().toString();
 		if (JSGuards.isString(context_object) && property_name.equals("length")) {
