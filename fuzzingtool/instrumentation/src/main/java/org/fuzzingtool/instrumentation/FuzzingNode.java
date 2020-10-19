@@ -94,6 +94,8 @@ public class FuzzingNode extends ExecutionEventNode {
 	private String type_of_first_equal_input = "";
 	// used by all nodes to cache a custom error exception because it cannot be thrown at onInputValue
 	private CustomError.EscalatedException cached_exception = null;
+	// used for performance
+	ArrayList<Pair<Integer, String>> cached_child_hashes = null;
 
 	public FuzzingNode(TruffleInstrument.Env env, Amygdala amy, EventContext ec) {
 		this.amygdala = amy;
@@ -648,7 +650,10 @@ public class FuzzingNode extends ExecutionEventNode {
 	}
 
 	private ArrayList<Pair<Integer, String>> getChildHashes() {
-		return getChildHashes(instrumented_node);
+		if (this.cached_child_hashes == null) {
+			this.cached_child_hashes = getChildHashes(instrumented_node);
+		}
+		return this.cached_child_hashes;
 	}
 
 	private ArrayList<Pair<Integer, String>> getChildHashes(Node base_node) {
