@@ -1,5 +1,6 @@
 ---
 program_path: "../javascript/ultimatetest.js"
+results: "../results/ultimatetest"
 variables:
   - line_num: 5
     name: integer named k
@@ -12,7 +13,11 @@ variables:
 fuzzing_parameters:
   max_iterations: 10
   tactic: "DEPTH_SEARCH"
-  tactic_depth_search:
+  tactic_options:
     max_loop_unrolling: 16
     max_depth: 32
+visualization:
+  function_visualization: true
+  branching_visualization: true
+  event_logging: true
 ...

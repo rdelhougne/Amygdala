@@ -1,0 +1,31 @@
+---
+program_path: "../javascript/math.js"
+results: "../results/math"
+variables:
+  - line_num: 1
+    name: integer i
+    type: REAL
+    sample: 5.0
+  - line_num: 2
+    name: integer j
+    type: REAL
+    sample: 7.0
+  - line_num: 3
+    name: real k
+    type: INTEGER
+    sample: 3
+  - line_num: 4
+    name: real l
+    type: INTEGER
+    sample: 2
+fuzzing_parameters:
+  max_iterations: 10
+  tactic: DEPTH_SEARCH
+  tactic_options:
+    max_loop_unrolling: 16
+    max_depth: 32
+visualization:
+  function_visualization: true
+  branching_visualization: true
+  event_logging: true
+...

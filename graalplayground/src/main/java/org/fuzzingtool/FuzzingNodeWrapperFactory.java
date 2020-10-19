@@ -1,5 +1,6 @@
 package org.fuzzingtool;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Scope;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -15,6 +16,7 @@ import com.oracle.truffle.api.library.LibraryFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
@@ -25,16 +27,24 @@ import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
 import com.oracle.truffle.js.nodes.binary.DualNode;
 import com.oracle.truffle.js.nodes.binary.JSAddSubNumericUnitNode;
 import com.oracle.truffle.js.nodes.function.JSFunctionCallNode;
+import com.oracle.truffle.js.nodes.instrumentation.NodeObjectDescriptor;
+import com.oracle.truffle.js.runtime.JSContext;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
+import com.oracle.truffle.js.runtime.JSRealm;
 import com.oracle.truffle.js.runtime.JSRuntime;
+import com.oracle.truffle.js.runtime.builtins.JSUserObject;
+import com.oracle.truffle.js.runtime.objects.JSObject;
 import com.oracle.truffle.js.runtime.objects.JSObjectUtil;
+import com.oracle.truffle.js.runtime.objects.JSProperty;
 import com.oracle.truffle.js.runtime.objects.JSScope;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
 import com.oracle.truffle.js.runtime.truffleinterop.JSInteropUtil;
+import com.oracle.truffle.object.DynamicObjectBasic;
 import org.fuzzingtool.visualization.ASTVisualizer;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -76,6 +86,11 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 			private final Node my_node = ec.getInstrumentedNode();
 			private final String node_type = my_node.getClass().getSimpleName();
 			private final int node_hash = my_node.hashCode();
+
+
+			private Object writing_to = null;
+
+
 
 			protected String getSignature() {
 				String node_type_padded = String.format("%1$-" + 36 + "s", node_type);
@@ -146,6 +161,15 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					}
 				}
 				return builder.toString();
+			}
+
+			public String objectToString(Object obj) {
+				String info = obj.getClass().getName() + "@\033[44m" + Integer.toHexString(System.identityHashCode(obj)) + "\033[0m";
+				if (obj instanceof Integer || obj instanceof Double || obj instanceof Boolean || obj instanceof String) {
+					info = info + " (" + obj.toString() + ")";
+				}
+				//info += "\n";
+				return info;
 			}
 
 			@Override
@@ -262,6 +286,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					Object func_obj = JSFrameUtil.getFunctionObject(vFrame);
 					logger.log("func_obj: " + func_obj.toString());
 				}*/
+				CompilerDirectives.transferToInterpreterAndInvalidate();
 			}
 
 			@Override
@@ -284,6 +309,28 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					logger.log("WritePropertyInput 0:");
 					logger.log(inputValue.toString());
 				}*/
+				CompilerDirectives.transferToInterpreterAndInvalidate();
+
+
+				if (n instanceof WritePropertyNode || n instanceof PropertyNode) {
+					if (inputIndex == 0) {
+						this.writing_to = inputValue;
+					}
+				}
+
+				/*if (n instanceof WritePropertyNode) {
+					WritePropertyNode wpn = (WritePropertyNode) n;
+
+					logger.alert(objectToString(JSObject.get((DynamicObjectBasic) writing_to, wpn.getKey())));
+				}*/
+
+				if (n instanceof PropertyNode) {
+					PropertyNode pn = (PropertyNode) n;
+
+					//logger.alert(objectToString(JSObject.get((DynamicObjectBasic) writing_to, pn.getPropertyKey())));
+				}
+
+				CompilerDirectives.transferToInterpreterAndInvalidate();
 
 				//logger.log("InputFrame: " + vFrame + " input Index: " + inputIndex);
 			}
@@ -306,7 +353,7 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					arrayToSymbolic((DynamicObject) result);
 				}*/
 
-				if (n instanceof JSAddSubNumericUnitNode) {
+				/*if (n instanceof JSAddSubNumericUnitNode) {
 					SourceSection ss = ec.getInstrumentedSourceSection();
 					logger.log(ss.toString());
 					logger.log("index: " + String.valueOf(ss.getCharIndex()));
@@ -315,20 +362,94 @@ class FuzzingNodeWrapperFactory implements ExecutionEventNodeFactory {
 					String after = String.valueOf(ss.getSource().getCharacters().charAt(ss.getCharEndIndex()));
 					logger.log(before);
 					logger.log(after);
+				}*/
+
+				CompilerDirectives.transferToInterpreterAndInvalidate();
+
+				/*if (n instanceof WritePropertyNode) {
+					WritePropertyNode wpn = (WritePropertyNode) n;
+					logger.log(n.getSourceSection().getStartLine() + " WritePropertyNode: " + wpn.getKey());
+					logger.log(objectToString(result));
+
+					DynamicObjectBasic dob = (DynamicObjectBasic) writing_to;
+					Object val = dob.get(wpn.getKey());
+					logger.alert(objectToString(val));
+
+					logger.alert(objectToString(JSObject.get((DynamicObjectBasic) writing_to, wpn.getKey())));
+				}*/
+
+				if (n instanceof PropertyNode) {
+					PropertyNode pn = (PropertyNode) n;
+					logger.log("\033[46m" + n.getSourceSection().getStartLine() + " PropertyNode: " + pn.getPropertyKey() + "\033[0m");
+					logger.log(objectToString(result));
+
+					/*DynamicObjectBasic dob = (DynamicObjectBasic) writing_to;
+					Object val = dob.get(pn.getPropertyKey());
+					logger.alert(objectToString(val));*/
+
+					//logger.alert(objectToString(JSObject.get((DynamicObjectBasic) writing_to, pn.getPropertyKey())));
+
+					Shape shape = ((DynamicObject) writing_to).getShape();
+					for (Property prop : shape.getPropertyListInternal(false)) {
+						logger.log(prop.toString());
+						logger.log(Integer.toHexString(System.identityHashCode(prop)));
+						Location loc = prop.getLocation();
+						logger.log(Integer.toHexString(System.identityHashCode(loc)));
+						logger.alert(objectToString(loc.get((DynamicObject) writing_to, false)));
+
+						logger.log(String.valueOf(JSProperty.isData(prop)));
+						logger.log(String.valueOf(JSProperty.isAccessor(prop)));
+						logger.log(String.valueOf(JSProperty.isConfigurable(prop)));
+						logger.log(String.valueOf(JSProperty.isConst(prop)));
+						logger.log(String.valueOf(JSProperty.isEnumerable(prop)));
+						logger.log(String.valueOf(JSProperty.isProxy(prop)));
+						logger.log(String.valueOf(JSProperty.isWritable(prop)));
+					}
 				}
 
-				if (n instanceof WritePropertyNode) {
-					logger.log(result.toString());
+				/*if (n instanceof GlobalPropertyNode) {
+					GlobalPropertyNode gpn = (GlobalPropertyNode) n;
+					logger.log(n.getSourceSection().getStartLine() + " GlobalPropertyNode: " + gpn.getPropertyKey());
+					logger.log(objectToString(result));
+				}*/
+
+				/*if (n instanceof JSReadFrameSlotNode){
+					JSReadFrameSlotNode jsrfsn = ((JSReadFrameSlotNode) n);
+					FrameSlot slot = jsrfsn.getFrameSlot();
+					logger.log(n.getSourceSection().getStartLine() + " JSReadFrameSlotNode: " + slot);
+
+					NodeObjectDescriptor nod = (NodeObjectDescriptor) jsrfsn.getNodeObject();
+					logger.log(objectToString(result));
+				}*/
+
+				/*if (n instanceof JSWriteFrameSlotNode){
+					FrameSlot slot = ((JSWriteFrameSlotNode) n).getFrameSlot();
+					logger.log(n.getSourceSection().getStartLine() + " JSWriteFrameSlotNode: " + slot);
+					logger.log(objectToString(result));
 				}
+
+				if (n instanceof ReadElementNode){
+					ReadElementNode ren = (ReadElementNode) n;
+					logger.log(n.getSourceSection().getStartLine() + " ReadElementNode: " + ren.expressionToString());
+					logger.log(objectToString(result));
+				}
+
+				if (n instanceof WriteElementNode){
+					WriteElementNode wen = (WriteElementNode) n;
+					logger.log(n.getSourceSection().getStartLine() + " WriteElementNode: " + wen.expressionToString());
+					logger.log(objectToString(result));
+				}*/
+
+				CompilerDirectives.transferToInterpreterAndInvalidate();
 
 				/*if (n instanceof GlobalPropertyNode) {
 					arrayToSymbolic((DynamicObject) result);
 				}*/
 
-				if (n instanceof DualNode) {
+				/*if (n instanceof DualNode) {
 					DualNode dn = (DualNode) n;
 					logger.log(dn.getRight().expressionToString());
-				}
+				}*/
 
 				/*if (n instanceof ObjectLiteralNode) {
 					logger.alert(n.toString());

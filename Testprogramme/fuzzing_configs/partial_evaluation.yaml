@@ -1,0 +1,20 @@
+---
+program_path: "../javascript/partial_evaluation.js"
+results: "../results/partial_evaluation"
+variables:
+  - line_num: 6
+    name: var_integer
+    type: INTEGER
+    sample: 42
+  - line_num: 7
+    name: var_string
+    type: STRING
+    sample: house
+fuzzing_parameters:
+  max_iterations: 1000
+  tactic: "DEPTH_SEARCH"
+  tactic_options:
+    max_loop_unrolling: 16
+    max_depth: 32
+  partial_evaluation_on_cast: true
+...

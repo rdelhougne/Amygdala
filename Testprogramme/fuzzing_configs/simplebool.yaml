@@ -1,5 +1,6 @@
 ---
 program_path: "../javascript/simplebool.js"
+results: "../results/simplebool"
 variables:
   - line_num: 1
     name: "k"
