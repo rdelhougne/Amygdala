@@ -26,6 +26,9 @@ import com.oracle.truffle.js.nodes.access.JSWriteFrameSlotNode;
 import com.oracle.truffle.js.nodes.access.PropertyNode;
 import com.oracle.truffle.js.nodes.access.WritePropertyNode;
 import com.oracle.truffle.js.nodes.arguments.AccessIndexedArgumentNode;
+import com.oracle.truffle.js.nodes.binary.DualNode;
+import com.oracle.truffle.js.nodes.control.IfNode;
+import com.oracle.truffle.js.nodes.control.WhileNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.JSRuntime;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
@@ -96,7 +99,12 @@ public class FuzzingNode extends ExecutionEventNode {
 	private CustomError.EscalatedException cached_exception = null;
 	// performance improvements
 	ArrayList<Pair<Integer, String>> cached_child_hashes = null;
-	String cached_predicate = null;
+	String branch_predicate = null;
+	String cached_attribute_name = null;
+	boolean dual_node_is_increment;
+	boolean dual_node_is_decrement;
+	VariableContext cached_constant_array = null;
+	Integer cached_argument_index = null;
 
 	public FuzzingNode(TruffleInstrument.Env env, Amygdala amy, EventContext ec) {
 		this.amygdala = amy;
@@ -142,6 +150,14 @@ public class FuzzingNode extends ExecutionEventNode {
 
 		if (!amygdala.node_type_instrumented.containsKey(instrumented_node_type)) {
 			amygdala.node_type_instrumented.put(instrumented_node_type, new BitSet(7));
+		}
+
+		if (instrumented_node instanceof WhileNode || instrumented_node instanceof IfNode) {
+			this.branch_predicate = extractPredicate();
+		}
+
+		if (instrumented_node instanceof DualNode) {
+			dualNodeCheckIncDec();
 		}
 	}
 
@@ -722,7 +738,7 @@ public class FuzzingNode extends ExecutionEventNode {
 		if (input_index == 0) {
 			Boolean taken = JSRuntime.toBoolean(input_value);
 			amygdala.branchingEvent(source_relative_identifier, BranchingNodeAttribute.BRANCH, children.get(0).getLeft(),
-									taken, extractPredicate());
+									taken, branch_predicate);
 			amygdala.coverage.addBranchTaken(source_relative_identifier, taken);
 		}
 	}
@@ -734,7 +750,7 @@ public class FuzzingNode extends ExecutionEventNode {
 		if (input_index == 0 && children.size() == 2) {
 			Boolean taken = JSRuntime.toBoolean(input_value);
 			amygdala.branchingEvent(source_relative_identifier, BranchingNodeAttribute.LOOP, children.get(0).getLeft(),
-									taken, extractPredicate());
+									taken, branch_predicate);
 			amygdala.coverage.addBranchTaken(source_relative_identifier, taken);
 		}
 	}
@@ -821,21 +837,18 @@ public class FuzzingNode extends ExecutionEventNode {
 	}
 
 	private String extractPredicate() {
-		if (this.cached_predicate == null) {
-			if (source_section != null && source_section.isAvailable()) {
-				Matcher branch_matcher = BRANCH_PATTERN.matcher(source_section.getCharacters().toString());
-				if (branch_matcher.lookingAt()) {
-					String kind = branch_matcher.group(1);
-					String predicate = Logger.capBack(branch_matcher.group(2), 16);
-					this.cached_predicate = kind.toUpperCase() + " " + predicate;
-				} else {
-					this.cached_predicate = "(NO SOURCE)";
-				}
+		if (source_section != null && source_section.isAvailable()) {
+			Matcher branch_matcher = BRANCH_PATTERN.matcher(source_section.getCharacters().toString());
+			if (branch_matcher.lookingAt()) {
+				String kind = branch_matcher.group(1);
+				String predicate = Logger.capBack(branch_matcher.group(2), 16);
+				return kind.toUpperCase() + " " + predicate;
 			} else {
-				this.cached_predicate = "(NO SOURCE)";
+				return "(NO SOURCE)";
 			}
+		} else {
+			return "(NO SOURCE)";
 		}
-		return this.cached_predicate;
 	}
 
 	// Default Behavior is to just pass through any symbolic flow
@@ -849,16 +862,44 @@ public class FuzzingNode extends ExecutionEventNode {
 
 	// ===== JavaScript Read/Write =====
 
+	private String getAttributeName() {
+		if (this.cached_attribute_name == null) {
+			if (instrumented_node instanceof GlobalPropertyNode) {
+				GlobalPropertyNode gpnode = (GlobalPropertyNode) instrumented_node;
+				this.cached_attribute_name = gpnode.getPropertyKey();
+			}
+			if (instrumented_node instanceof PropertyNode) {
+				PropertyNode pnode = (PropertyNode) instrumented_node;
+				this.cached_attribute_name = pnode.getPropertyKey().toString();
+			}
+			if (instrumented_node instanceof WritePropertyNode) {
+				WritePropertyNode wpnode = (WritePropertyNode) instrumented_node;
+				this.cached_attribute_name = wpnode.getKey().toString();
+			}
+			if (instrumented_node instanceof JSReadFrameSlotNode) {
+				JSReadFrameSlotNode jsrfsn = (JSReadFrameSlotNode) instrumented_node;
+				this.cached_attribute_name = JSFrameUtil.getPublicName(jsrfsn.getFrameSlot());
+			}
+			if (instrumented_node instanceof JSWriteFrameSlotNode) {
+				JSWriteFrameSlotNode jswfsn = (JSWriteFrameSlotNode) instrumented_node;
+				this.cached_attribute_name = JSFrameUtil.getPublicName(jswfsn.getFrameSlot());
+			}
+		}
+		return this.cached_attribute_name;
+	}
+
 	private void onReturnBehaviorGlobalPropertyNode(VirtualFrame frame, Object result) {
-		GlobalPropertyNode gpnode = (GlobalPropertyNode) instrumented_node;
+		String property_name = getAttributeName();
 		if (context_object != null) {
-			amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), gpnode.getPropertyKey(),
+			amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object),
+												   property_name,
 												   instrumented_node_hash);
 		} else {
-			amygdala.tracer.propertyToIntermediate(amygdala.tracer.getJSGlobalObjectId(), gpnode.getPropertyKey(),
+			amygdala.tracer.propertyToIntermediate(amygdala.tracer.getJSGlobalObjectId(),
+												   property_name,
 												   instrumented_node_hash);
 		}
-		enforceExistingProperties(context_object, gpnode.getPropertyKey());
+		enforceExistingProperties(context_object, property_name);
 	}
 
 	private void onReturnBehaviorGlobalObjectNode(VirtualFrame frame, Object result) {
@@ -866,8 +907,7 @@ public class FuzzingNode extends ExecutionEventNode {
 	}
 
 	private void onReturnBehaviorPropertyNode(VirtualFrame frame, Object result) {
-		PropertyNode pnode = (PropertyNode) instrumented_node;
-		String property_name = pnode.getPropertyKey().toString();
+		String property_name = getAttributeName();
 		if (JSGuards.isString(context_object) && property_name.equals("length")) {
 			onReturnBehaviorUnaryOperation(frame, result, Operation.STR_LENGTH);
 		} else if (JSRuntime.isArray(context_object) && property_name.equals("length")) {
@@ -880,7 +920,7 @@ public class FuzzingNode extends ExecutionEventNode {
 			amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), property_name,
 												   instrumented_node_hash);
 		}
-		enforceExistingProperties(context_object, pnode.getPropertyKey());
+		enforceExistingProperties(context_object, property_name);
 	}
 
 	private void enforceExistingProperties(Object js_object, Object key) {
@@ -898,10 +938,10 @@ public class FuzzingNode extends ExecutionEventNode {
 	}
 
 	private void onReturnBehaviorWritePropertyNode(VirtualFrame frame, Object result) {
-		WritePropertyNode wpnode = (WritePropertyNode) instrumented_node;
 		ArrayList<Pair<Integer, String>> children = getChildHashes();
-		// TODO toString()?
-		amygdala.tracer.intermediateToProperty(System.identityHashCode(context_object), wpnode.getKey().toString(), children.get(1).getLeft());
+		amygdala.tracer.intermediateToProperty(System.identityHashCode(context_object),
+											   getAttributeName(),
+											   children.get(1).getLeft());
 		amygdala.tracer.passThroughIntermediate(instrumented_node_hash, children.get(1).getLeft());
 	}
 
@@ -955,9 +995,8 @@ public class FuzzingNode extends ExecutionEventNode {
 	}
 
 	private void onReturnBehaviorJSReadCurrentFrameSlotNodeGen(VirtualFrame frame, Object result) {
-		JSReadFrameSlotNode jsrfsn = (JSReadFrameSlotNode) instrumented_node;
 		boolean read_successful = amygdala.tracer.frameSlotToIntermediate(getScopeHashCurrent(frame),
-																		  JSFrameUtil.getPublicName(jsrfsn.getFrameSlot()),
+																		  getAttributeName(),
 																		  instrumented_node_hash);
 		if (!read_successful && Amygdala.EXPERIMENTAL_FRAMESLOT_FILL_IN_NONEXISTENT) {
 			amygdala.tracer.setIntermediate(instrumented_node_hash, jsObjectToSymbolic(result));
@@ -967,16 +1006,14 @@ public class FuzzingNode extends ExecutionEventNode {
 
 	private void onReturnBehaviorJSWriteCurrentFrameSlotNodeGen(VirtualFrame frame, Object result) {
 		ArrayList<Pair<Integer, String>> children = getChildHashes();
-		JSWriteFrameSlotNode jswfsn = (JSWriteFrameSlotNode) instrumented_node;
 		amygdala.tracer.intermediateToFrameSlot(getScopeHashCurrent(frame),
-												JSFrameUtil.getPublicName(jswfsn.getFrameSlot()),
+												getAttributeName(),
 												children.get(0).getLeft());
 		amygdala.tracer.passThroughIntermediate(instrumented_node_hash, children.get(0).getLeft());
 	}
 
 	private void onReturnBehaviorJSReadScopeFrameSlotNodeGen(VirtualFrame frame, Object result) {
-		JSReadFrameSlotNode jsrfsn = (JSReadFrameSlotNode) instrumented_node;
-		String variable_name = JSFrameUtil.getPublicName(jsrfsn.getFrameSlot());
+		String variable_name = getAttributeName();
 		boolean read_successful = amygdala.tracer.frameSlotToIntermediate(getScopeHashScoped(frame, variable_name),
 																		  variable_name,
 																		  instrumented_node_hash);
@@ -988,8 +1025,7 @@ public class FuzzingNode extends ExecutionEventNode {
 
 	private void onReturnBehaviorJSWriteScopeFrameSlotNodeGen(VirtualFrame frame, Object result) {
 		ArrayList<Pair<Integer, String>> children = getChildHashes();
-		JSWriteFrameSlotNode jswfsn = (JSWriteFrameSlotNode) instrumented_node;
-		String variable_name = JSFrameUtil.getPublicName(jswfsn.getFrameSlot());
+		String variable_name = getAttributeName();
 		amygdala.tracer.intermediateToFrameSlot(getScopeHashScoped(frame, variable_name),
 												variable_name,
 												children.get(0).getLeft());
@@ -1087,9 +1123,16 @@ public class FuzzingNode extends ExecutionEventNode {
 		amygdala.tracer.resetFunctionReturnValue();
 	}
 
+	private Integer getArgumentIndex() {
+		if (this.cached_argument_index == null) {
+			AccessIndexedArgumentNode aian = (AccessIndexedArgumentNode) instrumented_node;
+			this.cached_argument_index = aian.getIndex();
+		}
+		return this.cached_argument_index;
+	}
+
 	private void onReturnBehaviorAccessIndexedArgumentNode(VirtualFrame frame, Object result) {
-		AccessIndexedArgumentNode aian = (AccessIndexedArgumentNode) instrumented_node;
-		amygdala.tracer.argumentToIntermediate(aian.getIndex(), instrumented_node_hash);
+		amygdala.tracer.argumentToIntermediate(getArgumentIndex(), instrumented_node_hash);
 	}
 
 	private void behaviorFrameReturnTerminalPositionReturnNode() {
@@ -1181,15 +1224,14 @@ public class FuzzingNode extends ExecutionEventNode {
 	}
 
 	private void onReturnBehaviorConstantArrayLiteralNode(VirtualFrame frame, Object result) {
-		VariableContext array_ctx = null;
-		try {
-			array_ctx = arrayToSymbolic((DynamicObject) result);
-		} catch (ClassCastException cce) {
-			amygdala.logger.critical("onReturnBehaviorConstantArrayLiteralNode(): Cannot cast result to DynamicObject");
+		if (this.cached_constant_array == null) {
+			try {
+				this.cached_constant_array = arrayToSymbolic((DynamicObject) result);
+			} catch (ClassCastException cce) {
+				amygdala.logger.critical("onReturnBehaviorConstantArrayLiteralNode(): Cannot cast result to DynamicObject");
+			}
 		}
-		if (array_ctx != null) {
-			amygdala.tracer.setSymbolicContext(System.identityHashCode(result), array_ctx);
-		}
+		amygdala.tracer.setSymbolicContext(System.identityHashCode(result), this.cached_constant_array.copy());
 		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.OBJECT, null);
 	}
 
@@ -1203,9 +1245,14 @@ public class FuzzingNode extends ExecutionEventNode {
 			ArrayList<Pair<Integer, String>> children = getChildHashes();
 			ArrayList<SymbolicNode> arg = new ArrayList<>();
 			arg.add(amygdala.tracer.getIntermediate(children.get(1).getLeft()));
-			amygdala.tracer.addStringOperation(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, children.get(0).getLeft(), arg, Operation.STR_CHAR_AT);
+			amygdala.tracer.addStringOperation(instrumented_node_hash,
+											   LanguageSemantic.JAVASCRIPT,
+											   children.get(0).getLeft(),
+											   arg,
+											   Operation.STR_CHAR_AT);
 		} else {
-			amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object), element_access,
+			amygdala.tracer.propertyToIntermediate(System.identityHashCode(context_object),
+												   element_access,
 												   instrumented_node_hash);
 		}
 		enforceExistingProperties(context_object, element_access);
@@ -1213,21 +1260,29 @@ public class FuzzingNode extends ExecutionEventNode {
 
 	private void onReturnBehaviorWriteElementNode(VirtualFrame frame, Object result) {
 		ArrayList<Pair<Integer, String>> children = getChildHashes();
-		amygdala.tracer.intermediateToProperty(System.identityHashCode(context_object), element_access, children.get(2).getLeft());
+		amygdala.tracer.intermediateToProperty(System.identityHashCode(context_object),
+											   element_access,
+											   children.get(2).getLeft());
 		amygdala.tracer.passThroughIntermediate(instrumented_node_hash, children.get(2).getLeft());
+	}
+
+	void dualNodeCheckIncDec() {
+		Matcher inc_matcher = INCREMENT_PATTERN.matcher(source_section.getCharacters().toString());
+		Matcher dec_matcher = DECREMENT_PATTERN.matcher(source_section.getCharacters().toString());
+		this.dual_node_is_increment = inc_matcher.matches();
+		this.dual_node_is_decrement = dec_matcher.matches();
 	}
 
 	//TODO extremely hacky
 	private void onReturnBehaviorDualNode(VirtualFrame frame, Object result) {
-		ArrayList<Pair<Integer, String>> children = getChildHashes();
-		Matcher inc_matcher = INCREMENT_PATTERN.matcher(source_section.getCharacters().toString());
-		Matcher dec_matcher = DECREMENT_PATTERN.matcher(source_section.getCharacters().toString());
 		// if DualNode is part of an increment/decrement operation
-		if (inc_matcher.matches()) {
+		if (dual_node_is_increment) {
+			ArrayList<Pair<Integer, String>> children = getChildHashes();
 			SymbolicNode pre = amygdala.tracer.getIntermediate(children.get(0).getLeft());
 			SymbolicNode revert_increment = new Subtraction(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
 			amygdala.tracer.setIntermediate(instrumented_node_hash, revert_increment);
-		} else if (dec_matcher.matches()) {
+		} else if (dual_node_is_decrement) {
+			ArrayList<Pair<Integer, String>> children = getChildHashes();
 			SymbolicNode pre = amygdala.tracer.getIntermediate(children.get(0).getLeft());
 			SymbolicNode revert_decrement = new Addition(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
 			amygdala.tracer.setIntermediate(instrumented_node_hash, revert_decrement);
@@ -1261,14 +1316,14 @@ public class FuzzingNode extends ExecutionEventNode {
 					array_elem = INTEROP.readArrayElement(dyn_obj, i);
 				} catch (UnsupportedMessageException | InvalidArrayIndexException e) {
 					amygdala.logger.critical("arrayToSymbolic(): Object is an array, but we cannot read the element with index" + i);
-					return null;
+					return new VariableContext();
 				}
 				array_ctx.set(i, jsObjectToSymbolic(array_elem));
 			}
 			return array_ctx;
 		} else {
 			amygdala.logger.critical("arrayToSymbolic(): Object '" + dyn_obj.toString() + "' is not a JavaScript array.");
-			return null;
+			return new VariableContext();
 		}
 	}
 
