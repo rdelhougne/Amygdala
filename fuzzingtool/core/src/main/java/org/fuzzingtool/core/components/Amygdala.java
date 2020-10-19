@@ -143,11 +143,11 @@ public class Amygdala {
 	}
 
 	/**
-	 * This function returns the number of fuzzing iterations.
+	 * This function returns the number of completed fuzzing iterations.
 	 *
 	 * @return An int, specifying the number of completed runs, effectively the count of terminate() signals.
 	 */
-	public int getIterations() {
+	public int getIteration() {
 		return this.fuzzing_iterations;
 	}
 

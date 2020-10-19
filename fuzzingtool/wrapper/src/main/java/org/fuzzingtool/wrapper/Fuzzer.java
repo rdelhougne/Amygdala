@@ -40,7 +40,7 @@ public class Fuzzer {
 	private String runtime_fractional_output = null;
 
 	public Fuzzer(String fuzzing_config) {
-		this.probe = new TimeProbe(false);
+		this.probe = new TimeProbe(true);
 		try {
 			init(fuzzing_config);
 			this.initialization_successful = true;
@@ -111,6 +111,7 @@ public class Fuzzer {
 	public void fuzz() {
 		boolean one_more = true;
 		while (one_more) {
+			logger.info("Running iteration " + (amygdala.getIteration() + 1));
 			boolean run_successful = true;
 			String error_reason = "UNKNOWN";
 			try {
@@ -140,7 +141,7 @@ public class Fuzzer {
 			amygdala.coverage.saveSnapshot();
 
 			if (amygdala.isBranchingVisEnabled()) {
-				amygdala.visualizeProgramFlow("trace_tree_" + amygdala.getIterations() + ".svg");
+				amygdala.visualizeProgramFlow("trace_tree_" + amygdala.getIteration() + ".svg");
 			}
 
 			// TODO hackyyy...

@@ -15,14 +15,15 @@ import org.fuzzingtool.core.symbolic.string.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 public class Tracer {
 	public final Logger logger;
 	// Saves intermediate results of all nodes
-	private final HashMap<Integer, SymbolicNode> intermediate_results = new HashMap<>();
+	private final Map<Integer, SymbolicNode> intermediate_results = new HashMap<>();
 
 	// Saves a symbolic representation of the entire program
-	private final HashMap<Integer, VariableContext> symbolic_program = new HashMap<>();
+	private final Map<Integer, VariableContext> symbolic_program = new HashMap<>();
 
 	// These two are for crossing function boundaries
 	private ArrayList<SymbolicNode> arguments_array = new ArrayList<>();
@@ -256,7 +257,7 @@ public class Tracer {
 			assert intermediate_results.get(node_id) != null;
 			return intermediate_results.get(node_id);
 		} else {
-			logger.critical("Tracer::get_intermediate(): Cannot get intermediate results for hash " + node_id);
+			logger.critical("Tracer::getIntermediate(): Cannot get intermediate results for hash " + node_id);
 			return new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
 		}
 	}
@@ -293,6 +294,8 @@ public class Tracer {
 	public void clearAll() {
 		intermediate_results.clear();
 		symbolic_program.clear();
+		arguments_array.clear();
+		resetFunctionReturnValue();
 	}
 
 	/**

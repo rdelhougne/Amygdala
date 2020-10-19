@@ -12,7 +12,7 @@ public class Logger {
 
 	// logging statistics
 	private static final boolean SHOW_DEBUGGING_STATS = true;
-	private static final boolean AGGREGATE_EVENTS = false;
+	private static final boolean AGGREGATE_EVENTS = true;
 	private int num_log = 0;
 	private int num_event = 0;
 	private int num_debug = 0;
