@@ -138,11 +138,8 @@ public class Fuzzer {
 			} else {
 				amygdala.errorEvent(error_reason, probe.getIterationDuration());
 			}
-			amygdala.coverage.saveSnapshot();
 
-			if (amygdala.isBranchingVisEnabled()) {
-				amygdala.visualizeProgramFlow("trace_tree_" + amygdala.getIteration() + ".svg");
-			}
+			amygdala.snapshot();
 
 			// TODO hackyyy...
 			File f = new File(TERMINATE_FILE_NAME);

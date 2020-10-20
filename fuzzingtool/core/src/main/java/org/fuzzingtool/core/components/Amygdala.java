@@ -43,6 +43,8 @@ public class Amygdala {
 	private final List<Map<VariableIdentifier, Object>> variable_values;
 	private final List<Pair<Boolean, String>> iteration_information;
 	private final List<Long> runtime_nanos;
+	private final List<Pair<Integer, Integer>> execution_graph_statistics;
+	private final List<Map<BranchingNodeAttribute, Integer>> execution_graph_component_statistics;
 	private final BidiMap<VariableIdentifier, Integer> variable_lines;
 	private final Map<VariableIdentifier, String> variable_names;
 	private Boolean fuzzing_finished = false;
@@ -60,6 +62,8 @@ public class Amygdala {
 	// This option disables computation of new input values and instead
 	// locks them to the values specified in the configuration YAML-file.
 	public static final boolean LOCK_VALUES = false;
+	// This option measures size and depth of the execution graph in after every iteration
+	public static final boolean EXECUTION_GRAPH_STATISTICS = false;
 
 	// Debugging Bits: is node executed, onEnter (E), onInputValue (I), OnReturn (R), onReturnExceptional (X), onUnwind (U), onDispose (D)
 	public final HashMap<String, BitSet> node_type_instrumented = new HashMap<>();
@@ -73,6 +77,8 @@ public class Amygdala {
 		this.variable_names = new HashMap<>();
 		this.variable_lines = new DualHashBidiMap<>();
 		this.runtime_nanos = new ArrayList<>();
+		this.execution_graph_statistics = new ArrayList<>();
+		this.execution_graph_component_statistics = new ArrayList<>();
 		this.iteration_information = new ArrayList<>();
 
 		com.microsoft.z3.Global.ToggleWarningMessages(true);
@@ -504,6 +510,29 @@ public class Amygdala {
 		logger.log(getInstrumentationString());
 	}
 
+	public void snapshot() {
+		coverage.saveSnapshot();
+		if (this.branching_visualization) {
+			visualizeProgramFlow("trace_tree_" + getIteration() + ".svg");
+		}
+		if (EXECUTION_GRAPH_STATISTICS) {
+			int graph_size = branching_root_node.getTreeSize();
+			int graph_height = branching_root_node.getTreeHeight();
+			execution_graph_statistics.add(Pair.create(graph_size, graph_height));
+			Map<BranchingNodeAttribute, Integer> components = new HashMap<>();
+			System.out.println(String.valueOf(BranchingNodeAttribute.BRANCH));
+			System.out.println(BranchingNodeAttribute.BRANCH.toString());
+			components.put(BranchingNodeAttribute.BRANCH, 0);
+			components.put(BranchingNodeAttribute.LOOP, 0);
+			components.put(BranchingNodeAttribute.UNKNOWN, 0);
+			components.put(BranchingNodeAttribute.UNREACHABLE, 0);
+			components.put(BranchingNodeAttribute.TERMINATE, 0);
+			components.put(BranchingNodeAttribute.ERROR, 0);
+			branching_root_node.getComponents(components);
+			execution_graph_component_statistics.add(components);
+		}
+	}
+
 	/**
 	 * Returns a string-representation of the instrumentation statistics
 	 *
@@ -581,6 +610,17 @@ public class Amygdala {
 				iteration.put("error_message", iteration_information.get(i).getRight());
 			}
 			iteration.put("runtime", runtime_nanos.get(i) / 1000000);
+
+			if (EXECUTION_GRAPH_STATISTICS) {
+				Pair<Integer, Integer> graph_stat = execution_graph_statistics.get(i);
+				iteration.put("execution_graph_height", graph_stat.getRight());
+				iteration.put("execution_graph_size", graph_stat.getLeft());
+				Map<String, Integer> converted_components = new HashMap<>();
+				for (Map.Entry<BranchingNodeAttribute, Integer> entry: execution_graph_component_statistics.get(i).entrySet()) {
+					converted_components.put(String.valueOf(entry.getKey()), entry.getValue());
+				}
+				iteration.put("execution_graph_components", converted_components);
+			}
 
 			List<Map<String, Object>> variables = new ArrayList<>();
 			if (LOCK_VALUES) {
