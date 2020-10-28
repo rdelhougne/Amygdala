@@ -9,6 +9,7 @@ import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.fuzzingtool.core.symbolic.basic.SymbolicConstant;
 import org.fuzzingtool.core.symbolic.basic.SymbolicVariable;
 import org.fuzzingtool.core.symbolic.arithmetic.*;
+import org.fuzzingtool.core.symbolic.conversion.StringToInt;
 import org.fuzzingtool.core.symbolic.logical.*;
 import org.fuzzingtool.core.symbolic.string.*;
 
@@ -566,6 +567,16 @@ public class Tracer {
 					function_return_value = new SquareRoot(s, arguments_array.get(0));
 				} else {
 					logger.critical("Arguments for Operation SQRT have the wrong size");
+					function_return_value = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
+				}
+				break;
+			case STR_TO_INT:
+				if (arguments_array.size() == 1) {
+					function_return_value = new StringToInt(s, arguments_array.get(0), new SymbolicConstant(s, ExpressionType.NUMBER_INTEGER, 10));
+				} else if (arguments_array.size() == 2) {
+					function_return_value = new StringToInt(s, arguments_array.get(0), arguments_array.get(1));
+				} else {
+					logger.critical("Arguments for Operation STR_TO_INT have the wrong size");
 					function_return_value = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
 				}
 				break;

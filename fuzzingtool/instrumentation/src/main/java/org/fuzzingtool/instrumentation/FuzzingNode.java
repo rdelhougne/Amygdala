@@ -583,21 +583,21 @@ public class FuzzingNode extends ExecutionEventNode {
 				onReturnBehaviorUnaryOperation(frame, result, Operation.NOT);
 				break;
 
-			// ===== JavaScript Error Handling =====
-			// TODO
+			// ===== JavaScript Buildins =====
+			case "JSGlobalParseIntNodeGen":
+				onReturnBehaviorJSGlobalParseIntNodeGen(frame, result);
+				break;
 
 			// ===== JavaScript Miscellaneous =====
 			case "DualNode":
 				onReturnBehaviorDualNode(frame, result);
 				break;
+			case "IfNode":
+			case "WhileNode":
 			case "JSGlobalPrintNodeGen":
-				onReturnBehaviorJSGlobalPrintNodeGen(frame, result);
-				break;
 			case "ExprBlockNode":
-				onReturnBehaviorExprBlockNode(frame, result);
-				break;
 			case "VoidBlockNode":
-				onReturnBehaviorVoidBlockNode(frame, result);
+				onReturnBehaviorAddUnknown(frame, result);
 				break;
 			case "DiscardResultNode":
 				onReturnBehaviorDiscardResultNode(frame, result);
@@ -649,7 +649,10 @@ public class FuzzingNode extends ExecutionEventNode {
 		switch (instrumented_node_type) {
 			case "FrameReturnNode":
 				// FrameReturnNode has no onReturnValue event, instead it throws a ControlFlowException
-				behaviorFrameReturnTerminalPositionReturnNode();
+				// should only be instrumented if called properly
+				if (exception instanceof ControlFlowException) {
+					behaviorFrameReturnTerminalPositionReturnNode();
+				}
 				break;
 			default:
 				was_instrumented_on_return_exceptional = false;
@@ -863,6 +866,13 @@ public class FuzzingNode extends ExecutionEventNode {
 		if (child_hashes.size() == 1) {
 			amygdala.tracer.passThroughIntermediate(instrumented_node_hash, child_hashes.get(0).getLeft());
 		}
+	}
+
+	// Some nodes return a value that is never used
+	// if these values are queried, an error should be thrown
+	// TODO check behavior in ECMA Specification
+	private void onReturnBehaviorAddUnknown(VirtualFrame frame, Object result) {
+		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
 	}
 
 	// ===== JavaScript Read/Write =====
@@ -1125,7 +1135,14 @@ public class FuzzingNode extends ExecutionEventNode {
 	}
 
 	private void behaviorFrameReturnTerminalPositionReturnNode() {
-		amygdala.tracer.intermediateToFunctionReturnValue(child_hashes.get(0).getLeft());
+		if (child_hashes.size() > 0) {
+			Integer child_hash = child_hashes.get(0).getLeft();
+			amygdala.tracer.passThroughIntermediate(instrumented_node_hash, child_hash);
+			amygdala.tracer.intermediateToFunctionReturnValue(child_hash);
+		} else {
+			amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
+			amygdala.tracer.resetFunctionReturnValue();
+		}
 	}
 
 	// ===== JavaScript General Nodes =====
@@ -1247,6 +1264,11 @@ public class FuzzingNode extends ExecutionEventNode {
 		amygdala.tracer.passThroughIntermediate(instrumented_node_hash, child_hashes.get(2).getLeft());
 	}
 
+	private void onReturnBehaviorJSGlobalParseIntNodeGen(VirtualFrame frame, Object result) {
+		// Behaves like a function
+		amygdala.tracer.performSingularMethodInvocation(LanguageSemantic.JAVASCRIPT, Operation.STR_TO_INT);
+	}
+
 	//TODO extremely hacky
 	private void onReturnBehaviorDualNode(VirtualFrame frame, Object result) {
 		// if DualNode is part of an increment/decrement operation
@@ -1259,19 +1281,6 @@ public class FuzzingNode extends ExecutionEventNode {
 			SymbolicNode revert_decrement = new Addition(LanguageSemantic.JAVASCRIPT, pre, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.NUMBER_INTEGER, 1));
 			amygdala.tracer.setIntermediate(instrumented_node_hash, revert_decrement);
 		}
-	}
-
-	private void onReturnBehaviorJSGlobalPrintNodeGen(VirtualFrame frame, Object result) {
-		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
-	}
-
-	private void onReturnBehaviorExprBlockNode(VirtualFrame frame, Object result) {
-		// TODO
-		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.NULL, null);
-	}
-
-	private void onReturnBehaviorVoidBlockNode(VirtualFrame frame, Object result) {
-		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
 	}
 
 	private void onReturnBehaviorDiscardResultNode(VirtualFrame frame, Object result) {

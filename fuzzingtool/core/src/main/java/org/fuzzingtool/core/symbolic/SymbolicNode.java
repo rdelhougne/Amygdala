@@ -101,6 +101,7 @@ public abstract class SymbolicNode {
 							expression.getRight().toString() + "' to a Number type");
 					}
 				} else {
+					System.out.println("inserted conversion");
 					return Pair.create(ctx.stringToInt(expression.getLeft()), ExpressionType.NUMBER_INTEGER);
 				}
 			case BIGINT:

@@ -87,6 +87,7 @@ public abstract class FuzzingTactic {
 				}
 				Solver s = ctx.mkSolver();
 				s.add(expr);
+				//logger.mesmerize(expr.getSExpr());
 				probe.switchState(TimeProbe.ProgramState.SOLVE);
 				Status status = s.check();
 				probe.switchState(TimeProbe.ProgramState.TACTIC);

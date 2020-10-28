@@ -20,6 +20,8 @@ public class Coverage {
 	private final List<Double> statement_coverage = new ArrayList<>();
 	private final List<Double> branch_coverage = new ArrayList<>();
 
+	private static final double THRESHOLD = .000001;
+
 	public Coverage(Logger lgr) {
 		this.logger = lgr;
 	}
@@ -88,6 +90,12 @@ public class Coverage {
 			covered += entry.getValue().cardinality();
 		}
 		branch_coverage.add(100.0 * ((double) covered / (double) loaded));
+	}
+
+	public boolean coverageReached(double min_root, double min_statement, double min_branch) {
+		return root_coverage.get(root_coverage.size() - 1) >= min_root - THRESHOLD &&
+				statement_coverage.get(statement_coverage.size() - 1) >= min_statement - THRESHOLD &&
+				branch_coverage.get(branch_coverage.size() - 1) >= min_branch - THRESHOLD;
 	}
 
 	/**
