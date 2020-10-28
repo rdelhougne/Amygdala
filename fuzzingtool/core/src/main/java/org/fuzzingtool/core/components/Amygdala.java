@@ -58,6 +58,8 @@ public class Amygdala {
 	private double min_coverage_root = 100.0;
 	private double min_coverage_statement = 100.0;
 	private double min_coverage_branch = 100.0;
+	private boolean timeout_reached = false;
+	private long timeout_millis = 10000;
 
 	// Experimental
 	// This option advises JSReadCurrent/ScopeFrameSlotNodeGen to fill in values if they are not found.
@@ -132,6 +134,7 @@ public class Amygdala {
 	 * program has been terminated under normal circumstances.
 	 */
 	public void terminateEvent(Long runtime) {
+		logger.info("Program terminated without error");
 		current_branch.setBranchingNodeAttribute(BranchingNodeAttribute.TERMINATE);
 		current_branch = branching_root_node;
 		iteration_information.add(Pair.create(true, ""));
@@ -144,6 +147,7 @@ public class Amygdala {
 	 * The function suppresses the next terminate-event.
 	 */
 	public void errorEvent(String reason, Long runtime) {
+		logger.info("Program fault detected: " + reason);
 		current_branch.setBranchingNodeAttribute(BranchingNodeAttribute.ERROR);
 		current_branch = branching_root_node;
 		iteration_information.add(Pair.create(false, reason));
@@ -180,6 +184,18 @@ public class Amygdala {
 		this.probe = tp;
 	}
 
+	public void setTimeoutReached(boolean value) {
+		this.timeout_reached = value;
+	}
+
+	public boolean timeoutReached() {
+		return this.timeout_reached;
+	}
+
+	public long getTimeoutMillis() {
+		return this.timeout_millis;
+	}
+
 	/**
 	 * This Method uses a specified tactic to find the next path in the program flow.
 	 * If the tactic cannot find another path, the global fuzzing-loop has to be terminated.
@@ -191,6 +207,7 @@ public class Amygdala {
 			if (!coverage.coverageReached(this.min_coverage_root, this.min_coverage_statement, this.min_coverage_branch)) {
 				if (!LOCK_VALUES) {
 					probe.switchState(TimeProbe.ProgramState.TACTIC);
+					logger.info("Finding next path...");
 					boolean res = this.tactic.calculate();
 					probe.switchState(TimeProbe.ProgramState.MANAGE);
 					if (res) {

@@ -25,6 +25,8 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Fuzzer {
 	private Engine engine;
@@ -34,6 +36,7 @@ public class Fuzzer {
 	private Logger logger = null;
 	private final TimeProbe probe;
 	private boolean initialization_successful;
+	private Timer timeout_timer;
 
 	private static final String TERMINATE_FILE_NAME = "terminate-1bfa427b-a460-4088-b578-e388a6bce94d";
 	private String runtime_complete_output = null;
@@ -41,6 +44,7 @@ public class Fuzzer {
 
 	public Fuzzer(String fuzzing_config) {
 		this.probe = new TimeProbe(true);
+		this.timeout_timer = new Timer();
 		try {
 			init(fuzzing_config);
 			this.initialization_successful = true;
@@ -114,6 +118,8 @@ public class Fuzzer {
 			logger.info("Running iteration " + (amygdala.getIteration() + 1));
 			boolean run_successful = true;
 			String error_reason = "UNKNOWN";
+			TimeoutTask task = new TimeoutTask(amygdala);
+			this.timeout_timer.schedule(task, amygdala.getTimeoutMillis());
 			try {
 				probe.switchStateAndStartIteration(TimeProbe.ProgramState.EXECUTION);
 				context.eval(source);
@@ -132,6 +138,8 @@ public class Fuzzer {
 				}
 				run_successful = false;
 			}
+			task.cancel();
+			amygdala.setTimeoutReached(false);
 
 			if (run_successful) {
 				amygdala.terminateEvent(probe.getIterationDuration());
@@ -149,11 +157,13 @@ public class Fuzzer {
 				if (!delete_successful) {
 					amygdala.logger.warning("Cannot delete termination indicator file, should be deleted manually");
 				}
+				timeout_timer.cancel();
 				return;
 			}
 
 			one_more = amygdala.calculateNextPath();
 		}
+		timeout_timer.cancel();
 	}
 
 	public void printResults() {
@@ -231,5 +241,18 @@ public class Fuzzer {
 			}
 		}
 		logger.log(probe.toString());
+	}
+
+	class TimeoutTask extends TimerTask {
+		private final Amygdala amygdala;
+
+		public TimeoutTask(Amygdala amy) {
+			this.amygdala = amy;
+		}
+
+		@Override
+		public void run() {
+			this.amygdala.setTimeoutReached(true);
+		}
 	}
 }

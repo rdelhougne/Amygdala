@@ -626,6 +626,9 @@ public class FuzzingNode extends ExecutionEventNode {
 				throw event_context.createError(ee);
 			}
 		}
+		if (amygdala.timeoutReached()) {
+			throw event_context.createError(CustomError.createException("Timeout reached"));
+		}
 		amygdala.probe.switchState(TimeProbe.ProgramState.EXECUTION);
 	}
 
