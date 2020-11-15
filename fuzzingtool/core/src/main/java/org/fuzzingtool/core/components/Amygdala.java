@@ -67,7 +67,7 @@ public class Amygdala {
 	// This option disables computation of new input values and instead
 	// locks them to the values specified in the configuration YAML-file.
 	public static final boolean LOCK_VALUES = false;
-	// This option measures size and depth of the execution graph in after every iteration
+	// This option measures size and depth of the execution graph after every iteration
 	public static final boolean EXECUTION_GRAPH_STATISTICS = false;
 
 	// Debugging Bits: is node executed, onEnter (E), onInputValue (I), OnReturn (R), onReturnExceptional (X), onUnwind (U), onDispose (D)
@@ -88,7 +88,7 @@ public class Amygdala {
 
 		com.microsoft.z3.Global.ToggleWarningMessages(true);
 		com.microsoft.z3.Global.setParameter("smt.string_solver", "z3str3");
-		com.microsoft.z3.Global.setParameter("timeout", "60000");
+		com.microsoft.z3.Global.setParameter("timeout", "10000");
 		logger.info("Using Z3 " + Version.getString() + " © Copyright 2006-2016 Microsoft Corp.");
 
 		HashMap<String, String> cfg = new HashMap<>();

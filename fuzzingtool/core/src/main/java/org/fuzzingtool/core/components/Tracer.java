@@ -125,10 +125,10 @@ public class Tracer {
 	public void propertyToIntermediate(Integer context, Object key, Integer node_id_intermediate) {
 		if (symbolic_program.containsKey(context)) {
 			VariableContext var_ctx = symbolic_program.get(context);
-			if (!var_ctx.hasProperty(key)) {
-				logger.warning("Tracer::propertyToIntermediate(): Context " + context + " has no property '" + key + "', returning JS.undefined");
-			}
 			try {
+				if (!var_ctx.hasProperty(key)) {
+					logger.warning("Tracer::propertyToIntermediate(): Context " + context + " has no property '" + key + "', returning JS.undefined");
+				}
 				intermediate_results.put(node_id_intermediate, var_ctx.get(key));
 			} catch (IllegalArgumentException iae) {
 				logger.critical(iae.getMessage());

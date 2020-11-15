@@ -1,5 +1,7 @@
 package org.fuzzingtool.core.components;
 
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.js.runtime.JSRuntime;
 import org.fuzzingtool.core.symbolic.ExpressionType;
 import org.fuzzingtool.core.symbolic.LanguageSemantic;
 import org.fuzzingtool.core.symbolic.SymbolicNode;
@@ -45,6 +47,9 @@ public class VariableContext {
 		}
 		if (key instanceof String) {
 			return (String) key;
+		}
+		if (key instanceof DynamicObject) {
+			return JSRuntime.toString(key);
 		}
 		throw new IllegalArgumentException("VariableContext.convertProperty(): Cannot use property key with type '" + key.getClass().getSimpleName() + "'");
 	}
