@@ -38,6 +38,10 @@ public class Tracer {
 	private final HashSet<String> used_gids = new HashSet<>();
 	private final RandomStringGenerator gid_generator;
 
+	// Short-circuit evaluation
+	public final HashSet<Integer> logic_node_full_expression = new HashSet<>();
+	private Boolean no_side_effects_allowed = false;
+
 	public Tracer(Logger l) {
 		this.logger = l;
 
@@ -46,6 +50,18 @@ public class Tracer {
 		this.gid_generator = rand_builder.build();
 
 		resetFunctionReturnValue();
+	}
+
+	public void allowSideffects() {
+		this.no_side_effects_allowed = false;
+	}
+
+	public void forbidSideffects() {
+		this.no_side_effects_allowed = true;
+	}
+
+	public boolean noSideeffectsAllowed() {
+		return this.no_side_effects_allowed;
 	}
 
 	public void setArgumentsArray(ArrayList<SymbolicNode> arguments) {
@@ -289,6 +305,7 @@ public class Tracer {
 		arguments_array.clear();
 		resetFunctionReturnValue();
 		cached_scopes.clear();
+		logic_node_full_expression.clear();
 	}
 
 	/**
@@ -311,27 +328,21 @@ public class Tracer {
 	 */
 	public void addOperation(Integer node_target, LanguageSemantic s, Operation op, Integer node_source_a,
 							 Integer node_source_b) {
-		// handle early discard
-		if (op == Operation.OR) {
+		// Handle short-circuit evaluation
+		if (op == Operation.AND || op == Operation.OR) {
 			if (!intermediate_results.containsKey(node_source_a) && !intermediate_results.containsKey(node_source_b)) {
 				logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
 										" but intermediate result from " + node_source_a + " and " + node_source_b +
 										" does not exist");
 				return;
 			}
-			SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, false));
-			SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, false));
-			intermediate_results.put(node_target, new Or(s, a, b));
-		} else if (op == Operation.AND) {
-			if (!intermediate_results.containsKey(node_source_a) && !intermediate_results.containsKey(node_source_b)) {
-				logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
-										" but intermediate result from " + node_source_a + " and " + node_source_b +
-										" does not exist");
-				return;
+			SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, false));
+			SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, false));
+			if (op == Operation.AND) {
+				intermediate_results.put(node_target, new And(s, a, b));
+			} else {
+				intermediate_results.put(node_target, new Or(s, a, b));
 			}
-			SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, true));
-			SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, true));
-			intermediate_results.put(node_target, new And(s, a, b));
 		} else {
 			if (intermediate_results.containsKey(node_source_a) && intermediate_results.containsKey(node_source_b)) {
 				SymbolicNode a = intermediate_results.get(node_source_a);
@@ -683,6 +694,44 @@ public class Tracer {
 		} else {
 			logger.warning("Tracer::initializeProgramContext(): Cannot initialize context with semantic '" +
                                    sem.toString() + "'");
+		}
+	}
+
+	/**
+	 * Create a new Exception for non-allowed side effects that cannot be caught.
+	 *
+	 * @param message Message of the exception
+	 * @return Exception of type "EscalatedException"
+	 */
+	public static Tracer.SideEffectException createException(String message) {
+		return new Tracer.SideEffectException(message);
+	}
+
+	/**
+	 * An exception for side effects in a manually executed partial 'and' or 'or' statement.
+	 * This is used for handling short-circuit evaluation.
+	 */
+	public static class SideEffectException extends RuntimeException {
+		public SideEffectException() {
+			super();
+		}
+
+		public SideEffectException(String message) {
+			super(message);
+		}
+
+		public SideEffectException(String message, Throwable cause) {
+			super(message, cause);
+		}
+
+		public SideEffectException(Throwable cause) {
+			super(cause);
+		}
+
+		protected SideEffectException(String message, Throwable cause,
+									 boolean enableSuppression,
+									 boolean writableStackTrace) {
+			super(message, cause, enableSuppression, writableStackTrace);
 		}
 	}
 }

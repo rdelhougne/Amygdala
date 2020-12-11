@@ -36,14 +36,14 @@ public class Fuzzer {
 	private Logger logger = null;
 	private final TimeProbe probe;
 	private boolean initialization_successful;
-	private Timer timeout_timer;
+	private final Timer timeout_timer;
 
 	private static final String TERMINATE_FILE_NAME = "terminate-1bfa427b-a460-4088-b578-e388a6bce94d";
 	private String runtime_complete_output = null;
 	private String runtime_fractional_output = null;
 
 	public Fuzzer(String fuzzing_config) {
-		this.probe = new TimeProbe(true);
+		this.probe = new TimeProbe(false);
 		this.timeout_timer = new Timer();
 		try {
 			init(fuzzing_config);
@@ -130,7 +130,8 @@ public class Fuzzer {
 				if (message.startsWith("org.fuzzingtool.core.components.CustomError$EscalatedException:")) {
 					error_reason = message.replace("org.fuzzingtool.core.components.CustomError$EscalatedException: ", "");
 				} else if (message.startsWith("SyntaxError")) {
-					logger.critical("JavaScript program is not valid");
+					timeout_timer.cancel();
+					logger.critical("Syntax error found, cannot proceed. Message:");
 					logger.log(message);
 					return;
 				} else {

@@ -117,6 +117,7 @@ public class Amygdala {
 			Pair<Integer, Boolean> expected_behavior = next_program_path.poll();
 			if (!expected_behavior.getLeft().equals(branching_node_hash) || !expected_behavior.getRight().equals(taken)) {
 				logger.info("Diverging program path detected");
+				logger.alert("Diverging program path detected");
 				current_branch.setDiverging();
 			}
 		}

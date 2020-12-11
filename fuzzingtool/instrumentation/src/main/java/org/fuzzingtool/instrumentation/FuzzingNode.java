@@ -19,6 +19,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.js.nodes.JSGuards;
 import com.oracle.truffle.js.nodes.JSNodeUtil;
+import com.oracle.truffle.js.nodes.JavaScriptNode;
 import com.oracle.truffle.js.nodes.access.GlobalPropertyNode;
 import com.oracle.truffle.js.nodes.access.JSConstantNode;
 import com.oracle.truffle.js.nodes.access.JSReadFrameSlotNode;
@@ -37,6 +38,7 @@ import org.fuzzingtool.core.components.Amygdala;
 import org.fuzzingtool.core.components.BranchingNodeAttribute;
 import org.fuzzingtool.core.components.CustomError;
 import org.fuzzingtool.core.components.TimeProbe;
+import org.fuzzingtool.core.components.Tracer;
 import org.fuzzingtool.core.components.VariableContext;
 import org.fuzzingtool.core.components.VariableIdentifier;
 import org.fuzzingtool.core.symbolic.ExpressionType;
@@ -111,6 +113,8 @@ public class FuzzingNode extends ExecutionEventNode {
 	VariableContext cached_constant_array = null;
 	// function argument index for AccessIndexedArgumentNode
 	Integer argument_index;
+	// oh no
+	public Integer and_or_full_expression = 42;
 
 	public FuzzingNode(TruffleInstrument.Env env, Amygdala amy, EventContext ec) {
 		this.amygdala = amy;
@@ -303,6 +307,17 @@ public class FuzzingNode extends ExecutionEventNode {
 			amygdala.logger.event(getSignatureString() + " \033[32m→\033[0m");
 		}
 
+		if (amygdala.tracer.noSideeffectsAllowed()) {
+			if (instrumented_node_type.equals("WritePropertyNode")
+					|| instrumented_node_type.equals("WriteElementNode")
+					|| instrumented_node_type.equals("CompoundWriteElementNode")
+					|| instrumented_node_type.equals("JSWriteCurrentFrameSlotNodeGen")
+					|| instrumented_node_type.equals("JSWriteScopeFrameSlotNodeGen")
+					|| instrumented_node_type.equals("JSGlobalPrintNodeGen")) {
+				throw event_context.createError(Tracer.createException("no side effects allowed"));
+			}
+		}
+
 		boolean was_instrumented_on_enter = true;
 		switch (instrumented_node_type) {
 			case "Call0Node":
@@ -330,6 +345,7 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "EchoTargetValueNode": //TODO verify...
 			case "MaterializedTargetablePropertyNode": //TODO verify...
 			case "ForInIteratorPrototypeNextNodeGen":
+			case "EmptyNode":
 				// Do nothing. These nodes should not have any behavior or are instrumented otherwise.
 				break;
 			default:
@@ -397,6 +413,12 @@ public class FuzzingNode extends ExecutionEventNode {
 				break;
 			case "JSEqualNodeGen":
 				onInputValueBehaviorJSEqualNodeGen(frame, input_context, input_index, input_value);
+				break;
+			case "JSAndNode":
+				onInputValueBehaviorAndNode(frame, input_context, input_index, input_value);
+				break;
+			case "JSOrNode":
+				onInputValueBehaviorOrNode(frame, input_context, input_index, input_value);
 				break;
 			default:
 				was_instrumented_on_input_value = false;
@@ -580,6 +602,8 @@ public class FuzzingNode extends ExecutionEventNode {
 				onReturnBehaviorBinaryOperation(frame, result, Operation.OR);
 				break;
 			case "JSNotNodeGen":
+				/*FuzzingNode fn = (FuzzingNode) this.getParent().getParent();
+				amygdala.logger.mesmerize(fn.and_or_full_expression.toString());*/
 				onReturnBehaviorUnaryOperation(frame, result, Operation.NOT);
 				break;
 
@@ -641,7 +665,9 @@ public class FuzzingNode extends ExecutionEventNode {
 
 		// Exception should only be escalated if it is not already an escalated exception
 		// and is not a ControlFlowException, these exceptions can occur in normal program executions
-		if (!(exception instanceof CustomError.EscalatedException) && !(exception instanceof ControlFlowException)) {
+		if (!(exception instanceof CustomError.EscalatedException)
+				&& !(exception instanceof ControlFlowException)
+				&& !(exception instanceof Tracer.SideEffectException)) {
 			if (amygdala.custom_error.escalateExceptionsEnabled()) {
 				amygdala.logger.info("Escalating exception with message: '" + exception.getMessage() + "' (escalate_exceptions)");
 				throw event_context.createError(CustomError.createException(exception.getMessage()));
@@ -757,6 +783,46 @@ public class FuzzingNode extends ExecutionEventNode {
 									taken, branch_predicate);
 			amygdala.coverage.addBranchTaken(source_relative_identifier, taken);
 		}
+	}
+
+	private void onInputValueBehaviorAndNode(VirtualFrame frame, EventContext input_context, int input_index,
+											Object input_value) {
+		if (input_index == 0
+				&& !amygdala.tracer.logic_node_full_expression.contains(source_relative_identifier)
+				&& !JSRuntime.toBoolean(input_value)) { // handle if first part is false
+			handle_short_circuit_evaluation(frame);
+		}
+	}
+
+	private void onInputValueBehaviorOrNode(VirtualFrame frame, EventContext input_context, int input_index,
+											   Object input_value) {
+		if (input_index == 0
+				&& !amygdala.tracer.logic_node_full_expression.contains(source_relative_identifier)
+				&& JSRuntime.toBoolean(input_value)) { // handle if first part is true
+			handle_short_circuit_evaluation(frame);
+		}
+	}
+
+	private void handle_short_circuit_evaluation(VirtualFrame frame) {
+		try {
+			Iterator<Node> iter = instrumented_node.getChildren().iterator();
+			iter.next();
+			JavaScriptNode exn = (JavaScriptNode) iter.next(); // Second child
+			amygdala.tracer.forbidSideffects();
+			exn.execute(frame);
+		} catch (Tracer.SideEffectException see) {
+			int line = -1;
+			String characters = "(UNAVAILABLE)";
+			if (source_section != null && source_section.isAvailable()) {
+				line = source_section.getStartLine();
+				characters = source_section.getCharacters().toString().replace("\n", "");
+			}
+			amygdala.logger.warning("It seems that a part of expression '" + characters + "' in line " + line + " has side effects, so we can't handle short-circuit evaluation");
+		} catch (Throwable thr) {
+			amygdala.logger.debug("An exception occurred while executing a short-circuit subtree: '" + thr.getMessage() + "', ignoring");
+		}
+		amygdala.tracer.allowSideffects();
+		amygdala.tracer.logic_node_full_expression.add(source_relative_identifier);
 	}
 
 	private void onInputValueBehaviorWhileNode(VirtualFrame frame, EventContext input_context, int input_index,
