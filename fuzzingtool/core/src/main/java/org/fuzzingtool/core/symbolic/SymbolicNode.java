@@ -354,6 +354,7 @@ public abstract class SymbolicNode {
 			throw new SymbolicException.UndecidableExpression("Z3", "Cannot cast expression with type '" +
 					old_expr_type.name() + "' to a numeric value with partial evaluation because it contains variables");
 		}
+		System.out.println("[CRITICAL] Partial evaluation cast failed");
 		return Pair.create(null, ExpressionType.INTERNAL_ERROR);
 	}
 

@@ -32,6 +32,7 @@ import com.oracle.truffle.js.nodes.control.IfNode;
 import com.oracle.truffle.js.nodes.control.WhileNode;
 import com.oracle.truffle.js.runtime.JSFrameUtil;
 import com.oracle.truffle.js.runtime.JSRuntime;
+import com.oracle.truffle.js.runtime.SafeInteger;
 import com.oracle.truffle.js.runtime.truffleinterop.InteropList;
 import org.fuzzingtool.core.Logger;
 import org.fuzzingtool.core.components.Amygdala;
@@ -345,7 +346,6 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "EchoTargetValueNode": //TODO verify...
 			case "MaterializedTargetablePropertyNode": //TODO verify...
 			case "ForInIteratorPrototypeNextNodeGen":
-			case "EmptyNode":
 				// Do nothing. These nodes should not have any behavior or are instrumented otherwise.
 				break;
 			default:
@@ -531,6 +531,8 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "JSConstantBooleanNode":
 				onReturnBehaviorConstant(frame, result, ExpressionType.BOOLEAN);
 				break;
+			case "JSConstantSafeIntegerNode":
+				result = ((SafeInteger) result).intValue();
 			case "JSConstantIntegerNode":
 				onReturnBehaviorConstant(frame, result, ExpressionType.NUMBER_INTEGER);
 				break;
@@ -616,12 +618,13 @@ public class FuzzingNode extends ExecutionEventNode {
 			case "DualNode":
 				onReturnBehaviorDualNode(frame, result);
 				break;
+			case "JSGlobalPrintNodeGen":
 			case "IfNode":
 			case "WhileNode":
-			case "JSGlobalPrintNodeGen":
-			case "ExprBlockNode":
 			case "VoidBlockNode":
-				onReturnBehaviorAddUnknown(frame, result);
+			case "ExprBlockNode":
+			case "EmptyNode":
+				onReturnBehaviorAddUndefined(frame, result);
 				break;
 			case "DiscardResultNode":
 				onReturnBehaviorDiscardResultNode(frame, result);
@@ -920,7 +923,7 @@ public class FuzzingNode extends ExecutionEventNode {
 			if (branch_matcher.lookingAt()) {
 				String kind = branch_matcher.group(1);
 				String predicate = Logger.capBack(branch_matcher.group(2), 16);
-				return kind.toUpperCase() + " " + predicate;
+				return kind.toUpperCase() + " " + predicate + "(" + source_section.getStartLine() + ")";
 			} else {
 				return "(NO SOURCE)";
 			}
@@ -941,7 +944,15 @@ public class FuzzingNode extends ExecutionEventNode {
 	// if these values are queried, an error should be thrown
 	// TODO check behavior in ECMA Specification
 	private void onReturnBehaviorAddUnknown(VirtualFrame frame, Object result) {
+		amygdala.logger.alert("added internal error " + instrumented_node_type);
+		amygdala.logger.log(result.toString());
 		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
+	}
+
+	// Some nodes return a value that is never used
+	// if these values are queried, an error should be thrown
+	private void onReturnBehaviorAddUndefined(VirtualFrame frame, Object result) {
+		amygdala.tracer.addConstant(instrumented_node_hash, LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null);
 	}
 
 	// ===== JavaScript Read/Write =====

@@ -38,9 +38,10 @@ public class ASTVisualizer {
 		vis_graph.graphAttrs().add("fontname", "LiberationSans");
 		vis_graph.graphAttrs().add("fontsize", 14);
 		String node_type = root_node.getClass().getSimpleName();
+		Integer node_hash = root_node.hashCode();
 		String visualization_node_name = String.valueOf(root_node.hashCode());
 		MutableNode root =
-				mutNode(visualization_node_name).add(getNodeContents(node_type, root_node.getSourceSection()));
+				mutNode(visualization_node_name).add(getNodeContents(node_type, node_hash, root_node.getSourceSection()));
 		root.add(Shape.ELLIPSE, Style.FILLED, Color.rgb(0x72, 0x9f, 0xcf));
 		vis_graph.add(root);
 		buildVisualization(root_node, root);
@@ -78,18 +79,19 @@ public class ASTVisualizer {
 			}
 
 			String node_type = realnode.getClass().getSimpleName();
+			Integer node_hash = realnode.hashCode();
 			String visualization_node_name = String.valueOf(realnode.hashCode());
 
 			MutableNode child = mutNode(visualization_node_name);
 			child.add(Shape.BOX, Style.FILLED, node_color);
-			child.add(getNodeContents(node_type, realnode.getSourceSection()));
+			child.add(getNodeContents(node_type, node_hash, realnode.getSourceSection()));
 			vis_graph.add(child);
 			current_vis_node.addLink(child);
 			buildVisualization(realnode, child);
 		}
 	}
 
-	private Label getNodeContents(String node_type, SourceSection node_source) {
+	private Label getNodeContents(String node_type, Integer node_hash, SourceSection node_source) {
 		String source = "(NO SOURCE)";
 		if (node_source != null && node_source.isAvailable()) {
 			String characters = Logger.capBack(node_source.getCharacters().toString().replaceAll("\\s+", " "), 16);
@@ -107,8 +109,10 @@ public class ASTVisualizer {
 			}
 			source = line_numbering + StringEscapeUtils.escapeHtml4(characters);
 		}
-		return Label.html("<table><tr><td balign='center'><font face='LiberationMono'><b>" + node_type +
-								  "</b></font></td></tr><tr><td balign='left'><font face='LiberationMono'>" + source +
-								  "</font></td></tr></table>");
+		return Label.html("<table>" +
+								  "<tr><td balign='center'><font face='LiberationMono'><b>" + node_type + "</b></font></td></tr>" +
+								  "<tr><td balign='center'><font face='LiberationMono'><i>" + node_hash + "</i></font></td></tr>" +
+								  "<tr><td balign='left'><font face='LiberationMono'>" + source + "</font></td></tr>" +
+								  "</table>");
 	}
 }

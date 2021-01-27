@@ -133,7 +133,8 @@ def main():
 	args = [
 		engine_exec_path,
 		"-XX:-UseJVMCIClassLoader",
-		"-Xss128m",
+		"-Xss256m",
+		"-Xmx12g",
 		"-Dgraalvm.locatorDisabled=true",
 		"-Dtruffle.class.path.append=" + dtruffle_classpaths,
 		"-cp", java_classpaths,

@@ -336,6 +336,18 @@ public class Tracer {
 										" does not exist");
 				return;
 			}
+			if (!intermediate_results.containsKey(node_source_a)) {
+				logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
+										" but intermediate result from " + node_source_a +
+										" does not exist");
+				return;
+			}
+			if (!intermediate_results.containsKey(node_source_b)) {
+				logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
+										" but intermediate result from " + node_source_b +
+										" does not exist");
+				return;
+			}
 			SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, false));
 			SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, false));
 			if (op == Operation.AND) {

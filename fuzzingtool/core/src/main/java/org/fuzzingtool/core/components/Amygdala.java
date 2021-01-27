@@ -68,7 +68,7 @@ public class Amygdala {
 	// locks them to the values specified in the configuration YAML-file.
 	public static final boolean LOCK_VALUES = false;
 	// This option measures size and depth of the execution graph after every iteration
-	public static final boolean EXECUTION_GRAPH_STATISTICS = false;
+	public static final boolean EXECUTION_GRAPH_STATISTICS = true;
 
 	// Debugging Bits: is node executed, onEnter (E), onInputValue (I), OnReturn (R), onReturnExceptional (X), onUnwind (U), onDispose (D)
 	public final HashMap<String, BitSet> node_type_instrumented = new HashMap<>();
