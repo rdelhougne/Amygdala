@@ -2,27 +2,27 @@
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
 # User-specific stuff
-fuzzingtool/.idea/**/workspace.xml
-fuzzingtool/.idea/**/tasks.xml
-fuzzingtool/.idea/**/usage.statistics.xml
-fuzzingtool/.idea/**/dictionaries
-fuzzingtool/.idea/**/shelf
+src/.idea/**/workspace.xml
+src/.idea/**/tasks.xml
+src/.idea/**/usage.statistics.xml
+src/.idea/**/dictionaries
+src/.idea/**/shelf
 
 # Generated files
-fuzzingtool/.idea/**/contentModel.xml
+src/.idea/**/contentModel.xml
 
 # Sensitive or high-churn files
-fuzzingtool/.idea/**/dataSources/
-fuzzingtool/.idea/**/dataSources.ids
-fuzzingtool/.idea/**/dataSources.local.xml
-fuzzingtool/.idea/**/sqlDataSources.xml
-fuzzingtool/.idea/**/dynamic.xml
-fuzzingtool/.idea/**/uiDesigner.xml
-fuzzingtool/.idea/**/dbnavigator.xml
+src/.idea/**/dataSources/
+src/.idea/**/dataSources.ids
+src/.idea/**/dataSources.local.xml
+src/.idea/**/sqlDataSources.xml
+src/.idea/**/dynamic.xml
+src/.idea/**/uiDesigner.xml
+src/.idea/**/dbnavigator.xml
 
 # Gradle
-fuzzingtool/.idea/**/gradle.xml
-fuzzingtool/.idea/**/libraries
+src/.idea/**/gradle.xml
+src/.idea/**/libraries
 
 # Gradle and Maven with auto-import
 # When using Gradle or Maven with auto-import, you should exclude module files,
@@ -37,130 +37,53 @@ fuzzingtool/.idea/**/libraries
 # *.ipr
 
 # CMake
-fuzzingtool/cmake-build-*/
+src/cmake-build-*/
 
 # Mongo Explorer plugin
-fuzzingtool/.idea/**/mongoSettings.xml
+src/.idea/**/mongoSettings.xml
 
 # File-based project format
-fuzzingtool/*.iws
+src/*.iws
 
 # IntelliJ
-fuzzingtool/out/
+src/out/
 
 # mpeltonen/sbt-idea plugin
-fuzzingtool/.idea_modules/
+src/.idea_modules/
 
 # JIRA plugin
-fuzzingtool/atlassian-ide-plugin.xml
+src/atlassian-ide-plugin.xml
 
 # Cursive Clojure plugin
-fuzzingtool/.idea/replstate.xml
+src/.idea/replstate.xml
 
 # Crashlytics plugin (for Android Studio and IntelliJ)
-fuzzingtool/com_crashlytics_export_strings.xml
-fuzzingtool/crashlytics.properties
-fuzzingtool/crashlytics-build.properties
-fuzzingtool/fabric.properties
+src/com_crashlytics_export_strings.xml
+src/crashlytics.properties
+src/crashlytics-build.properties
+src/fabric.properties
 
 # Editor-based Rest Client
-fuzzingtool/.idea/httpRequests
+src/.idea/httpRequests
 
 # Android studio 3.1+ serialized cache file
-fuzzingtool/.idea/caches/build_file_checksums.ser
+src/.idea/caches/build_file_checksums.ser
 
-fuzzingtool/target/
+src/target/
 
-fuzzingtool/*.svg
-fuzzingtool/*.dot
+src/*.svg
+src/*.dot
 
-fuzzingtool/__pycache__/
+src/__pycache__/
 
-# User-specific stuff
-graalplayground/.idea/**/workspace.xml
-graalplayground/.idea/**/tasks.xml
-graalplayground/.idea/**/usage.statistics.xml
-graalplayground/.idea/**/dictionaries
-graalplayground/.idea/**/shelf
+src/instrumentation/target/
+src/core/target/
+src/wrapper/target/
 
-# Generated files
-graalplayground/.idea/**/contentModel.xml
+src/build/
 
-# Sensitive or high-churn files
-graalplayground/.idea/**/dataSources/
-graalplayground/.idea/**/dataSources.ids
-graalplayground/.idea/**/dataSources.local.xml
-graalplayground/.idea/**/sqlDataSources.xml
-graalplayground/.idea/**/dynamic.xml
-graalplayground/.idea/**/uiDesigner.xml
-graalplayground/.idea/**/dbnavigator.xml
+src/hs_err_pid*.log
 
-# Gradle
-graalplayground/.idea/**/gradle.xml
-graalplayground/.idea/**/libraries
+src/result.yaml
 
-# Gradle and Maven with auto-import
-# When using Gradle or Maven with auto-import, you should exclude module files,
-# since they will be recreated, and may cause churn.  Uncomment if using
-# auto-import.
-# .idea/artifacts
-# .idea/compiler.xml
-# .idea/modules.xml
-# .idea/*.iml
-# .idea/modules
-# *.iml
-# *.ipr
-
-# CMake
-graalplayground/cmake-build-*/
-
-# Mongo Explorer plugin
-graalplayground/.idea/**/mongoSettings.xml
-
-# File-based project format
-graalplayground/*.iws
-
-# IntelliJ
-graalplayground/out/
-
-# mpeltonen/sbt-idea plugin
-graalplayground/.idea_modules/
-
-# JIRA plugin
-graalplayground/atlassian-ide-plugin.xml
-
-# Cursive Clojure plugin
-graalplayground/.idea/replstate.xml
-
-# Crashlytics plugin (for Android Studio and IntelliJ)
-graalplayground/com_crashlytics_export_strings.xml
-graalplayground/crashlytics.properties
-graalplayground/crashlytics-build.properties
-graalplayground/fabric.properties
-
-# Editor-based Rest Client
-graalplayground/.idea/httpRequests
-
-# Android studio 3.1+ serialized cache file
-graalplayground/.idea/caches/build_file_checksums.ser
-
-graalplayground/target/
-
-graalplayground/*.svg
-graalplayground/*.dot
-
-graalplayground/__pycache__/
-
-Testprogramme/nodejs/node_modules/
-
-fuzzingtool/instrumentation/target/
-fuzzingtool/core/target/
-fuzzingtool/wrapper/target/
-
-fuzzingtool/build/
-
-fuzzingtool/hs_err_pid*.log
-
-fuzzingtool/result.yaml
-
-Testprogramme/results/
+test/results/

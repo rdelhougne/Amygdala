@@ -1,0 +1,66 @@
+/* Block states (auto storage) for model 'ALARM_Functional' */
+class DW {
+	constructor() {
+		this.isActiveC2AlarmFunctional = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isC2AlarmFunctional = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveNotification = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isVisual = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveVisual = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isAudio = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveAudio = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveCheckAlarm = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isCancelAlarm = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveCancelAlarm = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveSetAlarmStatus = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveLevel4 = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsEmptyReservoir = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsEmptyReservoir = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsSystemMonitorFailed = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsSystemMonitorFailed = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsEnviromentalError = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsEnviromentalError = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveLevel3 = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsOverInfusionFlowRate = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsOverInfusionFlowRate = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isInfusionNotStartedWarning = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveInfusionNotStartedWarning = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsOverInfusionVTBI = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsOverInfusionVTBI = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsAirInLine = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsAirInLine = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsOcclusion = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsOcclusion = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsDoorOpen = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsDoorOpen = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveLevel2 = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsLowReservoir = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsLowReservoir = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveLevel1 = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsUnderInfusion = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsUnderInfusion = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsFlowRateNotStable = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsFlowRateNotStable = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsIdleTimeExceeded = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsIdleTimeExceeded = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsPausedTimeExceeded = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsPausedTimeExceeded = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsConfigTimeWarning = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsConfigTimeWarning = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsBatteryError = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsBatteryError = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsPumpHot = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsPumpHot = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsLoggingFailed = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsLoggingFailed = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isIsHardwareError = 0; /* '<Root>/Alarm  Sub-System' */
+		this.isActiveIsHardwareError = 0; /* '<Root>/Alarm  Sub-System' */
+		this.overInfusionTimer = 0; /* '<Root>/Alarm  Sub-System' */
+		this.underInfusionTimer = 0; /* '<Root>/Alarm  Sub-System' */
+		this.currentAlarm = 0; /* '<Root>/Alarm  Sub-System' */
+		this.audioTimer = 0; /* '<Root>/Alarm  Sub-System' */
+		this.cancelAlarm = 0; /* '<Root>/Alarm  Sub-System' */
+		this.maxAlarmLevel = 0; /* '<Root>/Alarm  Sub-System' */
+		this.idletimer = 0; /* '<Root>/Alarm  Sub-System' */
+		this.pausedtimer = 0; /* '<Root>/Alarm  Sub-System' */
+	}
+}

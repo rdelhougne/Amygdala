@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import time
 import signal
 import argparse
@@ -11,6 +12,8 @@ import testgenerator
 
 MEASURE_TIME = False
 NUM_SAMPLES = 10
+GRAAL_INSTALL_DIR = "/opt/graalvm"
+MAVEN_REPOSITORY_DIR = "/home/foo/.m2/repository"
 
 
 MAIN_CLASS = "org.fuzzingtool.wrapper.Wrapper"
@@ -18,53 +21,58 @@ BUILD_DIRECTORY = "build"
 WRAPPER = "wrapper-1.0-SNAPSHOT.jar"
 INSTRUMENTATION = "instrumentation-1.0-SNAPSHOT.jar"
 CORE = "core-1.0-SNAPSHOT.jar"
-DEPENDENCIES = [
-	"/home/robert/.m2/repository/org/snakeyaml/snakeyaml-engine/2.1/snakeyaml-engine-2.1.jar",
-	"/home/robert/.m2/repository/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar",
-	"/home/robert/.m2/repository/org/slf4j/slf4j-api/1.5.6/slf4j-api-1.5.6.jar",
-	"/home/robert/.m2/repository/org/slf4j/slf4j-api/1.7.5/slf4j-api-1.7.5.jar",
-	"/home/robert/.m2/repository/org/slf4j/slf4j-api/1.7.7/slf4j-api-1.7.7.jar",
-	"/home/robert/.m2/repository/org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar",
-	"/home/robert/.m2/repository/org/apache/logging/log4j/log4j-api/2.13.0/log4j-api-2.13.0.jar",
-	"/home/robert/.m2/repository/org/apache/logging/log4j/log4j-core/2.13.0/log4j-core-2.13.0.jar",
-	"/home/robert/.m2/repository/org/apache/logging/log4j/log4j-slf4j-impl/2.13.0/log4j-slf4j-impl-2.13.0.jar",
-	"/home/robert/.m2/repository/org/apache/commons/commons-lang3/3.4/commons-lang3-3.4.jar",
-	"/home/robert/.m2/repository/org/apache/commons/commons-lang3/3.7/commons-lang3-3.7.jar",
-	"/home/robert/.m2/repository/org/apache/commons/commons-lang3/3.9/commons-lang3-3.9.jar",
-	"/home/robert/.m2/repository/org/apache/commons/commons-lang3/3.1/commons-lang3-3.1.jar",
-	"/home/robert/.m2/repository/org/apache/commons/commons-compress/1.14/commons-compress-1.14.jar",
-	"/home/robert/.m2/repository/org/apache/commons/commons-compress/1.19/commons-compress-1.19.jar",
-	"/home/robert/.m2/repository/org/apache/commons/commons-compress/1.9/commons-compress-1.9.jar",
-	"/home/robert/.m2/repository/org/apache/commons/commons-collections4/4.4/commons-collections4-4.4.jar",
-	"/home/robert/.m2/repository/org/apache/commons/commons-text/1.8/commons-text-1.8.jar",
-	"/home/robert/.m2/repository/org/apache/commons/commons-exec/1.3/commons-exec-1.3.jar",
-	"/home/robert/.m2/repository/guru/nidi/com/kitfox/svgSalamander/1.1.3/svgSalamander-1.1.3.jar",
-	"/home/robert/.m2/repository/guru/nidi/graphviz-java/0.16.1/graphviz-java-0.16.1.jar",
-	"/home/robert/.m2/repository/com/microsoft/z3/4.8.7/z3-4.8.7.jar"
-]
-TRUFFLE_JS = [
-	"/opt/graalvm/jre/languages/js/graaljs.jar",
-	"/opt/graalvm/jre/languages/js/asm7.1.jar",
-	"/opt/graalvm/jre/languages/js/asm-analysis-7.1.jar",
-	"/opt/graalvm/jre/languages/js/asm-commons-7.1.jar",
-	"/opt/graalvm/jre/languages/js/asm-tree-7.1.jar",
-	"/opt/graalvm/jre/languages/js/asm-util-7.1.jar",
-	"/opt/graalvm/jre/languages/js/icu4j.jar",
-	"/opt/graalvm/jre/languages/js/trufflenode.jar"
-]
+DEPENDENCIES = [os.path.join(MAVEN_REPOSITORY_DIR, d) for d in [
+	"org/snakeyaml/snakeyaml-engine/2.1/snakeyaml-engine-2.1.jar",
+	"org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar",
+	"org/slf4j/slf4j-api/1.5.6/slf4j-api-1.5.6.jar",
+	"org/slf4j/slf4j-api/1.7.5/slf4j-api-1.7.5.jar",
+	"org/slf4j/slf4j-api/1.7.7/slf4j-api-1.7.7.jar",
+	"org/slf4j/slf4j-api/1.7.30/slf4j-api-1.7.30.jar",
+	"org/apache/logging/log4j/log4j-api/2.13.0/log4j-api-2.13.0.jar",
+	"org/apache/logging/log4j/log4j-core/2.13.0/log4j-core-2.13.0.jar",
+	"org/apache/logging/log4j/log4j-slf4j-impl/2.13.0/log4j-slf4j-impl-2.13.0.jar",
+	"org/apache/commons/commons-lang3/3.4/commons-lang3-3.4.jar",
+	"org/apache/commons/commons-lang3/3.7/commons-lang3-3.7.jar",
+	"org/apache/commons/commons-lang3/3.9/commons-lang3-3.9.jar",
+	"org/apache/commons/commons-lang3/3.1/commons-lang3-3.1.jar",
+	"org/apache/commons/commons-compress/1.14/commons-compress-1.14.jar",
+	"org/apache/commons/commons-compress/1.19/commons-compress-1.19.jar",
+	"org/apache/commons/commons-compress/1.9/commons-compress-1.9.jar",
+	"org/apache/commons/commons-collections4/4.4/commons-collections4-4.4.jar",
+	"org/apache/commons/commons-text/1.8/commons-text-1.8.jar",
+	"org/apache/commons/commons-exec/1.3/commons-exec-1.3.jar",
+	"guru/nidi/com/kitfox/svgSalamander/1.1.3/svgSalamander-1.1.3.jar",
+	"guru/nidi/graphviz-java/0.16.1/graphviz-java-0.16.1.jar",
+	"com/microsoft/z3/4.8.7/z3-4.8.7.jar"
+]]
+TRUFFLE_JS = [os.path.join(GRAAL_INSTALL_DIR, d) for d in [
+	"jre/languages/js/graaljs.jar",
+	"jre/languages/js/asm7.1.jar",
+	"jre/languages/js/asm-analysis-7.1.jar",
+	"jre/languages/js/asm-commons-7.1.jar",
+	"jre/languages/js/asm-tree-7.1.jar",
+	"jre/languages/js/asm-util-7.1.jar",
+	"jre/languages/js/icu4j.jar",
+	"jre/languages/js/trufflenode.jar"
+]]
 
 TERMINATE_FILE_NAME = "terminate-1bfa427b-a460-4088-b578-e388a6bce94d"
 
 fuzzing_process = None
 
+
 def signal_handler(sig, frame):
 	if fuzzing_process is not None:
 		open(TERMINATE_FILE_NAME, 'a')
+
+
 signal.signal(signal.SIGINT, signal_handler)
+
 
 def generate_test_program(path):
 	with open(path, "w") as new_file:
-		new_file.write(testgenerator.generate_program((2,4), (1,1), (1,2), (1,2)))
+		new_file.write(testgenerator.generate_program((2, 4), (1, 1), (1, 2), (1, 2)))
+
 
 def main():
 	global fuzzing_process
@@ -85,7 +93,7 @@ def main():
 	program_path = ""
 	runtime_fractional_output = ""
 
-	# Check if program exists
+	# check if configuration exists
 	try:
 		with open(fuzzing_configuration, "r") as cfile:
 			try:
@@ -93,13 +101,13 @@ def main():
 				program_path = yaml_dict["program_path"]
 				if "runtime_fractional_output" in yaml_dict:
 					runtime_fractional_output = yaml_dict["runtime_fractional_output"]
-			except yaml.YAMLError as ye:
+			except yaml.YAMLError:
 				print("ERROR: Cannot parse " + fuzzing_configuration + ".")
 				exit(1)
-	except FileNotFoundError as fnfe:
+	except FileNotFoundError:
 		print("ERROR: File " + fuzzing_configuration + " not found.")
 		exit(1)
-	except:
+	except Exception:
 		print("ERROR: Cannot open file " + fuzzing_configuration + ".")
 		exit(1)
 
@@ -118,7 +126,7 @@ def main():
 	if not os.path.exists(program_path):
 		print("ERROR: File not found: " + program_path)
 		exit(1)
-	
+
 	dtruffle_classpaths = os.path.join(BUILD_DIRECTORY, INSTRUMENTATION) + ":" + \
 							os.path.join(BUILD_DIRECTORY, CORE) + ":" + \
 							":".join(DEPENDENCIES)
@@ -141,7 +149,7 @@ def main():
 		MAIN_CLASS,
 		fuzzing_configuration
 	]
-	
+
 	if MEASURE_TIME:
 		for sample in range(NUM_SAMPLES):
 			print(f"Sample {sample + 1}/{NUM_SAMPLES}")
@@ -161,8 +169,6 @@ def main():
 	else:
 		fuzzing_process = subprocess.Popen(args, preexec_fn=os.setpgrp)
 		fuzzing_process.wait()
-
-	
 
 
 if __name__ == "__main__":

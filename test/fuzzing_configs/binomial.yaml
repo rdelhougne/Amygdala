@@ -1,0 +1,25 @@
+---
+program_path: "../javascript/binomial.js"
+results: "../results/binomial"
+variables:
+  - line_num: 34
+    name: n
+    type: INTEGER
+    sample: 5
+  - line_num: 35
+    name: k
+    type: INTEGER
+    sample: 3
+fuzzing_parameters:
+  max_iterations: 150
+  tactic: "DEPTH_SEARCH"
+  tactic_options:
+    max_loop_unrolling: 16
+    max_depth: 32
+visualization:
+  function_visualization: false
+  branching_visualization: false
+  event_logging: false
+custom_errors:
+  escalate_exceptions: false
+...
