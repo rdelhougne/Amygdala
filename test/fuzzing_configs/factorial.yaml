@@ -1,0 +1,25 @@
+---
+program_path: "../javascript/factorial.js"
+results: "../results/factorial"
+variables:
+  - line_num: 1
+    name: integer to factorialize
+    type: INTEGER
+    sample: 5
+fuzzing_parameters:
+  max_iterations: 1000
+  tactic: "DEPTH_SEARCH"
+  tactic_options:
+    max_loop_unrolling: 64
+    max_depth: 128
+  required_coverage:
+    statement: 0
+    branch: 0
+    root: 100
+visualization:
+  function_visualization: true
+  branching_visualization: true
+  event_logging: false
+custom_errors:
+  escalate_exceptions: true
+...

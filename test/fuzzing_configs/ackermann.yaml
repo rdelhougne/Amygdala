@@ -1,0 +1,25 @@
+---
+program_path: "../javascript/ackermann.js"
+results: "../results/ackermann"
+variables:
+  - line_num: 1
+    name: integer k
+    type: INTEGER
+    sample: 2
+  - line_num: 2
+    name: integer l
+    type: INTEGER
+    sample: 3
+fuzzing_parameters:
+  max_iterations: 150
+  tactic: "DEPTH_SEARCH"
+  tactic_options:
+    max_loop_unrolling: 64
+    max_depth: 128
+visualization:
+  function_visualization: true
+  branching_visualization: true
+  event_logging: true
+custom_errors:
+  escalate_exceptions: true
+...

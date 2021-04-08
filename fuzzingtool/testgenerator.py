@@ -1,11 +1,64 @@
 #!/usr/bin/env python3
+
+# Copyright 2021 Robert Delhougne
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import random
 
 ARITHMETIC_OPS = ["+", "-", "*", "/"]
 BOOLEAN_OPS = ["==", "===", "<", ">", "<=", ">="]
-INPUT_VARIABLE_NAMES = ["input_number_integer", "input_number_real", "input_boolean", "input_string"]
-CONSTANT_VARIABLE_NAMES = ["const_null", "const_undefined", "const_nan", "const_pos_infinity", "const_neg_infinity", "const_number_integer", "const_number_real", "const_boolean", "const_string"]
-CONSTANT_NAMES = ["null", "undefined", "NaN", "Infinity", "15", "7004", "-45", "0", "-1", "5.8", "132.3984", "-3434.239829382", "'abra'", "'kadabra'", "'18'", "'-60'", "'56.7'", "'-34.2'", "'2.0'", "'-7.0'", "'NaN'", "'Infinity'"]
+INPUT_VARIABLE_NAMES = [
+	"input_number_integer",
+	"input_number_real",
+	"input_boolean",
+	"input_string"
+]
+CONSTANT_VARIABLE_NAMES = [
+	"const_null",
+	"const_undefined",
+	"const_nan",
+	"const_pos_infinity",
+	"const_neg_infinity",
+	"const_number_integer",
+	"const_number_real",
+	"const_boolean",
+	"const_string"
+]
+CONSTANT_NAMES = [
+	"null",
+	"undefined",
+	"NaN",
+	"Infinity",
+	"15",
+	"7004",
+	"-45",
+	"0",
+	"-1",
+	"5.8",
+	"132.3984",
+	"-3434.239829382",
+	"'abra'",
+	"'kadabra'",
+	"'18'",
+	"'-60'",
+	"'56.7'",
+	"'-34.2'",
+	"'2.0'",
+	"'-7.0'",
+	"'NaN'",
+	"'Infinity'"
+]
 
 PROGRAM_DECL_PREFIX = """//--------------------------------Inputs----------------------------------------
 
@@ -32,8 +85,10 @@ var const_string = 'halelulja';
 
 """
 
+
 def generate_simple_expression(num_const):
-	return "print(" + generate_expression((0,0), (0,0), num_const) + ");"
+	return "print(" + generate_expression((0, 0), (0, 0), num_const) + ");"
+
 
 def generate_program(num_expressions, num_input_vars, num_const_vars, num_const):
 	program_str = PROGRAM_DECL_PREFIX
@@ -43,10 +98,12 @@ def generate_program(num_expressions, num_input_vars, num_const_vars, num_const)
 		program_str += "\n\n"
 	return program_str
 
+
 def generate_if(num_input_vars, num_const_vars, num_const, print_str):
 	if_exp = f"if ({generate_expression(num_input_vars, num_const_vars, num_const)}) {{\n"
 	if_exp += f"\tprint('{print_str}');\n}}"
 	return if_exp
+
 
 def generate_expression(num_input_vars, num_const_vars, num_const):
 	concrete_num_input_vars = random.randint(num_input_vars[0], num_input_vars[1])
@@ -59,9 +116,9 @@ def generate_expression(num_input_vars, num_const_vars, num_const):
 		parts.append(random.choice(CONSTANT_VARIABLE_NAMES))
 	for _ in range(concrete_num_const):
 		parts.append(random.choice(CONSTANT_NAMES))
-	
+
 	random.shuffle(parts)
-	
+
 	expression = ""
 	for part_index in range(len(parts)):
 		if part_index == len(parts) - 1:
@@ -70,5 +127,5 @@ def generate_expression(num_input_vars, num_const_vars, num_const):
 			expression += parts[part_index] + " " + random.choice(BOOLEAN_OPS) + " "
 		else:
 			expression += parts[part_index] + " " + random.choice(ARITHMETIC_OPS) + " "
-	
+
 	return expression

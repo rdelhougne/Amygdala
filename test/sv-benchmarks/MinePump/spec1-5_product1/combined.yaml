@@ -1,0 +1,89 @@
+---
+program_path: "combined.js"
+results: "results/minepump"
+variables:
+- line_num: 222
+  name: cleanupTimeShifts
+  sample: 2
+  type: INTEGER
+- line_num: 223
+  name: num_steps
+  sample: 5
+  type: INTEGER
+- line_num: 255
+  name: action1_1
+  sample: false
+  type: BOOLEAN
+- line_num: 256
+  name: action1_2
+  sample: true
+  type: BOOLEAN
+- line_num: 257
+  name: action1_3
+  sample: false
+  type: BOOLEAN
+- line_num: 258
+  name: action1_4
+  sample: true
+  type: BOOLEAN
+- line_num: 259
+  name: action2_1
+  sample: false
+  type: BOOLEAN
+- line_num: 260
+  name: action2_2
+  sample: true
+  type: BOOLEAN
+- line_num: 261
+  name: action2_3
+  sample: false
+  type: BOOLEAN
+- line_num: 262
+  name: action2_4
+  sample: false
+  type: BOOLEAN
+- line_num: 263
+  name: action3_1
+  sample: true
+  type: BOOLEAN
+- line_num: 264
+  name: action3_2
+  sample: true
+  type: BOOLEAN
+- line_num: 265
+  name: action3_3
+  sample: false
+  type: BOOLEAN
+- line_num: 266
+  name: action3_4
+  sample: false
+  type: BOOLEAN
+- line_num: 267
+  name: action4_1
+  sample: false
+  type: BOOLEAN
+- line_num: 268
+  name: action4_2
+  sample: true
+  type: BOOLEAN
+- line_num: 269
+  name: action4_3
+  sample: true
+  type: BOOLEAN
+- line_num: 270
+  name: action4_4
+  sample: false
+  type: BOOLEAN
+fuzzing_parameters:
+  max_iterations: 1500
+  tactic: "RANDOM_SEARCH"
+  tactic_options:
+    max_loop_unrolling: 16
+    max_depth: 32
+visualization:
+  function_visualization: false
+  branching_visualization: false
+  event_logging: false
+custom_errors:
+  escalate_exceptions: false
+...
