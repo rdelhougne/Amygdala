@@ -1,16 +1,25 @@
 package org.fuzzingtool.core.components;
 
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.js.runtime.JSRuntime;
 import org.fuzzingtool.core.symbolic.ExpressionType;
 import org.fuzzingtool.core.symbolic.LanguageSemantic;
 import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.fuzzingtool.core.symbolic.basic.SymbolicConstant;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class VariableContext {
-	private final HashMap<String, SymbolicNode> properties = new HashMap<>();
+	private final Map<String, SymbolicNode> properties;
 
-	public VariableContext() {}
+	public VariableContext() {
+		this.properties = new HashMap<>();
+	}
+
+	public VariableContext(Map<String, SymbolicNode> map) {
+		this.properties = map;
+	}
 
 	public SymbolicNode get(Object key) {
 		return properties.getOrDefault(convertProperty(key), new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.UNDEFINED, null));
@@ -28,12 +37,19 @@ public class VariableContext {
 		properties.clear();
 	}
 
+	public VariableContext copy() {
+		return new VariableContext(new HashMap<>(this.properties));
+	}
+
 	private String convertProperty(Object key) {
 		if (key instanceof Integer || key instanceof Long) {
 			return String.valueOf(key);
 		}
 		if (key instanceof String) {
 			return (String) key;
+		}
+		if (key instanceof DynamicObject) {
+			return JSRuntime.toString(key);
 		}
 		throw new IllegalArgumentException("VariableContext.convertProperty(): Cannot use property key with type '" + key.getClass().getSimpleName() + "'");
 	}

@@ -9,6 +9,7 @@ import org.fuzzingtool.core.symbolic.SymbolicNode;
 import org.fuzzingtool.core.symbolic.basic.SymbolicConstant;
 import org.fuzzingtool.core.symbolic.basic.SymbolicVariable;
 import org.fuzzingtool.core.symbolic.arithmetic.*;
+import org.fuzzingtool.core.symbolic.conversion.StringToInt;
 import org.fuzzingtool.core.symbolic.logical.*;
 import org.fuzzingtool.core.symbolic.string.*;
 
@@ -29,10 +30,17 @@ public class Tracer {
 	private ArrayList<SymbolicNode> arguments_array = new ArrayList<>();
 	private SymbolicNode function_return_value;
 
+	// Caching
+	public final Map<Integer, Integer> cached_scopes = new HashMap<>();
+
 	private Integer js_global_object_id = 0;
 
 	private final HashSet<String> used_gids = new HashSet<>();
 	private final RandomStringGenerator gid_generator;
+
+	// Short-circuit evaluation
+	public final HashSet<Integer> logic_node_full_expression = new HashSet<>();
+	private Boolean no_side_effects_allowed = false;
 
 	public Tracer(Logger l) {
 		this.logger = l;
@@ -42,6 +50,18 @@ public class Tracer {
 		this.gid_generator = rand_builder.build();
 
 		resetFunctionReturnValue();
+	}
+
+	public void allowSideffects() {
+		this.no_side_effects_allowed = false;
+	}
+
+	public void forbidSideffects() {
+		this.no_side_effects_allowed = true;
+	}
+
+	public boolean noSideeffectsAllowed() {
+		return this.no_side_effects_allowed;
 	}
 
 	public void setArgumentsArray(ArrayList<SymbolicNode> arguments) {
@@ -121,10 +141,10 @@ public class Tracer {
 	public void propertyToIntermediate(Integer context, Object key, Integer node_id_intermediate) {
 		if (symbolic_program.containsKey(context)) {
 			VariableContext var_ctx = symbolic_program.get(context);
-			if (!var_ctx.hasProperty(key)) {
-				logger.warning("Tracer::propertyToIntermediate(): Context " + context + " has no property '" + key + "', returning JS.undefined");
-			}
 			try {
+				if (!var_ctx.hasProperty(key)) {
+					logger.warning("Tracer::propertyToIntermediate(): Context " + context + " has no property '" + key + "', returning JS.undefined");
+				}
 				intermediate_results.put(node_id_intermediate, var_ctx.get(key));
 			} catch (IllegalArgumentException iae) {
 				logger.critical(iae.getMessage());
@@ -159,83 +179,71 @@ public class Tracer {
 	}
 
 	/**
-	 * Read a symbolic variable from a list of function scopes into an intermediate result.
+	 * Read a symbolic variable from a function scope into an intermediate result.
 	 * This function is used by JSReadCurrentFrameSlotNodeGen and JSReadScopeFrameSlotNodeGen.
-	 * Calling from JSReadCurrentFrameSlotNodeGen, frame_stack.length should always be 1.
 	 *
-	 * @param frame_stack A list of function scope identifiers, ranging from the innermost [0] to outermost [n] scopes.
+	 * @param function_scope Hash-Code of the function object
 	 * @param key The name of the variable
 	 * @param node_id_intermediate The ID of the new intermediate result
 	 * @return A boolean, indicating if the read was successful
 	 */
-	public boolean frameSlotToIntermediate(ArrayList<Integer> frame_stack, Object key, Integer node_id_intermediate) {
-		for (Integer function_scope: frame_stack) {
-			if (symbolic_program.containsKey(function_scope)) {
-				VariableContext var_ctx = symbolic_program.get(function_scope);
-				try {
-					if (var_ctx.hasProperty(key)) {
-						intermediate_results.put(node_id_intermediate, var_ctx.get(key));
-						return true;
-					}
-				} catch (IllegalArgumentException iae) {
-					logger.critical(iae.getMessage());
+	public boolean frameSlotToIntermediate(int function_scope, Object key, Integer node_id_intermediate) {
+		if (symbolic_program.containsKey(function_scope)) {
+			VariableContext var_ctx = symbolic_program.get(function_scope);
+			try {
+				if (var_ctx.hasProperty(key)) {
+					intermediate_results.put(node_id_intermediate, var_ctx.get(key));
+					return true;
 				}
-			} else {
-				logger.critical("Tracer::frameSlotToIntermediate(): No frame slot " + function_scope);
+			} catch (IllegalArgumentException iae) {
+				logger.critical(iae.getMessage());
 			}
+			logger.critical("Tracer::frameSlotToIntermediate(): Function scope does not contain variable '" + key + "'");
+		} else {
+			logger.critical("Tracer::frameSlotToIntermediate(): No function scope " + function_scope + " found");
 		}
-		logger.critical("Tracer::frameSlotToIntermediate(): No function scope with variable '" + key + "' found");
 		return false;
 	}
 
 	/**
 	 * Writes an intermediate result to a frame slot (e.g. a variable).
 	 * Used by JSWriteCurrentFrameSlotNodeGen and JSWriteScopeFrameSlotNodeGen.
-	 * If called by JSWriteCurrentFrameSlotNodeGen, the number of function scopes has
-	 * to be 1. The behavior for these two nodes differs significantly.
 	 *
-	 * @param frame_stack A list of function scopes, starting with the innermost
+	 * @param function_scope Hash-Code of the function object
 	 * @param key The name of the variable
 	 * @param node_id_intermediate The key to the intermediate result.
 	 */
-	public void intermediateToFrameSlot(ArrayList<Integer> frame_stack, Object key, Integer node_id_intermediate) {
+	public void intermediateToFrameSlot(int function_scope, Object key, Integer node_id_intermediate) {
 		if (intermediate_results.containsKey(node_id_intermediate)) {
-			if (frame_stack.size() == 1) {
-				// Behavior for JSWriteCurrentFrameSlotNodeGen (or block scopes)?
-				if (symbolic_program.containsKey(frame_stack.get(0))) {
-					VariableContext var_ctx = symbolic_program.get(frame_stack.get(0));
-					try {
-						var_ctx.set(key, intermediate_results.get(node_id_intermediate));
-					} catch (IllegalArgumentException iae) {
-						logger.critical(iae.getMessage());
-					}
-				} else {
-					logger.critical("Tracer::intermediateToFrameSlot(): Context " + frame_stack.get(0) + " does not exist");
+			if (symbolic_program.containsKey(function_scope)) {
+				VariableContext var_ctx = symbolic_program.get(function_scope);
+				try {
+					var_ctx.set(key, intermediate_results.get(node_id_intermediate));
+				} catch (IllegalArgumentException iae) {
+					logger.critical(iae.getMessage());
 				}
-			} else if (frame_stack.size() > 1) {
-				// Behavior for JSWriteScopeFrameSlotNodeGen
-				for (Integer function_scope: frame_stack) {
-					if (symbolic_program.containsKey(function_scope)) {
-						VariableContext var_ctx = symbolic_program.get(function_scope);
-						try {
-							if (var_ctx.hasProperty(key)) {
-								var_ctx.set(key, intermediate_results.get(node_id_intermediate));
-								return;
-							}
-						} catch (IllegalArgumentException iae) {
-							logger.critical(iae.getMessage());
-						}
-					} else {
-						logger.warning("Tracer::intermediateToFrameSlot(): No frame slot " + function_scope);
-					}
-				}
-				logger.critical("Tracer::intermediateToFrameSlot(): No function scope with variable '" + key + "' found");
 			} else {
-				logger.critical("Tracer::intermediateToFrameSlot(): No function scopes provided");
+				logger.critical("Tracer::intermediateToFrameSlot(): Function scope " + function_scope + " does not exist");
 			}
 		} else {
 			logger.critical("Tracer::intermediateToFrameSlot(): No intermediate result for " + node_id_intermediate);
 		}
+	}
+
+	public boolean containsVariable(int context, Object key) {
+		if (symbolic_program.containsKey(context)) {
+			VariableContext var_ctx = symbolic_program.get(context);
+			try {
+				if (var_ctx.hasProperty(key)) {
+					return true;
+				}
+			} catch (IllegalArgumentException iae) {
+				logger.critical(iae.getMessage());
+			}
+		} else {
+			logger.critical("Tracer::containsVariable(): No context " + context);
+		}
+		return false;
 	}
 
 	/**
@@ -296,6 +304,8 @@ public class Tracer {
 		symbolic_program.clear();
 		arguments_array.clear();
 		resetFunctionReturnValue();
+		cached_scopes.clear();
+		logic_node_full_expression.clear();
 	}
 
 	/**
@@ -318,27 +328,33 @@ public class Tracer {
 	 */
 	public void addOperation(Integer node_target, LanguageSemantic s, Operation op, Integer node_source_a,
 							 Integer node_source_b) {
-		// handle early discard
-		if (op == Operation.OR) {
+		// Handle short-circuit evaluation
+		if (op == Operation.AND || op == Operation.OR) {
 			if (!intermediate_results.containsKey(node_source_a) && !intermediate_results.containsKey(node_source_b)) {
 				logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
 										" but intermediate result from " + node_source_a + " and " + node_source_b +
 										" does not exist");
 				return;
 			}
-			SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, false));
-			SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, false));
-			intermediate_results.put(node_target, new Or(s, a, b));
-		} else if (op == Operation.AND) {
-			if (!intermediate_results.containsKey(node_source_a) && !intermediate_results.containsKey(node_source_b)) {
+			if (!intermediate_results.containsKey(node_source_a)) {
 				logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
-										" but intermediate result from " + node_source_a + " and " + node_source_b +
+										" but intermediate result from " + node_source_a +
 										" does not exist");
 				return;
 			}
-			SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, true));
-			SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.BOOLEAN, true));
-			intermediate_results.put(node_target, new And(s, a, b));
+			if (!intermediate_results.containsKey(node_source_b)) {
+				logger.critical("Tracer::add_operation(): Trying to add operation " + op.toString() +
+										" but intermediate result from " + node_source_b +
+										" does not exist");
+				return;
+			}
+			SymbolicNode a = intermediate_results.getOrDefault(node_source_a, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, false));
+			SymbolicNode b = intermediate_results.getOrDefault(node_source_b, new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, false));
+			if (op == Operation.AND) {
+				intermediate_results.put(node_target, new And(s, a, b));
+			} else {
+				intermediate_results.put(node_target, new Or(s, a, b));
+			}
 		} else {
 			if (intermediate_results.containsKey(node_source_a) && intermediate_results.containsKey(node_source_b)) {
 				SymbolicNode a = intermediate_results.get(node_source_a);
@@ -577,6 +593,16 @@ public class Tracer {
 					function_return_value = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
 				}
 				break;
+			case STR_TO_INT:
+				if (arguments_array.size() == 1) {
+					function_return_value = new StringToInt(s, arguments_array.get(0), new SymbolicConstant(s, ExpressionType.NUMBER_INTEGER, 10));
+				} else if (arguments_array.size() == 2) {
+					function_return_value = new StringToInt(s, arguments_array.get(0), arguments_array.get(1));
+				} else {
+					logger.critical("Arguments for Operation STR_TO_INT have the wrong size");
+					function_return_value = new SymbolicConstant(LanguageSemantic.JAVASCRIPT, ExpressionType.INTERNAL_ERROR, null);
+				}
+				break;
 			default:
 				logger.critical("Operation '" + op.name() + "' is not an internal method call");
 		}
@@ -680,6 +706,44 @@ public class Tracer {
 		} else {
 			logger.warning("Tracer::initializeProgramContext(): Cannot initialize context with semantic '" +
                                    sem.toString() + "'");
+		}
+	}
+
+	/**
+	 * Create a new Exception for non-allowed side effects that cannot be caught.
+	 *
+	 * @param message Message of the exception
+	 * @return Exception of type "EscalatedException"
+	 */
+	public static Tracer.SideEffectException createException(String message) {
+		return new Tracer.SideEffectException(message);
+	}
+
+	/**
+	 * An exception for side effects in a manually executed partial 'and' or 'or' statement.
+	 * This is used for handling short-circuit evaluation.
+	 */
+	public static class SideEffectException extends RuntimeException {
+		public SideEffectException() {
+			super();
+		}
+
+		public SideEffectException(String message) {
+			super(message);
+		}
+
+		public SideEffectException(String message, Throwable cause) {
+			super(message, cause);
+		}
+
+		public SideEffectException(Throwable cause) {
+			super(cause);
+		}
+
+		protected SideEffectException(String message, Throwable cause,
+									 boolean enableSuppression,
+									 boolean writableStackTrace) {
+			super(message, cause, enableSuppression, writableStackTrace);
 		}
 	}
 }

@@ -87,61 +87,81 @@ public abstract class FuzzingTactic {
 				}
 				Solver s = ctx.mkSolver();
 				s.add(expr);
+				//logger.mesmerize(expr.getSExpr());
 				probe.switchState(TimeProbe.ProgramState.SOLVE);
 				Status status = s.check();
 				probe.switchState(TimeProbe.ProgramState.TACTIC);
 				if (status == Status.SATISFIABLE) {
-					Model model = s.getModel();
-					FuncDecl[] declarations = model.getConstDecls();
-					for (FuncDecl d: declarations) {
-						String declaration_name = d.getName().toString();
-						VariableIdentifier identifier = VariableIdentifier.fromString(declaration_name);
-						Expr result = model.getConstInterp(d);
+					boolean casting_error = false;
+					try {
+						Model model = s.getModel();
+						FuncDecl[] declarations = model.getConstDecls();
+						for (FuncDecl d: declarations) {
+							String declaration_name = d.getName().toString();
+							VariableIdentifier identifier = VariableIdentifier.fromString(declaration_name);
+							Expr result = model.getConstInterp(d);
 
-						switch (identifier.getVariableType()) {
-							case BOOLEAN:
-								if (result.isBool()) {
-									new_values.put(identifier, result.isTrue());
-								} else {
-									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Bool");
-								}
-								break;
-							case STRING:
-								if (result.isString()) {
-									new_values.put(identifier, result.getString());
-								} else {
-									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to String");
-								}
-								break;
-							case BIGINT:
-							case NUMBER_INTEGER:
-								if (result.isIntNum()) {
-									try {
-										IntNum cast_result = (IntNum) result;
-										new_values.put(identifier, cast_result.getInt());
-									} catch (ClassCastException cce) {
+							switch (identifier.getVariableType()) {
+								case BOOLEAN:
+									if (result.isBool()) {
+										new_values.put(identifier, result.isTrue());
+									} else {
+										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Bool");
+										casting_error = true;
+									}
+									break;
+								case STRING:
+									if (result.isString()) {
+										new_values.put(identifier, result.getString());
+									} else {
+										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to String");
+										casting_error = true;
+									}
+									break;
+								case BIGINT:
+								case NUMBER_INTEGER:
+									if (result.isIntNum()) {
+										try {
+											IntNum cast_result = (IntNum) result;
+											new_values.put(identifier, cast_result.getInt());
+										} catch (ClassCastException cce) {
+											logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer");
+											casting_error = true;
+										}
+									} else {
 										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer");
+										casting_error = true;
 									}
-								} else {
-									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Integer");
-								}
-								break;
-							case NUMBER_REAL: //TODO Z3 RatNum to Double conversion
-								if (result.isRatNum()) {
-									try {
-										RatNum cast_result = (RatNum) result;
-										new_values.put(identifier, Double.parseDouble(cast_result.toDecimalString(128)));
-									} catch (ClassCastException cce) {
+									break;
+								case NUMBER_REAL: //TODO Z3 RatNum to Double conversion
+									if (result.isRatNum()) {
+										try {
+											RatNum cast_result = (RatNum) result;
+											new_values.put(identifier, Double.parseDouble(cast_result.toDecimalString(128)));
+										} catch (ClassCastException cce) {
+											logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double");
+											casting_error = true;
+										}
+									} else {
 										logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double");
+										casting_error = true;
 									}
-								} else {
-									logger.critical("Cannot cast Z3 Expression '" + result.toString() + "' to Double");
-								}
-								break;
-							default:
-								logger.critical("Variable " + identifier.getIdentifierString() + " has not allowed type '" + identifier.getVariableType().toString() + "'");
-								break;
+									break;
+								default:
+									logger.critical("Variable " + identifier.getIdentifierString() + " has not allowed type '" +
+													identifier.getVariableType().toString() + "'");
+									casting_error = true;
+									break;
+							}
 						}
+					} catch (com.microsoft.z3.Z3Exception z3ex) {
+						logger.critical("An error occurred in the solver: " + z3ex.getMessage());
+						casting_error = true;
+					}
+
+					if (casting_error) {
+						new_target.setBranchingNodeAttribute(BranchingNodeAttribute.UNREACHABLE);
+						continue;
 					}
 
 					try {

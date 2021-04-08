@@ -43,6 +43,8 @@ public class Amygdala {
 	private final List<Map<VariableIdentifier, Object>> variable_values;
 	private final List<Pair<Boolean, String>> iteration_information;
 	private final List<Long> runtime_nanos;
+	private final List<Pair<Integer, Integer>> execution_graph_statistics;
+	private final List<Map<BranchingNodeAttribute, Integer>> execution_graph_component_statistics;
 	private final BidiMap<VariableIdentifier, Integer> variable_lines;
 	private final Map<VariableIdentifier, String> variable_names;
 	private Boolean fuzzing_finished = false;
@@ -53,6 +55,11 @@ public class Amygdala {
 	private boolean event_logging = true;
 	private String program_path = "";
 	private String results_path = "";
+	private double min_coverage_root = 100.0;
+	private double min_coverage_statement = 100.0;
+	private double min_coverage_branch = 100.0;
+	private boolean timeout_reached = false;
+	private long timeout_millis = 10000;
 
 	// Experimental
 	// This option advises JSReadCurrent/ScopeFrameSlotNodeGen to fill in values if they are not found.
@@ -60,6 +67,8 @@ public class Amygdala {
 	// This option disables computation of new input values and instead
 	// locks them to the values specified in the configuration YAML-file.
 	public static final boolean LOCK_VALUES = false;
+	// This option measures size and depth of the execution graph after every iteration
+	public static final boolean EXECUTION_GRAPH_STATISTICS = true;
 
 	// Debugging Bits: is node executed, onEnter (E), onInputValue (I), OnReturn (R), onReturnExceptional (X), onUnwind (U), onDispose (D)
 	public final HashMap<String, BitSet> node_type_instrumented = new HashMap<>();
@@ -73,11 +82,13 @@ public class Amygdala {
 		this.variable_names = new HashMap<>();
 		this.variable_lines = new DualHashBidiMap<>();
 		this.runtime_nanos = new ArrayList<>();
+		this.execution_graph_statistics = new ArrayList<>();
+		this.execution_graph_component_statistics = new ArrayList<>();
 		this.iteration_information = new ArrayList<>();
 
 		com.microsoft.z3.Global.ToggleWarningMessages(true);
 		com.microsoft.z3.Global.setParameter("smt.string_solver", "z3str3");
-		com.microsoft.z3.Global.setParameter("timeout", "1000");
+		com.microsoft.z3.Global.setParameter("timeout", "10000");
 		logger.info("Using Z3 " + Version.getString() + " © Copyright 2006-2016 Microsoft Corp.");
 
 		HashMap<String, String> cfg = new HashMap<>();
@@ -106,6 +117,7 @@ public class Amygdala {
 			Pair<Integer, Boolean> expected_behavior = next_program_path.poll();
 			if (!expected_behavior.getLeft().equals(branching_node_hash) || !expected_behavior.getRight().equals(taken)) {
 				logger.info("Diverging program path detected");
+				logger.alert("Diverging program path detected");
 				current_branch.setDiverging();
 			}
 		}
@@ -123,6 +135,7 @@ public class Amygdala {
 	 * program has been terminated under normal circumstances.
 	 */
 	public void terminateEvent(Long runtime) {
+		logger.info("Program terminated without error");
 		current_branch.setBranchingNodeAttribute(BranchingNodeAttribute.TERMINATE);
 		current_branch = branching_root_node;
 		iteration_information.add(Pair.create(true, ""));
@@ -135,6 +148,7 @@ public class Amygdala {
 	 * The function suppresses the next terminate-event.
 	 */
 	public void errorEvent(String reason, Long runtime) {
+		logger.info("Program fault detected: " + reason);
 		current_branch.setBranchingNodeAttribute(BranchingNodeAttribute.ERROR);
 		current_branch = branching_root_node;
 		iteration_information.add(Pair.create(false, reason));
@@ -171,6 +185,18 @@ public class Amygdala {
 		this.probe = tp;
 	}
 
+	public void setTimeoutReached(boolean value) {
+		this.timeout_reached = value;
+	}
+
+	public boolean timeoutReached() {
+		return this.timeout_reached;
+	}
+
+	public long getTimeoutMillis() {
+		return this.timeout_millis;
+	}
+
 	/**
 	 * This Method uses a specified tactic to find the next path in the program flow.
 	 * If the tactic cannot find another path, the global fuzzing-loop has to be terminated.
@@ -179,20 +205,26 @@ public class Amygdala {
 	 */
 	public Boolean calculateNextPath() {
 		if (fuzzing_iterations < max_iterations) {
-			if (!LOCK_VALUES) {
-				probe.switchState(TimeProbe.ProgramState.TACTIC);
-				boolean res = this.tactic.calculate();
-				probe.switchState(TimeProbe.ProgramState.MANAGE);
-				if (res) {
-					variable_values.add(this.tactic.getNextValues());
-					next_program_path = this.tactic.getNextPath();
-					return true;
+			if (!coverage.coverageReached(this.min_coverage_root, this.min_coverage_statement, this.min_coverage_branch)) {
+				if (!LOCK_VALUES) {
+					probe.switchState(TimeProbe.ProgramState.TACTIC);
+					logger.info("Finding next path...");
+					boolean res = this.tactic.calculate();
+					probe.switchState(TimeProbe.ProgramState.MANAGE);
+					if (res) {
+						variable_values.add(this.tactic.getNextValues());
+						next_program_path = this.tactic.getNextPath();
+						return true;
+					} else {
+						fuzzing_finished = true;
+						return false;
+					}
 				} else {
-					fuzzing_finished = true;
-					return false;
+					return true;
 				}
 			} else {
-				return true;
+				logger.info("Required coverage reached.");
+				return false;
 			}
 		} else {
 			logger.info("Max iterations reached (" + max_iterations + ")");
@@ -374,6 +406,16 @@ public class Amygdala {
 			logger.info("Option partial_evaluation_on_cast enabled");
 		}
 
+		if (parameters.containsKey("required_coverage") && parameters.get("required_coverage") instanceof Map) {
+			Map<String, Object> minc = (Map<String, Object>) parameters.get("required_coverage");
+			this.min_coverage_root = Double.parseDouble(minc.getOrDefault("root", 100.0).toString());
+			this.min_coverage_statement = Double.parseDouble(minc.getOrDefault("statement", 100.0).toString());
+			this.min_coverage_branch = Double.parseDouble(minc.getOrDefault("branch", 100.0).toString());
+		}
+		logger.info("Minimum coverage set to " + this.min_coverage_root + " (root), " +
+							this.min_coverage_statement + " (statement), " +
+							this.min_coverage_branch + " (branch)");
+
 		String tactic_string = (String) parameters.getOrDefault("tactic", "DEPTH_SEARCH");
 		switch (tactic_string) {
 			case "IN_ORDER_SEARCH":
@@ -504,6 +546,27 @@ public class Amygdala {
 		logger.log(getInstrumentationString());
 	}
 
+	public void snapshot() {
+		coverage.saveSnapshot();
+		if (this.branching_visualization) {
+			visualizeProgramFlow("trace_tree_" + getIteration() + ".svg");
+		}
+		if (EXECUTION_GRAPH_STATISTICS) {
+			int graph_size = branching_root_node.getTreeSize();
+			int graph_height = branching_root_node.getTreeHeight();
+			execution_graph_statistics.add(Pair.create(graph_size, graph_height));
+			Map<BranchingNodeAttribute, Integer> components = new HashMap<>();
+			components.put(BranchingNodeAttribute.BRANCH, 0);
+			components.put(BranchingNodeAttribute.LOOP, 0);
+			components.put(BranchingNodeAttribute.UNKNOWN, 0);
+			components.put(BranchingNodeAttribute.UNREACHABLE, 0);
+			components.put(BranchingNodeAttribute.TERMINATE, 0);
+			components.put(BranchingNodeAttribute.ERROR, 0);
+			branching_root_node.getComponents(components);
+			execution_graph_component_statistics.add(components);
+		}
+	}
+
 	/**
 	 * Returns a string-representation of the instrumentation statistics
 	 *
@@ -581,6 +644,17 @@ public class Amygdala {
 				iteration.put("error_message", iteration_information.get(i).getRight());
 			}
 			iteration.put("runtime", runtime_nanos.get(i) / 1000000);
+
+			if (EXECUTION_GRAPH_STATISTICS) {
+				Pair<Integer, Integer> graph_stat = execution_graph_statistics.get(i);
+				iteration.put("execution_graph_height", graph_stat.getRight());
+				iteration.put("execution_graph_size", graph_stat.getLeft());
+				Map<String, Integer> converted_components = new HashMap<>();
+				for (Map.Entry<BranchingNodeAttribute, Integer> entry: execution_graph_component_statistics.get(i).entrySet()) {
+					converted_components.put(String.valueOf(entry.getKey()), entry.getValue());
+				}
+				iteration.put("execution_graph_components", converted_components);
+			}
 
 			List<Map<String, Object>> variables = new ArrayList<>();
 			if (LOCK_VALUES) {

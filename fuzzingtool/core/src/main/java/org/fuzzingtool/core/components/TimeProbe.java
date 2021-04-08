@@ -88,15 +88,19 @@ public class TimeProbe {
 	public String toString() {
 		StringBuilder duration_str = new StringBuilder();
 		duration_str.append("===RUNTIME BEHAVIOR===\n");
-		long complete_duration = 0;
-		for (Map.Entry<ProgramState, Long> pair: this.durations.entrySet()) {
-			complete_duration += pair.getValue() / 1000000;
-		}
-		for (Map.Entry<ProgramState, Long> pair: this.durations.entrySet()) {
-			duration_str.append(pair.getKey().toString()).append(": ");
-			duration_str.append(pair.getValue() / 1000000).append("ms ");
-			double percentage = ((double) (pair.getValue() / 1000000) / (double) complete_duration) * 100.0;
-			duration_str.append("(").append(String.format(Locale.US, "%.1f", percentage)).append("%)\n");
+		if (only_iteration) {
+			duration_str.append("Precise measurement disabled\n");
+		} else {
+			long complete_duration = 0;
+			for (Map.Entry<ProgramState, Long> pair: this.durations.entrySet()) {
+				complete_duration += pair.getValue() / 1000000;
+			}
+			for (Map.Entry<ProgramState, Long> pair: this.durations.entrySet()) {
+				duration_str.append(pair.getKey().toString()).append(": ");
+				duration_str.append(pair.getValue() / 1000000).append("ms ");
+				double percentage = ((double) (pair.getValue() / 1000000) / (double) complete_duration) * 100.0;
+				duration_str.append("(").append(String.format(Locale.US, "%.1f", percentage)).append("%)\n");
+			}
 		}
 		return duration_str.toString();
 	}

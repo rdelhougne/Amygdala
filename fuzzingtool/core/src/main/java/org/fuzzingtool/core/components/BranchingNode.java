@@ -12,6 +12,7 @@ import org.graalvm.collections.Pair;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 
 public class BranchingNode {
@@ -366,6 +367,49 @@ public class BranchingNode {
 			Queue<Pair<Integer, Boolean>> q = new LinkedList<>();
 			q.offer(Pair.create(this.branch_identifier, taken_flag));
 			return q;
+		}
+	}
+
+	/**
+	 * Returns the height of the tree (the depth of it's deepest node).
+	 *
+	 * @return The height of the tree
+	 */
+	public int getTreeHeight() {
+		if (child_node_taken == null || child_node_not_taken == null) {
+			return depth;
+		} else {
+			int depth_taken = child_node_taken.getTreeHeight();
+			int depth_not_taken = child_node_not_taken.getTreeHeight();
+			return Math.max(depth_taken, depth_not_taken);
+		}
+	}
+
+	/**
+	 * Returns number of nodes in the tree.
+	 *
+	 * @return Number of nodes
+	 */
+	public int getTreeSize() {
+		if (child_node_taken == null || child_node_not_taken == null) {
+			return 1;
+		} else {
+			int size_taken = child_node_taken.getTreeSize();
+			int size_not_taken = child_node_not_taken.getTreeSize();
+			return size_taken + size_not_taken + 1;
+		}
+	}
+
+	/**
+	 * Returns the number of nodes of a specific type (BranchingNodeAttribute)
+	 *
+	 * @param out The Map the numbers are written to
+	 */
+	public void getComponents(Map<BranchingNodeAttribute, Integer> out) {
+		out.put(branching_node_attribute, out.get(branching_node_attribute) + 1);
+		if (branching_node_attribute == BranchingNodeAttribute.BRANCH || branching_node_attribute == BranchingNodeAttribute.LOOP) {
+			child_node_taken.getComponents(out);
+			child_node_not_taken.getComponents(out);
 		}
 	}
 }

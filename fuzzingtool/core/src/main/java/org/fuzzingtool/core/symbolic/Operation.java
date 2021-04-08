@@ -11,5 +11,8 @@ public enum Operation {
 	STR_LENGTH, STR_CONCAT, STR_CHAR_AT, STR_SUBSTR, STR_INCLUDES, STR_INDEXOF,
 
 	// Array
-	ARR_LENGTH, ARR_PUSH, ARR_JOIN
+	ARR_LENGTH, ARR_PUSH, ARR_JOIN,
+
+	// Explicit Conversion
+	STR_TO_INT
 }
